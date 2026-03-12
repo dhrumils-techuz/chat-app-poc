@@ -1,0 +1,123 @@
+# ========================
+# Flutter / Dart
+# ========================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+lib/generated_plugin_registrant.dart
+
+# Generated code
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+*.config.dart
+env.g.dart
+
+# FVM (Flutter Version Management)
+.fvm/
+.fvmrc
+
+# Coverage
+coverage/
+*.lcov
+
+# Test artifacts
+test/.test_coverage.dart
+
+# ========================
+# iOS
+# ========================
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Podfile.lock
+**/ios/Flutter/ephemeral/
+
+# Fastlane
+**/ios/fastlane/report.xml
+
+# ========================
+# Android
+# ========================
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/app/.cxx
+**/android/fastlane/report.xml
+local.properties
+
+# Keystore
+*.jks
+*.keystore
+
+# ========================
+# Firebase (sensitive)
+# ========================
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# ========================
+# Server (Node.js / TypeScript)
+# ========================
+server/node_modules/
+server/dist/
+server/logs/
+server/.env
+server/*.pem
+
+# ========================
+# Environment / Secrets
+# ========================
+*.env
+!server/.env.example
+/assets/env
+
+# ========================
+# IDE / Editor
+# ========================
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# ========================
+# OS files
+# ========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ========================
+# Miscellaneous
+# ========================
+*.class
+*.log
+*.pyc
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# Symbolication
+app.*.symbols
+
+# Obfuscation
+app.*.map.json
+
+# Lock files (regenerated per environment)
+pubspec.lock
+
+# Claude Code session data
+.claude/
