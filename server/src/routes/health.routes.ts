@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { healthCheck as dbHealthCheck } from '../config/database';
 import { redisHealthCheck } from '../config/redis';
+import { HealthStatus } from '../constants/messages';
 
 const router = Router();
 
@@ -13,11 +14,11 @@ router.get('/', async (_req: Request, res: Response) => {
   const healthy = dbHealthy && redisHealthy;
 
   res.status(healthy ? 200 : 503).json({
-    status: healthy ? 'healthy' : 'degraded',
+    status: healthy ? HealthStatus.HEALTHY : HealthStatus.DEGRADED,
     timestamp: new Date().toISOString(),
     services: {
-      database: dbHealthy ? 'up' : 'down',
-      redis: redisHealthy ? 'up' : 'down',
+      database: dbHealthy ? HealthStatus.UP : HealthStatus.DOWN,
+      redis: redisHealthy ? HealthStatus.UP : HealthStatus.DOWN,
     },
   });
 });
@@ -29,14 +30,14 @@ router.get('/ready', async (_req: Request, res: Response) => {
   ]);
 
   if (dbHealthy && redisHealthy) {
-    res.status(200).json({ status: 'ready' });
+    res.status(200).json({ status: HealthStatus.READY });
   } else {
-    res.status(503).json({ status: 'not ready' });
+    res.status(503).json({ status: HealthStatus.NOT_READY });
   }
 });
 
 router.get('/live', (_req: Request, res: Response) => {
-  res.status(200).json({ status: 'alive' });
+  res.status(200).json({ status: HealthStatus.ALIVE });
 });
 
 export default router;

@@ -34,6 +34,21 @@ async function bootstrap(): Promise<void> {
       env: env.NODE_ENV,
       port: env.PORT,
     });
+
+    console.log('\n┌──────────────────────────────────────────────────┐');
+    console.log(`│  Local:   http://${env.HOST}:${env.PORT}`);
+    if (env.NGROK_URL) {
+      console.log(`│  Ngrok:   ${env.NGROK_URL}`);
+      console.log('│');
+      console.log('│  Use the Ngrok URL above in your Flutter .env:');
+      console.log(`│    API_URL=${env.NGROK_URL}`);
+      console.log(`│    SOCKET_URL=${env.NGROK_URL}`);
+    } else {
+      console.log('│');
+      console.log('│  No NGROK_URL set. To enable cross-platform');
+      console.log('│  access, add NGROK_URL to your server .env');
+    }
+    console.log('└──────────────────────────────────────────────────┘\n');
   });
 
   // Graceful shutdown

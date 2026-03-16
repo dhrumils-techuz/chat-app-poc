@@ -35,6 +35,8 @@ const envSchema = z.object({
   AUDIT_LOG_RETENTION_DAYS: z.coerce.number().default(2555),
 
   ENCRYPTION_KEY: z.string().optional(),
+
+  NGROK_URL: z.string().url().optional(),
 });
 
 function loadEnv() {

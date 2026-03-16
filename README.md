@@ -30,6 +30,8 @@ A WhatsApp-style secure messaging platform built for medical sales representativ
 - [Database Schema](#database-schema)
 - [App Routes (Flutter)](#app-routes-flutter)
 - [Design System](#design-system)
+- [Cross-Platform Development (ngrok)](#cross-platform-development-ngrok)
+- [String Localization](#string-localization)
 - [Multi-Tenant Architecture](#multi-tenant-architecture)
 - [HIPAA Compliance](#hipaa-compliance)
 - [File Upload Limits](#file-upload-limits)
@@ -304,12 +306,13 @@ medchat/
 │           ├── theme/
 │           │   ├── color.dart                         # AppColor + ChatColors extension
 │           │   └── text_style.dart                    # ChatTextStyles (platform-aware)
+│           ├── config/
+│           │   └── app_config.dart                    # flutter_dotenv env loader
 │           ├── values/
 │           │   ├── app_sizes.dart                     # Spacing & sizing constants
+│           │   ├── app_strings.dart                   # All UI strings (Keys + ChatMessages)
 │           │   └── constants/
 │           │       └── socket_events.dart             # Socket event name constants
-│           └── env/
-│               └── env.dart                           # Environment URL configuration
 │
 ├── server/                               # Node.js backend
 │   ├── package.json
@@ -340,6 +343,8 @@ medchat/
 │       │   ├── folders.ts                # /api/folders/*
 │       │   ├── admin.ts                  # /api/admin/*
 │       │   └── health.ts                # /api/health/*
+│       ├── constants/
+│       │   └── messages.ts              # Centralized string constants
 │       ├── controllers/                  # Request handlers
 │       ├── services/                     # Business logic
 │       ├── socket/                       # Socket.IO event handlers
@@ -361,7 +366,8 @@ medchat/
 ├── assets/
 │   ├── fonts/                            # Montserrat, Roboto font files
 │   ├── images/                           # App images and icons
-│   └── .env.chat                         # Flutter environment config
+│   ├── .env                              # Flutter runtime env (flutter_dotenv)
+│   └── .env.example                      # Template with setup instructions
 ├── pubspec.yaml                          # Flutter dependencies
 ├── analysis_options.yaml                 # Dart lint rules
 ├── SOW_TECHNICAL_SPECIFICATION.md        # Full technical specification document
@@ -622,16 +628,37 @@ Firebase is only required for push notifications. The app works fully without it
 flutter pub get
 ```
 
-**Configure the API base URL:**
+**Configure the environment file:**
 
-Edit `assets/.env.chat` (or the env config at `lib/chat/core/env/env.dart`):
+```bash
+cp assets/.env.example assets/.env
+```
 
-| Environment          | API URL                           | Socket URL                    |
-| -------------------- | --------------------------------- | ----------------------------- |
-| **Development**      | `http://localhost:3000/api`       | `http://localhost:3000`       |
-| **Android Emulator** | `http://10.0.2.2:3000/api`        | `http://10.0.2.2:3000`        |
-| **iOS Simulator**    | `http://localhost:3000/api`       | `http://localhost:3000`       |
-| **Physical Device**  | `http://<your-local-ip>:3000/api` | `http://<your-local-ip>:3000` |
+Edit `assets/.env`:
+
+```env
+API_URL=http://localhost:3000
+SOCKET_URL=http://localhost:3000
+S3_BUCKET_URL=https://s3.amazonaws.com/your-bucket-name
+FIREBASE_API_KEY=your-firebase-api-key
+FIREBASE_PROJECT_ID=your-firebase-project-id
+DB_ENCRYPTION_KEY=your-32-char-encryption-key-here
+```
+
+The app uses `flutter_dotenv` to load these values at runtime — no build_runner or code generation required. Values can also be overridden at compile time with `--dart-define`:
+
+```bash
+flutter run --dart-define=API_URL=https://my-api.example.com
+```
+
+**Platform-specific API URLs (without ngrok):**
+
+| Environment          | API_URL / SOCKET_URL               |
+| -------------------- | ---------------------------------- |
+| **Web / iOS Sim**    | `http://localhost:3000`            |
+| **Android Emulator** | `http://10.0.2.2:3000`            |
+| **Physical Device**  | `http://<your-local-ip>:3000`      |
+| **Cross-platform**   | Use ngrok — see [Cross-Platform Development](#cross-platform-development-ngrok) |
 
 > **Tip:** Find your local IP with `ifconfig | grep "inet " | grep -v 127.0.0.1`
 
@@ -710,14 +737,20 @@ After first login, you can:
 | `RATE_LIMIT_MAX_REQUESTS`         | No       | `100`                   | Max requests per window                |
 | `AUDIT_LOG_RETENTION_DAYS`        | No       | `2555`                  | ~7 years (HIPAA requirement)           |
 | `ENCRYPTION_KEY`                  | No       | —                       | 256-bit hex key for PHI encryption     |
+| `NGROK_URL`                       | No       | —                       | Ngrok tunnel URL for cross-platform dev (logged on startup) |
 
-### Flutter Client (`assets/.env.chat`)
+### Flutter Client (`assets/.env`)
 
-| Variable      | Description                                                  |
-| ------------- | ------------------------------------------------------------ |
-| `DEV_URL`     | Development API base URL (e.g., `http://localhost:3000/api`) |
-| `STAGING_URL` | Staging API base URL                                         |
-| `PROD_URL`    | Production API base URL                                      |
+| Variable              | Required | Description                                              |
+| --------------------- | -------- | -------------------------------------------------------- |
+| `API_URL`             | **Yes**  | Server base URL (e.g., `http://localhost:3000`)          |
+| `SOCKET_URL`          | **Yes**  | Socket.IO server URL (usually same as API_URL)           |
+| `S3_BUCKET_URL`       | No       | S3 bucket URL for media                                  |
+| `FIREBASE_API_KEY`    | No       | Firebase Web API key                                     |
+| `FIREBASE_PROJECT_ID` | No       | Firebase project ID                                      |
+| `DB_ENCRYPTION_KEY`   | No       | SQLCipher encryption key for local database              |
+
+> All values can be overridden at compile time using `--dart-define=KEY=VALUE`.
 
 ---
 
@@ -1385,6 +1418,111 @@ Platform-aware font selection:
 
 ---
 
+## Cross-Platform Development (ngrok)
+
+Running the app on both Chrome and a mobile emulator/device simultaneously requires a single URL that works everywhere. **ngrok** tunnels your local server to a public HTTPS URL.
+
+### Setup
+
+1. **Install ngrok** ([ngrok.com/download](https://ngrok.com/download)):
+   ```bash
+   brew install ngrok   # macOS
+   # or download from https://ngrok.com/download
+   ```
+
+2. **Start the tunnel:**
+   ```bash
+   ngrok http 3000
+   ```
+   Copy the HTTPS forwarding URL (e.g., `https://xxxx-xx-xx-xxx-xx.ngrok-free.app`).
+
+3. **Configure the server** — add to `server/.env`:
+   ```env
+   NGROK_URL=https://xxxx-xx-xx-xxx-xx.ngrok-free.app
+   ```
+   The server will log the ngrok URL on startup and auto-allow it in CORS.
+
+4. **Configure Flutter** — update `assets/.env`:
+   ```env
+   API_URL=https://xxxx-xx-xx-xxx-xx.ngrok-free.app
+   SOCKET_URL=https://xxxx-xx-xx-xxx-xx.ngrok-free.app
+   ```
+
+5. **Run on any platform** — the same URL works for Chrome, Android emulator, iOS simulator, and physical devices.
+
+### Server Startup Output
+
+When `NGROK_URL` is set, the server displays:
+
+```
+┌──────────────────────────────────────────────────┐
+│  Local:   http://0.0.0.0:3000
+│  Ngrok:   https://xxxx-xx-xx-xxx-xx.ngrok-free.app
+│
+│  Use the Ngrok URL above in your Flutter .env:
+│    API_URL=https://xxxx-xx-xx-xxx-xx.ngrok-free.app
+│    SOCKET_URL=https://xxxx-xx-xx-xxx-xx.ngrok-free.app
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+## String Localization
+
+All user-facing strings are centralized to avoid hardcoded text throughout the codebase.
+
+### Flutter (Client)
+
+Strings are managed via GetX translations in `lib/chat/core/values/app_strings.dart`:
+
+```dart
+// Define keys
+abstract class Keys {
+  static const AppName = 'app_name';
+  static const Chats = 'chats';
+  static const Settings = 'settings';
+  // ...
+}
+
+// Provide translations
+class ChatMessages extends Translations {
+  @override
+  Map<String, Map<String, String>> get keys => {
+    'en_US': {
+      Keys.AppName: 'WhatsUp',
+      Keys.Chats: 'Chats',
+      Keys.Settings: 'Settings',
+      // ...
+    },
+  };
+}
+```
+
+**Usage in widgets:**
+```dart
+Text(Keys.Chats.tr)                    // Simple string
+Text(Keys.N_members.tr.replaceAll('@count', '$count'))  // Parameterized
+```
+
+To add a new language, add another locale map to `ChatMessages.keys`.
+
+### Server
+
+All server-side strings are centralized in `server/src/constants/messages.ts`:
+
+```typescript
+import { AuthMsg, ErrorCode, ConversationMsg } from '../constants/messages';
+
+// Usage:
+throw AppError.unauthorized(AuthMsg.INVALID_CREDENTIALS, ErrorCode.INVALID_CREDENTIALS);
+throw AppError.notFound(ConversationMsg.NOT_FOUND);
+res.json({ message: FolderMsg.DELETED });
+```
+
+Available constant groups: `ErrorCode`, `AuthMsg`, `ValidationMsg`, `UserMsg`, `ConversationMsg`, `MessageMsg`, `FolderMsg`, `MediaMsg`, `TenantMsg`, `RateLimitMsg`, `ErrorMsg`, `PasswordMsg`, `HealthStatus`.
+
+---
+
 ## Multi-Tenant Architecture
 
 All data is scoped by `tenant_id`, enforced at:
@@ -1592,6 +1730,7 @@ flutter build windows --release
 | `password authentication failed`     | Wrong DB credentials        | Check `DATABASE_URL` in `.env` matches Step 2                            |
 | Port 3000 already in use             | Another process on port     | `lsof -i :3000` to find it, or change `PORT` in `.env`                   |
 | Socket.IO connection drops           | Redis adapter not connected | Verify Redis is running and `REDIS_URL` is correct                       |
+| Ngrok URL not shown on startup       | `NGROK_URL` not in `.env`   | Add `NGROK_URL=https://...` to `server/.env`                             |
 
 ### Flutter Issues
 
@@ -1603,6 +1742,7 @@ flutter build windows --release
 | Firebase initialization failed            | Missing config files      | Add `google-services.json` / `GoogleService-Info.plist`      |
 | `flutter pub get` fails                   | Dart SDK version mismatch | Ensure Flutter 3.22+ with Dart ^3.6.1                        |
 | White screen on web                       | CORS error                | Add `http://localhost:<port>` to `CORS_ALLOWED_ORIGINS`      |
+| API works on web but not mobile           | Wrong API_URL              | Use ngrok URL or `10.0.2.2` — see [Cross-Platform Development](#cross-platform-development-ngrok) |
 | Fonts not rendering                       | Missing font files        | Check `assets/fonts/` has Roboto and SourceSansPro TTFs      |
 | GetX binding error                        | Missing DI registration   | Check `main.dart` registers all services before navigation   |
 

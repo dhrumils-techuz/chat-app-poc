@@ -34,9 +34,12 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
                 Expanded(child: _buildMessageList(context, colors)),
 
                 // Typing indicator
-                Obx(() => TypingIndicatorWidget(
-                      typingUsers: controller.typingUsers,
-                    )),
+                Obx(() {
+                  final users = controller.typingUsers.toList();
+                  return TypingIndicatorWidget(
+                    typingUsers: users,
+                  );
+                }),
 
                 // Message input bar
                 const MessageInputBar(),

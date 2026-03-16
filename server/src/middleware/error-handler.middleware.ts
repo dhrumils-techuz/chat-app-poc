@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { logger } from '../utils/logger';
+import { ValidationMsg, ErrorCode, ErrorMsg } from '../constants/messages';
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -53,8 +54,8 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
       message: e.message,
     }));
     res.status(400).json({
-      error: 'Validation failed',
-      code: 'VALIDATION_ERROR',
+      error: ValidationMsg.VALIDATION_FAILED,
+      code: ErrorCode.VALIDATION_ERROR,
       details: errors,
       requestId,
     });
@@ -89,8 +90,8 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   });
 
   res.status(500).json({
-    error: 'Internal server error',
-    code: 'INTERNAL_ERROR',
+    error: ErrorMsg.INTERNAL_SERVER_ERROR,
+    code: ErrorCode.INTERNAL_ERROR,
     requestId,
   });
 }

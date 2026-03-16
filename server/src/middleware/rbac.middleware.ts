@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '../types';
+import { AuthMsg, ErrorCode } from '../constants/messages';
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   super_admin: 3,
@@ -11,16 +12,16 @@ export function requireRole(...allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.auth) {
       res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
+        error: AuthMsg.AUTHENTICATION_REQUIRED,
+        code: ErrorCode.AUTH_REQUIRED,
       });
       return;
     }
 
     if (!allowedRoles.includes(req.auth.role)) {
       res.status(403).json({
-        error: 'Insufficient permissions',
-        code: 'FORBIDDEN',
+        error: AuthMsg.INSUFFICIENT_PERMISSIONS,
+        code: ErrorCode.FORBIDDEN,
       });
       return;
     }
@@ -33,8 +34,8 @@ export function requireMinRole(minRole: UserRole) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.auth) {
       res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
+        error: AuthMsg.AUTHENTICATION_REQUIRED,
+        code: ErrorCode.AUTH_REQUIRED,
       });
       return;
     }
@@ -44,8 +45,8 @@ export function requireMinRole(minRole: UserRole) {
 
     if (userLevel < requiredLevel) {
       res.status(403).json({
-        error: 'Insufficient permissions',
-        code: 'FORBIDDEN',
+        error: AuthMsg.INSUFFICIENT_PERMISSIONS,
+        code: ErrorCode.FORBIDDEN,
       });
       return;
     }
@@ -58,8 +59,8 @@ export function requireSelfOrAdmin(userIdParam: string = 'id') {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.auth) {
       res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
+        error: AuthMsg.AUTHENTICATION_REQUIRED,
+        code: ErrorCode.AUTH_REQUIRED,
       });
       return;
     }
@@ -70,8 +71,8 @@ export function requireSelfOrAdmin(userIdParam: string = 'id') {
 
     if (!isSelf && !isAdmin) {
       res.status(403).json({
-        error: 'Insufficient permissions',
-        code: 'FORBIDDEN',
+        error: AuthMsg.INSUFFICIENT_PERMISSIONS,
+        code: ErrorCode.FORBIDDEN,
       });
       return;
     }

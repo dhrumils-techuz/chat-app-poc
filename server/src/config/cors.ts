@@ -18,6 +18,12 @@ export const corsOptions: CorsOptions = {
       return;
     }
 
+    // Allow ngrok URL if configured
+    if (env.NGROK_URL && origin.startsWith(env.NGROK_URL.replace(/\/$/, ''))) {
+      callback(null, true);
+      return;
+    }
+
     // Check against explicit allow-list
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -26,7 +32,7 @@ export const corsOptions: CorsOptions = {
     }
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Tenant-ID', 'X-Device-Id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Tenant-ID', 'X-Device-Id', 'ngrok-skip-browser-warning'],
   exposedHeaders: ['X-Request-ID', 'X-Total-Count'],
   credentials: true,
   maxAge: 86400,

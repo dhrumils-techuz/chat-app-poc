@@ -2,6 +2,7 @@ import { query } from '../config/database';
 import { S3_CONFIG } from '../config/s3';
 import { generateUploadUrl, generateDownloadUrl } from '../utils/s3.util';
 import { AppError } from '../middleware/error-handler.middleware';
+import { ConversationMsg, MediaMsg, ErrorCode } from '../constants/messages';
 import { conversationService } from './conversation.service';
 import { auditService } from './audit.service';
 import { Media } from '../types';
@@ -22,13 +23,13 @@ class MediaService {
 
     // Validate mime type
     if (!S3_CONFIG.allowedMimeTypes.includes(mimeType)) {
-      throw AppError.badRequest(`File type ${mimeType} is not allowed`, 'INVALID_FILE_TYPE');
+      throw AppError.badRequest(MediaMsg.INVALID_FILE_TYPE(mimeType), ErrorCode.INVALID_FILE_TYPE);
     }
 
     // Verify participant access
     const isParticipant = await conversationService.isParticipant(conversationId, userId);
     if (!isParticipant) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     const result = await generateUploadUrl({
@@ -82,7 +83,7 @@ class MediaService {
     );
 
     if (mediaResult.rows.length === 0) {
-      throw AppError.notFound('Media not found');
+      throw AppError.notFound(MediaMsg.NOT_FOUND);
     }
 
     const media = mediaResult.rows[0];
@@ -90,7 +91,7 @@ class MediaService {
     // Verify user is participant of the conversation
     const isParticipant = await conversationService.isParticipant(media.conversation_id, userId);
     if (!isParticipant) {
-      throw AppError.forbidden('You do not have access to this media');
+      throw AppError.forbidden(MediaMsg.NO_ACCESS);
     }
 
     const { downloadUrl, expiresIn } = await generateDownloadUrl(media.s3_key);
@@ -118,7 +119,7 @@ class MediaService {
   ): Promise<{ media: Media[]; total: number }> {
     const isParticipant = await conversationService.isParticipant(conversationId, userId);
     if (!isParticipant) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     const conditions: string[] = ['conversation_id = $1', 'tenant_id = $2'];

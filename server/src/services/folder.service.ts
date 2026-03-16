@@ -1,5 +1,6 @@
 import { query } from '../config/database';
 import { AppError } from '../middleware/error-handler.middleware';
+import { ConversationMsg, FolderMsg } from '../constants/messages';
 import { ChatFolder, ChatFolderConversation } from '../types';
 import { auditService } from './audit.service';
 import { conversationService } from './conversation.service';
@@ -77,7 +78,7 @@ class FolderService {
     }
 
     if (setClauses.length === 0) {
-      throw AppError.badRequest('No fields to update');
+      throw AppError.badRequest(ConversationMsg.NO_FIELDS_TO_UPDATE);
     }
 
     setClauses.push('updated_at = NOW()');
@@ -91,7 +92,7 @@ class FolderService {
     );
 
     if (result.rows.length === 0) {
-      throw AppError.notFound('Folder not found');
+      throw AppError.notFound(FolderMsg.NOT_FOUND);
     }
 
     await auditService.log({
@@ -116,7 +117,7 @@ class FolderService {
     );
 
     if (result.rowCount === 0) {
-      throw AppError.notFound('Folder not found');
+      throw AppError.notFound(FolderMsg.NOT_FOUND);
     }
 
     await auditService.log({
@@ -143,13 +144,13 @@ class FolderService {
       [folderId, tenantId, userId]
     );
     if (folderResult.rows.length === 0) {
-      throw AppError.notFound('Folder not found');
+      throw AppError.notFound(FolderMsg.NOT_FOUND);
     }
 
     // Verify user is participant
     const isParticipant = await conversationService.isParticipant(conversationId, userId);
     if (!isParticipant) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     // Check for duplicate
@@ -158,7 +159,7 @@ class FolderService {
       [folderId, conversationId]
     );
     if (existing.rows.length > 0) {
-      throw AppError.conflict('Conversation already in folder');
+      throw AppError.conflict(FolderMsg.CONVERSATION_ALREADY_IN);
     }
 
     await query(
@@ -178,7 +179,7 @@ class FolderService {
       [folderId, tenantId, userId]
     );
     if (folderResult.rows.length === 0) {
-      throw AppError.notFound('Folder not found');
+      throw AppError.notFound(FolderMsg.NOT_FOUND);
     }
 
     const result = await query(
@@ -187,7 +188,7 @@ class FolderService {
     );
 
     if (result.rowCount === 0) {
-      throw AppError.notFound('Conversation not found in folder');
+      throw AppError.notFound(FolderMsg.CONVERSATION_NOT_IN);
     }
   }
 
@@ -201,7 +202,7 @@ class FolderService {
       [folderId, tenantId, userId]
     );
     if (folderResult.rows.length === 0) {
-      throw AppError.notFound('Folder not found');
+      throw AppError.notFound(FolderMsg.NOT_FOUND);
     }
 
     const result = await query<{ conversation_id: string }>(

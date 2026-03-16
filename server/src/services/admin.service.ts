@@ -1,6 +1,7 @@
 import { query, transaction } from '../config/database';
 import { hashPassword, validatePasswordComplexity } from '../utils/password.util';
 import { AppError } from '../middleware/error-handler.middleware';
+import { ConversationMsg, TenantMsg, ErrorCode } from '../constants/messages';
 import { Tenant, User } from '../types';
 import { auditService } from './audit.service';
 import { CreateTenantInput } from '../utils/validators';
@@ -12,7 +13,7 @@ class AdminService {
   }> {
     const complexity = validatePasswordComplexity(input.adminPassword);
     if (!complexity.valid) {
-      throw AppError.badRequest(complexity.message, 'WEAK_PASSWORD');
+      throw AppError.badRequest(complexity.message, ErrorCode.WEAK_PASSWORD);
     }
 
     // Check for existing tenant name
@@ -21,7 +22,7 @@ class AdminService {
       [input.name]
     );
     if (existing.rows.length > 0) {
-      throw AppError.conflict('A tenant with this name already exists');
+      throw AppError.conflict(TenantMsg.NAME_EXISTS);
     }
 
     return await transaction(async (client) => {
@@ -92,7 +93,7 @@ class AdminService {
     );
 
     if (result.rows.length === 0) {
-      throw AppError.notFound('Tenant not found');
+      throw AppError.notFound(TenantMsg.NOT_FOUND);
     }
 
     return result.rows[0];
@@ -132,7 +133,7 @@ class AdminService {
     }
 
     if (setClauses.length === 0) {
-      throw AppError.badRequest('No fields to update');
+      throw AppError.badRequest(ConversationMsg.NO_FIELDS_TO_UPDATE);
     }
 
     setClauses.push('updated_at = NOW()');
@@ -144,7 +145,7 @@ class AdminService {
     );
 
     if (result.rows.length === 0) {
-      throw AppError.notFound('Tenant not found');
+      throw AppError.notFound(TenantMsg.NOT_FOUND);
     }
 
     await auditService.log({

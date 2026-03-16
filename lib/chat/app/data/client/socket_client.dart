@@ -67,6 +67,7 @@ class SocketClient extends GetxService {
         IO.OptionBuilder()
             .setTransports(['websocket'])
             .setAuth({'token': accessToken})
+            .setExtraHeaders({'ngrok-skip-browser-warning': 'true'})
             .disableAutoConnect()
             .enableReconnection()
             .setReconnectionAttempts(AppConstants.maxReconnectAttempts)

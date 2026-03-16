@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { mediaService } from '../services/media.service';
+import { ConversationMsg, ErrorCode } from '../constants/messages';
 import { requestUploadUrlSchema, confirmUploadSchema, uuidParamSchema } from '../utils/validators';
 
 export class MediaController {
@@ -62,7 +63,7 @@ export class MediaController {
       const { limit = '20', offset = '0', mimeType } = req.query;
 
       if (!conversationId) {
-        res.status(400).json({ error: 'Conversation ID required', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.CONVERSATION_ID_REQUIRED, code: ErrorCode.BAD_REQUEST });
         return;
       }
 

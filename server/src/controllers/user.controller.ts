@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { userService } from '../services/user.service';
+import { UserMsg, ErrorCode } from '../constants/messages';
 import { createUserSchema, updateUserSchema, uuidParamSchema } from '../utils/validators';
 import { UserRole } from '../types';
 
@@ -98,8 +99,8 @@ export class UserController {
 
       if (!q || typeof q !== 'string' || q.trim().length === 0) {
         res.status(400).json({
-          error: 'Search query is required',
-          code: 'BAD_REQUEST',
+          error: UserMsg.SEARCH_QUERY_REQUIRED,
+          code: ErrorCode.BAD_REQUEST,
         });
         return;
       }

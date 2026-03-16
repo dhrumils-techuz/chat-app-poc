@@ -53,6 +53,8 @@ class DioRemoteApiClient extends GetxService {
             options.headers['X-Device-Id'] = deviceId;
           }
           options.headers['Content-Type'] = 'application/json';
+          // Skip ngrok browser interstitial warning page (free tier)
+          options.headers['ngrok-skip-browser-warning'] = 'true';
 
           return handler.next(options);
         },
@@ -152,7 +154,10 @@ class DioRemoteApiClient extends GetxService {
         ApiEndpoints.refreshToken,
         data: {'refreshToken': refreshToken},
         options: Options(
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
         ),
       );
 

@@ -8,6 +8,7 @@ import { auditMiddleware } from './middleware/audit.middleware';
 import { globalRateLimit } from './middleware/rate-limit.middleware';
 import { errorHandler } from './middleware/error-handler.middleware';
 import routes from './routes';
+import { ErrorMsg, ErrorCode } from './constants/messages';
 
 const app = express();
 
@@ -42,8 +43,8 @@ app.use('/api', routes);
 // 404 handler
 app.use((_req, res) => {
   res.status(404).json({
-    error: 'Not found',
-    code: 'NOT_FOUND',
+    error: ErrorMsg.NOT_FOUND,
+    code: ErrorCode.NOT_FOUND,
   });
 });
 

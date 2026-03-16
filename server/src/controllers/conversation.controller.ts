@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { conversationService } from '../services/conversation.service';
+import { ConversationMsg, ErrorCode } from '../constants/messages';
 import {
   createConversationSchema,
   updateConversationSchema,
@@ -111,7 +112,7 @@ export class ConversationController {
 
       res.status(200).json({
         success: true,
-        message: 'Participant added',
+        message: ConversationMsg.PARTICIPANT_ADDED,
       });
     } catch (error) {
       next(error);
@@ -125,7 +126,7 @@ export class ConversationController {
       const participantUserId = req.params.userId;
 
       if (!conversationId || !participantUserId) {
-        res.status(400).json({ error: 'Missing required parameters', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.MISSING_REQUIRED_PARAMS, code: ErrorCode.BAD_REQUEST });
         return;
       }
 
@@ -138,7 +139,7 @@ export class ConversationController {
 
       res.status(200).json({
         success: true,
-        message: 'Participant removed',
+        message: ConversationMsg.PARTICIPANT_REMOVED,
       });
     } catch (error) {
       next(error);

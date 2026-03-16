@@ -1,5 +1,6 @@
 import { query, transaction } from '../config/database';
 import { AppError } from '../middleware/error-handler.middleware';
+import { ConversationMsg, UserMsg } from '../constants/messages';
 import { Conversation, ConversationParticipant, ConversationType } from '../types';
 import { auditService } from './audit.service';
 import { CreateConversationInput, UpdateConversationInput } from '../utils/validators';
@@ -30,12 +31,12 @@ class ConversationService {
     // For direct chats, ensure no duplicate exists
     if (input.type === 'direct') {
       if (input.participantIds.length !== 1) {
-        throw AppError.badRequest('Direct conversations require exactly one other participant');
+        throw AppError.badRequest(ConversationMsg.DIRECT_REQUIRES_ONE);
       }
 
       const otherUserId = input.participantIds[0];
       if (otherUserId === userId) {
-        throw AppError.badRequest('Cannot create a conversation with yourself');
+        throw AppError.badRequest(ConversationMsg.CANNOT_CHAT_SELF);
       }
 
       const existing = await query<{ id: string }>(
@@ -58,7 +59,7 @@ class ConversationService {
     );
 
     if (participantCheck.rows.length !== input.participantIds.length) {
-      throw AppError.badRequest('One or more participants not found in this organization');
+      throw AppError.badRequest(ConversationMsg.PARTICIPANTS_NOT_FOUND);
     }
 
     const conversationId = await transaction(async (client) => {
@@ -119,7 +120,7 @@ class ConversationService {
     );
 
     if (convResult.rows.length === 0) {
-      throw AppError.notFound('Conversation not found');
+      throw AppError.notFound(ConversationMsg.NOT_FOUND);
     }
 
     // Verify user is a participant
@@ -129,7 +130,7 @@ class ConversationService {
     );
 
     if (participantCheck.rows.length === 0) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     const conversation = convResult.rows[0];
@@ -252,7 +253,7 @@ class ConversationService {
     );
 
     if (participantResult.rows.length === 0) {
-      throw AppError.forbidden('Only conversation admins can update the conversation');
+      throw AppError.forbidden(ConversationMsg.ONLY_ADMINS_CAN_UPDATE);
     }
 
     const setClauses: string[] = [];
@@ -272,7 +273,7 @@ class ConversationService {
     }
 
     if (setClauses.length === 0) {
-      throw AppError.badRequest('No fields to update');
+      throw AppError.badRequest(ConversationMsg.NO_FIELDS_TO_UPDATE);
     }
 
     setClauses.push('updated_at = NOW()');
@@ -313,7 +314,7 @@ class ConversationService {
     );
 
     if (adderResult.rows.length === 0) {
-      throw AppError.forbidden('Only conversation admins can add participants');
+      throw AppError.forbidden(ConversationMsg.ONLY_ADMINS_CAN_ADD);
     }
 
     // Verify conversation is a group
@@ -323,7 +324,7 @@ class ConversationService {
     );
 
     if (convResult.rows.length === 0) {
-      throw AppError.badRequest('Can only add participants to group conversations');
+      throw AppError.badRequest(ConversationMsg.ONLY_GROUP_ADD);
     }
 
     // Check user exists in tenant
@@ -333,7 +334,7 @@ class ConversationService {
     );
 
     if (userResult.rows.length === 0) {
-      throw AppError.notFound('User not found in this organization');
+      throw AppError.notFound(UserMsg.NOT_FOUND_IN_ORG);
     }
 
     // Check if already a participant
@@ -343,7 +344,7 @@ class ConversationService {
     );
 
     if (existingResult.rows.length > 0) {
-      throw AppError.conflict('User is already a participant');
+      throw AppError.conflict(ConversationMsg.ALREADY_PARTICIPANT);
     }
 
     await query(
@@ -378,14 +379,14 @@ class ConversationService {
     );
 
     if (removerResult.rows.length === 0) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     const isSelf = removedByUserId === participantUserId;
     const removerRole = removerResult.rows[0].role;
 
     if (!isSelf && removerRole !== 'owner' && removerRole !== 'admin') {
-      throw AppError.forbidden('Insufficient permissions to remove participants');
+      throw AppError.forbidden(ConversationMsg.INSUFFICIENT_REMOVE_PERMS);
     }
 
     await query(

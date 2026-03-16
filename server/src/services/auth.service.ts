@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword, validatePasswordComplexity } from '../uti
 import { signAccessToken, generateRefreshToken, hashRefreshToken } from '../utils/jwt.util';
 import { auditService } from './audit.service';
 import { AppError } from '../middleware/error-handler.middleware';
+import { AuthMsg, ErrorCode, UserMsg } from '../constants/messages';
 import { User, JwtPayload } from '../types';
 import { logger } from '../utils/logger';
 
@@ -46,7 +47,7 @@ class AuthService {
     const lockoutKey = CACHE_KEYS.loginLockout(email);
     const isLocked = await redis.get(lockoutKey);
     if (isLocked) {
-      throw AppError.tooMany('Account temporarily locked due to failed login attempts. Try again in 15 minutes.', 'ACCOUNT_LOCKED');
+      throw AppError.tooMany(AuthMsg.ACCOUNT_LOCKED, ErrorCode.ACCOUNT_LOCKED);
     }
 
     // Find user
@@ -68,7 +69,7 @@ class AuthService {
         requestId: null,
         metadata: { email: '[REDACTED]', reason: 'user_not_found' },
       });
-      throw AppError.unauthorized('Invalid email or password', 'INVALID_CREDENTIALS');
+      throw AppError.unauthorized(AuthMsg.INVALID_CREDENTIALS, ErrorCode.INVALID_CREDENTIALS);
     }
 
     const user = userResult.rows[0];
@@ -88,7 +89,7 @@ class AuthService {
         requestId: null,
         metadata: { reason: 'invalid_password' },
       });
-      throw AppError.unauthorized('Invalid email or password', 'INVALID_CREDENTIALS');
+      throw AppError.unauthorized(AuthMsg.INVALID_CREDENTIALS, ErrorCode.INVALID_CREDENTIALS);
     }
 
     // Clear login attempts on success
@@ -159,7 +160,7 @@ class AuthService {
     );
 
     if (tokenResult.rows.length === 0) {
-      throw AppError.unauthorized('Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+      throw AppError.unauthorized(AuthMsg.INVALID_REFRESH_TOKEN, ErrorCode.INVALID_REFRESH_TOKEN);
     }
 
     const storedToken = tokenResult.rows[0];
@@ -173,11 +174,11 @@ class AuthService {
       logger.warn('Refresh token reuse detected, revoking all tokens', {
         userId: storedToken.user_id,
       });
-      throw AppError.unauthorized('Token has been revoked. Please log in again.', 'TOKEN_REVOKED');
+      throw AppError.unauthorized(AuthMsg.TOKEN_REVOKED, ErrorCode.TOKEN_REVOKED);
     }
 
     if (new Date() > storedToken.expires_at) {
-      throw AppError.unauthorized('Refresh token expired', 'REFRESH_TOKEN_EXPIRED');
+      throw AppError.unauthorized(AuthMsg.REFRESH_TOKEN_EXPIRED, ErrorCode.REFRESH_TOKEN_EXPIRED);
     }
 
     // Rotate token: revoke old, create new
@@ -187,7 +188,7 @@ class AuthService {
     );
 
     if (userResult.rows.length === 0) {
-      throw AppError.unauthorized('User not found or inactive', 'USER_INACTIVE');
+      throw AppError.unauthorized(AuthMsg.USER_NOT_FOUND_OR_INACTIVE, ErrorCode.USER_INACTIVE);
     }
 
     const user = userResult.rows[0];
@@ -265,13 +266,13 @@ class AuthService {
 
     const userResult = await query<User>('SELECT * FROM users WHERE id = $1', [userId]);
     if (userResult.rows.length === 0) {
-      throw AppError.notFound('User not found');
+      throw AppError.notFound(UserMsg.NOT_FOUND);
     }
 
     const user = userResult.rows[0];
     const passwordValid = await verifyPassword(currentPassword, user.password_hash);
     if (!passwordValid) {
-      throw AppError.unauthorized('Current password is incorrect', 'INVALID_PASSWORD');
+      throw AppError.unauthorized(AuthMsg.CURRENT_PASSWORD_INCORRECT, ErrorCode.INVALID_PASSWORD);
     }
 
     const newHash = await hashPassword(newPassword);

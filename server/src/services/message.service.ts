@@ -1,5 +1,6 @@
 import { query, transaction } from '../config/database';
 import { AppError } from '../middleware/error-handler.middleware';
+import { ConversationMsg, MessageMsg } from '../constants/messages';
 import { Message, MessageStatusType } from '../types';
 import { auditService } from './audit.service';
 import { conversationService } from './conversation.service';
@@ -26,7 +27,7 @@ class MessageService {
     // Verify sender is participant
     const isParticipant = await conversationService.isParticipant(conversationId, senderId);
     if (!isParticipant) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     // Verify conversation belongs to tenant
@@ -35,7 +36,7 @@ class MessageService {
       [conversationId, tenantId]
     );
     if (convCheck.rows.length === 0) {
-      throw AppError.notFound('Conversation not found');
+      throw AppError.notFound(ConversationMsg.NOT_FOUND);
     }
 
     // Verify reply target exists if provided
@@ -45,7 +46,7 @@ class MessageService {
         [replyToId, conversationId]
       );
       if (replyCheck.rows.length === 0) {
-        throw AppError.notFound('Reply target message not found');
+        throw AppError.notFound(MessageMsg.REPLY_NOT_FOUND);
       }
     }
 
@@ -115,7 +116,7 @@ class MessageService {
     // Verify participant access
     const isParticipant = await conversationService.isParticipant(conversationId, userId);
     if (!isParticipant) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     const baseQuery = `SELECT m.*, u.full_name as sender_name, u.avatar_url as sender_avatar_url
@@ -145,7 +146,7 @@ class MessageService {
   ): Promise<MessageWithSender> {
     const isParticipant = await conversationService.isParticipant(conversationId, userId);
     if (!isParticipant) {
-      throw AppError.forbidden('You are not a participant of this conversation');
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
     const result = await query<MessageWithSender>(
@@ -157,7 +158,7 @@ class MessageService {
     );
 
     if (result.rows.length === 0) {
-      throw AppError.notFound('Message not found');
+      throw AppError.notFound(MessageMsg.NOT_FOUND);
     }
 
     return result.rows[0];
@@ -215,7 +216,7 @@ class MessageService {
     );
 
     if (msgResult.rows.length === 0) {
-      throw AppError.notFound('Message not found or you are not the sender');
+      throw AppError.notFound(MessageMsg.NOT_FOUND_OR_NOT_SENDER);
     }
 
     await query(

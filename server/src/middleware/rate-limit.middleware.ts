@@ -1,5 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { env } from '../config/env';
+import { RateLimitMsg, ErrorCode } from '../constants/messages';
 
 export const globalRateLimit = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
@@ -7,8 +8,8 @@ export const globalRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: 'Too many requests, please try again later',
-    code: 'RATE_LIMIT_EXCEEDED',
+    error: RateLimitMsg.TOO_MANY_REQUESTS,
+    code: ErrorCode.RATE_LIMIT_EXCEEDED,
   },
   keyGenerator: (req) => {
     return req.auth?.userId || req.ip || 'anonymous';
@@ -24,8 +25,8 @@ export const authRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: 'Too many authentication attempts, please try again later',
-    code: 'AUTH_RATE_LIMIT_EXCEEDED',
+    error: RateLimitMsg.TOO_MANY_AUTH_ATTEMPTS,
+    code: ErrorCode.AUTH_RATE_LIMIT_EXCEEDED,
   },
   keyGenerator: (req) => {
     return req.ip || 'anonymous';
@@ -38,8 +39,8 @@ export const uploadRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: 'Upload limit exceeded, please try again later',
-    code: 'UPLOAD_RATE_LIMIT_EXCEEDED',
+    error: RateLimitMsg.UPLOAD_LIMIT_EXCEEDED,
+    code: ErrorCode.UPLOAD_RATE_LIMIT_EXCEEDED,
   },
   keyGenerator: (req) => {
     return req.auth?.userId || req.ip || 'anonymous';

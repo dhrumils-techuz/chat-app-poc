@@ -1,6 +1,7 @@
 import { query } from '../config/database';
 import { hashPassword, validatePasswordComplexity } from '../utils/password.util';
 import { AppError } from '../middleware/error-handler.middleware';
+import { ConversationMsg, UserMsg, ErrorCode } from '../constants/messages';
 import { User, UserPublic, UserRole } from '../types';
 import { auditService } from './audit.service';
 import { CreateUserInput, UpdateUserInput } from '../utils/validators';
@@ -28,7 +29,7 @@ class UserService {
   ): Promise<UserPublic> {
     const complexity = validatePasswordComplexity(input.password);
     if (!complexity.valid) {
-      throw AppError.badRequest(complexity.message, 'WEAK_PASSWORD');
+      throw AppError.badRequest(complexity.message, ErrorCode.WEAK_PASSWORD);
     }
 
     // Check for existing email within tenant
@@ -37,7 +38,7 @@ class UserService {
       [input.email, tenantId]
     );
     if (existing.rows.length > 0) {
-      throw AppError.conflict('A user with this email already exists in this organization', 'EMAIL_EXISTS');
+      throw AppError.conflict(UserMsg.EMAIL_EXISTS, ErrorCode.EMAIL_EXISTS);
     }
 
     const passwordHash = await hashPassword(input.password);
@@ -73,7 +74,7 @@ class UserService {
     );
 
     if (result.rows.length === 0) {
-      throw AppError.notFound('User not found');
+      throw AppError.notFound(UserMsg.NOT_FOUND);
     }
 
     return toPublicUser(result.rows[0]);
@@ -161,7 +162,7 @@ class UserService {
     }
 
     if (setClauses.length === 0) {
-      throw AppError.badRequest('No fields to update');
+      throw AppError.badRequest(ConversationMsg.NO_FIELDS_TO_UPDATE);
     }
 
     setClauses.push('updated_at = NOW()');
@@ -173,7 +174,7 @@ class UserService {
     );
 
     if (result.rows.length === 0) {
-      throw AppError.notFound('User not found');
+      throw AppError.notFound(UserMsg.NOT_FOUND);
     }
 
     await auditService.log({

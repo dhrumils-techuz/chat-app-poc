@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { folderService } from '../services/folder.service';
+import { FolderMsg } from '../constants/messages';
 import {
   createFolderSchema,
   updateFolderSchema,
@@ -64,7 +65,7 @@ export class FolderController {
 
       res.status(200).json({
         success: true,
-        message: 'Folder deleted',
+        message: FolderMsg.DELETED,
       });
     } catch (error) {
       next(error);
@@ -86,7 +87,7 @@ export class FolderController {
 
       res.status(200).json({
         success: true,
-        message: 'Conversation added to folder',
+        message: FolderMsg.CONVERSATION_ADDED,
       });
     } catch (error) {
       next(error);
@@ -107,7 +108,7 @@ export class FolderController {
 
       res.status(200).json({
         success: true,
-        message: 'Conversation removed from folder',
+        message: FolderMsg.CONVERSATION_REMOVED,
       });
     } catch (error) {
       next(error);

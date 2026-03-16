@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { messageService } from '../services/message.service';
+import { ConversationMsg, MessageMsg, ErrorCode } from '../constants/messages';
 import { sendMessageSchema, uuidParamSchema } from '../utils/validators';
 import { parsePaginationParams } from '../utils/pagination.util';
 
@@ -10,7 +11,7 @@ export class MessageController {
       const conversationId = req.params.conversationId;
 
       if (!conversationId) {
-        res.status(400).json({ error: 'Conversation ID required', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.CONVERSATION_ID_REQUIRED, code: ErrorCode.BAD_REQUEST });
         return;
       }
 
@@ -41,7 +42,7 @@ export class MessageController {
       const conversationId = req.params.conversationId;
 
       if (!conversationId) {
-        res.status(400).json({ error: 'Conversation ID required', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.CONVERSATION_ID_REQUIRED, code: ErrorCode.BAD_REQUEST });
         return;
       }
 
@@ -72,7 +73,7 @@ export class MessageController {
       const { conversationId, messageId } = req.params;
 
       if (!conversationId || !messageId) {
-        res.status(400).json({ error: 'Conversation ID and Message ID required', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.CONVERSATION_AND_MESSAGE_ID_REQUIRED, code: ErrorCode.BAD_REQUEST });
         return;
       }
 
@@ -97,7 +98,7 @@ export class MessageController {
       const { conversationId, messageId } = req.params;
 
       if (!conversationId || !messageId) {
-        res.status(400).json({ error: 'Conversation ID and Message ID required', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.CONVERSATION_AND_MESSAGE_ID_REQUIRED, code: ErrorCode.BAD_REQUEST });
         return;
       }
 
@@ -110,7 +111,7 @@ export class MessageController {
 
       res.status(200).json({
         success: true,
-        message: 'Message deleted',
+        message: MessageMsg.DELETED,
       });
     } catch (error) {
       next(error);
@@ -122,7 +123,7 @@ export class MessageController {
       const conversationId = req.params.conversationId;
 
       if (!conversationId) {
-        res.status(400).json({ error: 'Conversation ID required', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.CONVERSATION_ID_REQUIRED, code: ErrorCode.BAD_REQUEST });
         return;
       }
 
@@ -140,7 +141,7 @@ export class MessageController {
 
       res.status(200).json({
         success: true,
-        message: 'Marked as read',
+        message: MessageMsg.MARKED_AS_READ,
       });
     } catch (error) {
       next(error);
@@ -153,7 +154,7 @@ export class MessageController {
       const conversationId = req.params.conversationId;
 
       if (!conversationId) {
-        res.status(400).json({ error: 'Conversation ID required', code: 'BAD_REQUEST' });
+        res.status(400).json({ error: ConversationMsg.CONVERSATION_ID_REQUIRED, code: ErrorCode.BAD_REQUEST });
         return;
       }
 
@@ -171,7 +172,7 @@ export class MessageController {
 
       res.status(200).json({
         success: true,
-        message: 'Marked as delivered',
+        message: MessageMsg.MARKED_AS_DELIVERED,
       });
     } catch (error) {
       next(error);

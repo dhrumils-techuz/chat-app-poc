@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
+import { AuthMsg } from '../constants/messages';
 import { loginSchema, refreshTokenSchema, changePasswordSchema } from '../utils/validators';
 
 export class AuthController {
@@ -55,7 +56,7 @@ export class AuthController {
 
       res.status(200).json({
         success: true,
-        message: 'Logged out successfully',
+        message: AuthMsg.LOGGED_OUT,
       });
     } catch (error) {
       next(error);
@@ -78,7 +79,7 @@ export class AuthController {
 
       res.status(200).json({
         success: true,
-        message: 'Password changed successfully. Please log in again.',
+        message: AuthMsg.PASSWORD_CHANGED,
       });
     } catch (error) {
       next(error);

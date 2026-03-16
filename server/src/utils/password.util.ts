@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { PasswordMsg } from '../constants/messages';
 
 const SALT_ROUNDS = 12;
 
@@ -14,19 +15,19 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]
 
 export function validatePasswordComplexity(password: string): { valid: boolean; message: string } {
   if (password.length < 8) {
-    return { valid: false, message: 'Password must be at least 8 characters long' };
+    return { valid: false, message: PasswordMsg.MIN_LENGTH };
   }
   if (!/[a-z]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one lowercase letter' };
+    return { valid: false, message: PasswordMsg.LOWERCASE_REQUIRED };
   }
   if (!/[A-Z]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one uppercase letter' };
+    return { valid: false, message: PasswordMsg.UPPERCASE_REQUIRED };
   }
   if (!/\d/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one number' };
+    return { valid: false, message: PasswordMsg.NUMBER_REQUIRED };
   }
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one special character' };
+    return { valid: false, message: PasswordMsg.SPECIAL_CHAR_REQUIRED };
   }
-  return { valid: true, message: 'Password meets complexity requirements' };
+  return { valid: true, message: PasswordMsg.MEETS_REQUIREMENTS };
 }

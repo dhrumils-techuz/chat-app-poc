@@ -1,17 +1,18 @@
 import { z } from 'zod';
+import { ValidationMsg } from '../constants/messages';
 
 // Auth schemas
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
-  deviceId: z.string().uuid('Invalid device ID').optional(),
+  email: z.string().email(ValidationMsg.INVALID_EMAIL),
+  password: z.string().min(1, ValidationMsg.PASSWORD_REQUIRED),
+  deviceId: z.string().uuid(ValidationMsg.INVALID_DEVICE_ID).optional(),
   deviceName: z.string().max(100).optional(),
   platform: z.string().max(50).optional(),
   fcmToken: z.string().max(500).optional(),
 });
 
 export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().min(1, ValidationMsg.REFRESH_TOKEN_REQUIRED),
 });
 
 export const changePasswordSchema = z.object({
@@ -63,7 +64,7 @@ export const sendMessageSchema = z.object({
     if (data.type === 'text') return !!data.content;
     return !!data.mediaId;
   },
-  { message: 'Text messages require content; media messages require mediaId' }
+  { message: ValidationMsg.TEXT_REQUIRES_CONTENT }
 );
 
 // Media schemas
@@ -118,7 +119,7 @@ export const paginationSchema = z.object({
 
 // UUID param schema
 export const uuidParamSchema = z.object({
-  id: z.string().uuid('Invalid ID format'),
+  id: z.string().uuid(ValidationMsg.INVALID_ID_FORMAT),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

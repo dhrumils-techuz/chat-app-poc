@@ -22,7 +22,8 @@ class AppConfig {
   static String get apiBaseUrl {
     const override = String.fromEnvironment('API_URL');
     if (override.isNotEmpty) return override;
-    return dotenv.env['API_URL'] ?? 'http://localhost:3000';
+    return "https://lloyd-unhacked-alexandria.ngrok-free.dev";
+    // return dotenv.env['API_URL'] ?? 'http://localhost:3000';
   }
 
   static String get socketUrl {
