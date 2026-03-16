@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -78,7 +79,7 @@ class MessageInputBar extends GetView<ChatDetailController> {
                           color: colors.textPrimary,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Type a message...',
+                          hintText: Keys.Type_a_message.tr,
                           hintStyle: ChatTextStyles.inputText.copyWith(
                             color: colors.textLight,
                           ),

@@ -28,26 +28,25 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final lastSeen = json['lastSeenAt'] ?? json['last_seen_at'];
+    final created = json['createdAt'] ?? json['created_at'];
+    final updated = json['updatedAt'] ?? json['updated_at'];
+
     return UserModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      phoneNumber: json['phoneNumber'] as String?,
-      avatarUrl: json['avatarUrl'] as String?,
+      id: (json['id'] ?? json['userId'] ?? json['user_id']) as String,
+      // Server may send 'fullName', 'full_name', or 'name'
+      name: (json['fullName'] ?? json['full_name'] ?? json['name'] ?? '') as String,
+      email: (json['email'] ?? '') as String,
+      phoneNumber: (json['phoneNumber'] ?? json['phone_number'] ?? json['phone']) as String?,
+      avatarUrl: (json['avatarUrl'] ?? json['avatar_url']) as String?,
       designation: json['designation'] as String?,
       department: json['department'] as String?,
       presence: json['presence'] != null
           ? UserPresence.fromValue(json['presence'] as String)
           : UserPresence.offline,
-      lastSeenAt: json['lastSeenAt'] != null
-          ? DateTime.parse(json['lastSeenAt'] as String)
-          : null,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
+      lastSeenAt: lastSeen != null ? DateTime.parse(lastSeen as String) : null,
+      createdAt: created != null ? DateTime.parse(created as String) : null,
+      updatedAt: updated != null ? DateTime.parse(updated as String) : null,
     );
   }
 

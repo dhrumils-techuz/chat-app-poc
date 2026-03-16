@@ -6,8 +6,6 @@ import '../app_database.dart';
 /// Data Access Object for user-related database operations.
 class UserDao {
   static const String _tag = 'UserDao';
-  static const String _table = 'users';
-
   final AppDatabase _appDatabase;
 
   UserDao(this._appDatabase);
@@ -18,8 +16,8 @@ class UserDao {
     if (db == null) return;
 
     try {
-      final map = _userToMap(user);
-      // await db.insert(_table, map, conflictAlgorithm: ConflictAlgorithm.replace);
+      _userToMap(user);
+      // await db.insert('users', map, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Upsert user error: $e');
     }
@@ -145,6 +143,7 @@ class UserDao {
     };
   }
 
+  // ignore: unused_element
   UserModel _mapToUser(Map<String, dynamic> map) {
     return UserModel(
       id: map['id'] as String,

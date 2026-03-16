@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -56,7 +57,7 @@ class ChatListViewMobile extends GetView<ChatListController> {
       elevation: 0,
       scrolledUnderElevation: 0.5,
       title: Text(
-        'WhatsUp',
+        Keys.AppName.tr,
         style: ChatTextStyles.appBarTitle.copyWith(
           color: colors.primaryColor,
         ),
@@ -101,17 +102,17 @@ class ChatListViewMobile extends GetView<ChatListController> {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'new_group',
-              child: Text('New Group'),
+              child: Text(Keys.New_Group.tr),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'settings',
-              child: Text('Settings'),
+              child: Text(Keys.Settings.tr),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'profile',
-              child: Text('Profile'),
+              child: Text(Keys.Profile.tr),
             ),
           ],
         ),
@@ -135,13 +136,13 @@ class ChatListViewMobile extends GetView<ChatListController> {
         return EmptyStateWidget(
           icon: Icons.chat_bubble_outline_rounded,
           title: controller.searchQuery.value.isNotEmpty
-              ? 'No results found'
-              : 'No conversations yet',
+              ? Keys.No_results_found.tr
+              : Keys.No_conversations.tr,
           subtitle: controller.searchQuery.value.isNotEmpty
-              ? 'Try a different search term'
-              : 'Start a new chat to begin messaging',
+              ? Keys.Try_different_search.tr
+              : Keys.Start_new_chat.tr,
           actionText: controller.searchQuery.value.isEmpty
-              ? 'Start Chat'
+              ? Keys.Start_chat.tr
               : null,
           onAction: controller.searchQuery.value.isEmpty
               ? () => Get.toNamed(ChatAppRoutes.CONTACTS)
@@ -185,7 +186,7 @@ class ChatListViewMobile extends GetView<ChatListController> {
         highlightElevation: 0,
         child: const Icon(
           Icons.chat,
-          color: Colors.white,
+          color: AppColor.white,
           size: AppSizes.dimenToPx24,
         ),
       ),

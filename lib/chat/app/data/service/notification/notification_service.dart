@@ -100,7 +100,8 @@ class NotificationService extends GetxService {
         tag: _tag, 'Navigating to conversation: $conversationId');
   }
 
-  void _onTokenRefresh(String token) {
+  /// Handles FCM token refresh.
+  void onTokenRefresh(String token) {
     _fcmToken = token;
     LogsHelper.debugLog(tag: _tag, 'FCM token refreshed');
     // Should trigger saving the new token to the server

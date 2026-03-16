@@ -42,11 +42,16 @@ class MessageModel {
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
+    final createdAt = json['createdAt'] ?? json['created_at'];
+    final updatedAt = json['updatedAt'] ?? json['updated_at'];
+    final readAt = json['readAt'] ?? json['read_at'];
+    final deliveredAt = json['deliveredAt'] ?? json['delivered_at'];
+
     return MessageModel(
       id: json['id'] as String,
-      conversationId: json['conversationId'] as String,
-      senderId: json['senderId'] as String,
-      senderName: json['senderName'] as String?,
+      conversationId: (json['conversationId'] ?? json['conversation_id'] ?? '') as String,
+      senderId: (json['senderId'] ?? json['sender_id'] ?? '') as String,
+      senderName: (json['senderName'] ?? json['sender_name']) as String?,
       type: MessageType.fromValue(json['type'] as String),
       content: json['content'] as String?,
       attachment: json['attachment'] != null
@@ -56,21 +61,15 @@ class MessageModel {
       status: json['status'] != null
           ? MessageStatusType.fromValue(json['status'] as String)
           : MessageStatusType.sent,
-      replyToMessageId: json['replyToMessageId'] as String?,
-      replyToContent: json['replyToContent'] as String?,
-      replyToSenderName: json['replyToSenderName'] as String?,
-      isForwarded: json['isForwarded'] as bool? ?? false,
-      isDeleted: json['isDeleted'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
-      readAt: json['readAt'] != null
-          ? DateTime.parse(json['readAt'] as String)
-          : null,
-      deliveredAt: json['deliveredAt'] != null
-          ? DateTime.parse(json['deliveredAt'] as String)
-          : null,
+      replyToMessageId: (json['replyToMessageId'] ?? json['reply_to_id'] ?? json['replyToId']) as String?,
+      replyToContent: (json['replyToContent'] ?? json['reply_to_content']) as String?,
+      replyToSenderName: (json['replyToSenderName'] ?? json['reply_to_sender_name']) as String?,
+      isForwarded: (json['isForwarded'] ?? json['is_forwarded']) as bool? ?? false,
+      isDeleted: (json['isDeleted'] ?? json['is_deleted']) as bool? ?? false,
+      createdAt: DateTime.parse(createdAt as String),
+      updatedAt: updatedAt != null ? DateTime.parse(updatedAt as String) : null,
+      readAt: readAt != null ? DateTime.parse(readAt as String) : null,
+      deliveredAt: deliveredAt != null ? DateTime.parse(deliveredAt as String) : null,
     );
   }
 

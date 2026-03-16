@@ -43,15 +43,46 @@ class LoginResponseData {
     this.encryptionKey,
   });
 
+  /// Parses the server login response.
+  ///
+  /// Server returns tokens nested: `{ tokens: { accessToken, refreshToken, expiresIn }, user: {...} }`
+  /// `expiresIn` comes as a string like "15m" — we parse it to seconds.
   factory LoginResponseData.fromJson(Map<String, dynamic> json) {
+    // Tokens may be nested under 'tokens' key or flat at root level.
+    final tokensMap = json['tokens'] as Map<String, dynamic>? ?? json;
+
     return LoginResponseData(
-      accessToken: json['accessToken'] as String,
-      refreshToken: json['refreshToken'] as String,
-      expiresIn: json['expiresIn'] as int,
+      accessToken: tokensMap['accessToken'] as String,
+      refreshToken: tokensMap['refreshToken'] as String,
+      expiresIn: _parseExpiresIn(tokensMap['expiresIn']),
       user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
       deviceId: json['deviceId'] as String?,
       encryptionKey: json['encryptionKey'] as String?,
     );
+  }
+
+  /// Parses expiresIn which can be an int (seconds) or a string like "15m", "1h", "30s".
+  static int _parseExpiresIn(dynamic value) {
+    if (value is int) return value;
+    if (value is String) {
+      final match = RegExp(r'^(\d+)([smhd]?)$').firstMatch(value.trim());
+      if (match != null) {
+        final num = int.parse(match.group(1)!);
+        final unit = match.group(2) ?? 's';
+        switch (unit) {
+          case 'm':
+            return num * 60;
+          case 'h':
+            return num * 3600;
+          case 'd':
+            return num * 86400;
+          case 's':
+          default:
+            return num;
+        }
+      }
+    }
+    return 900; // Default 15 minutes
   }
 
   Map<String, dynamic> toJson() {

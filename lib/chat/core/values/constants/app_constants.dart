@@ -14,6 +14,6 @@ class AppConstants {
   static const int maxAudioRecordingSeconds = 120;
 }
 
-class AppConfig {
+class DebugConfig {
   static const bool testMode = false;
 }

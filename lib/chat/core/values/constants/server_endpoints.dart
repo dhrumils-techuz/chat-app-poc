@@ -1,13 +1,7 @@
-import '../../env/env.dart';
-
-class ServerEndpoints {
-  static const String devUrl = Env.devUrl;
-  static const String stagingUrl = Env.stagingUrl;
-  static const String prodUrl = Env.prodUrl;
-}
+import '../../config/app_config.dart';
 
 class ApiEndpoints {
-  static String baseURL = ServerEndpoints.devUrl;
+  static String baseURL = AppConfig.apiBaseUrl;
 
   // Auth
   static String get _authPrefix => '$baseURL/api/auth';
@@ -31,27 +25,29 @@ class ApiEndpoints {
   static String get conversations => _conversationPrefix;
   static String conversationById(String id) => '$_conversationPrefix/$id';
   static String get createConversation => _conversationPrefix;
-  static String get createGroup => '$_conversationPrefix/group';
+  static String get createGroup => _conversationPrefix; // same endpoint, type in body
   static String conversationMembers(String id) =>
-      '$_conversationPrefix/$id/members';
-  static String addMember(String id) => '$_conversationPrefix/$id/members';
+      '$_conversationPrefix/$id/participants';
+  static String addMember(String id) => '$_conversationPrefix/$id/participants';
   static String removeMember(String conversationId, String userId) =>
-      '$_conversationPrefix/$conversationId/members/$userId';
+      '$_conversationPrefix/$conversationId/participants/$userId';
   static String muteConversation(String id) => '$_conversationPrefix/$id/mute';
   static String pinConversation(String id) => '$_conversationPrefix/$id/pin';
   static String archiveConversation(String id) =>
       '$_conversationPrefix/$id/archive';
 
-  // Messages
+  // Messages (server routes: /api/messages/:conversationId)
   static String get _messagePrefix => '$baseURL/api/messages';
   static String messagesByConversation(String conversationId) =>
-      '$_conversationPrefix/$conversationId/messages';
-  static String messageById(String id) => '$_messagePrefix/$id';
-  static String deleteMessage(String id) => '$_messagePrefix/$id';
+      '$_messagePrefix/$conversationId';
+  static String messageById(String conversationId, String messageId) =>
+      '$_messagePrefix/$conversationId/$messageId';
+  static String deleteMessage(String conversationId, String messageId) =>
+      '$_messagePrefix/$conversationId/$messageId';
   static String markAsRead(String conversationId) =>
-      '$_conversationPrefix/$conversationId/read';
+      '$_messagePrefix/$conversationId/read';
   static String markAsDelivered(String conversationId) =>
-      '$_conversationPrefix/$conversationId/delivered';
+      '$_messagePrefix/$conversationId/delivered';
 
   // Media / Upload
   static String get _mediaPrefix => '$baseURL/api/media';
@@ -71,6 +67,5 @@ class ApiEndpoints {
   static String get _devicePrefix => '$baseURL/api/devices';
   static String get registerDevice => _devicePrefix;
   static String get saveFcmToken => '$_devicePrefix/fcm-token';
-  static String unregisterDevice(String deviceId) =>
-      '$_devicePrefix/$deviceId';
+  static String unregisterDevice(String deviceId) => '$_devicePrefix/$deviceId';
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 
@@ -71,37 +73,37 @@ class AttachmentPickerWidget extends StatelessWidget {
             children: [
               _AttachmentOption(
                 icon: Icons.insert_drive_file_outlined,
-                label: 'Document',
+                label: Keys.Document.tr,
                 color: const Color(0xFF5B5FC7),
                 onTap: () => onAttachmentSelected(AttachmentType.document),
               ),
               _AttachmentOption(
                 icon: Icons.camera_alt_outlined,
-                label: 'Camera',
+                label: Keys.Camera.tr,
                 color: const Color(0xFFE43D3D),
                 onTap: () => onAttachmentSelected(AttachmentType.camera),
               ),
               _AttachmentOption(
                 icon: Icons.photo_outlined,
-                label: 'Gallery',
+                label: Keys.Gallery.tr,
                 color: const Color(0xFFA855F7),
                 onTap: () => onAttachmentSelected(AttachmentType.gallery),
               ),
               _AttachmentOption(
                 icon: Icons.headphones_outlined,
-                label: 'Audio',
+                label: Keys.Audio.tr,
                 color: const Color(0xFFFF9F43),
                 onTap: () => onAttachmentSelected(AttachmentType.audio),
               ),
               _AttachmentOption(
                 icon: Icons.location_on_outlined,
-                label: 'Location',
+                label: Keys.Location.tr,
                 color: const Color(0xFF10C17D),
                 onTap: () => onAttachmentSelected(AttachmentType.location),
               ),
               _AttachmentOption(
                 icon: Icons.person_outline,
-                label: 'Contact',
+                label: Keys.Contact.tr,
                 color: const Color(0xFF3B82F6),
                 onTap: () => onAttachmentSelected(AttachmentType.contact),
               ),

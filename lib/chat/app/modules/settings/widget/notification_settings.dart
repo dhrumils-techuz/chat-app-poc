@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -41,8 +43,8 @@ class _NotificationSettingsState extends State<NotificationSettings> {
           _buildSwitchTile(
             colors: colors,
             icon: Icons.notifications_rounded,
-            title: 'All Notifications',
-            subtitle: 'Enable or disable all notifications',
+            title: Keys.All_Notifications.tr,
+            subtitle: Keys.Enable_disable_notifications.tr,
             value: _allNotifications,
             onChanged: (value) {
               setState(() {
@@ -60,8 +62,8 @@ class _NotificationSettingsState extends State<NotificationSettings> {
           _buildSwitchTile(
             colors: colors,
             icon: Icons.chat_bubble_rounded,
-            title: 'Message Notifications',
-            subtitle: 'Notify for new direct messages',
+            title: Keys.Message_Notifications.tr,
+            subtitle: Keys.Notify_direct_messages.tr,
             value: _messageNotifications,
             onChanged: _allNotifications
                 ? (value) => setState(() => _messageNotifications = value)
@@ -71,8 +73,8 @@ class _NotificationSettingsState extends State<NotificationSettings> {
           _buildSwitchTile(
             colors: colors,
             icon: Icons.group_rounded,
-            title: 'Group Notifications',
-            subtitle: 'Notify for new group messages',
+            title: Keys.Group_Notifications.tr,
+            subtitle: Keys.Notify_group_messages.tr,
             value: _groupNotifications,
             onChanged: _allNotifications
                 ? (value) => setState(() => _groupNotifications = value)
@@ -82,8 +84,8 @@ class _NotificationSettingsState extends State<NotificationSettings> {
           _buildSwitchTile(
             colors: colors,
             icon: Icons.volume_up_rounded,
-            title: 'Sound',
-            subtitle: 'Play sound for notifications',
+            title: Keys.Sound.tr,
+            subtitle: Keys.Play_sound.tr,
             value: _sound,
             onChanged: _allNotifications
                 ? (value) => setState(() => _sound = value)
@@ -93,8 +95,8 @@ class _NotificationSettingsState extends State<NotificationSettings> {
           _buildSwitchTile(
             colors: colors,
             icon: Icons.vibration_rounded,
-            title: 'Vibration',
-            subtitle: 'Vibrate for notifications',
+            title: Keys.Vibration.tr,
+            subtitle: Keys.Vibrate_notifications.tr,
             value: _vibration,
             onChanged: _allNotifications
                 ? (value) => setState(() => _vibration = value)

@@ -74,9 +74,11 @@ class GroupInfoController extends GetxController {
           await _chatRepository.getConversationById(conversation.value.id);
 
       if (response.isSuccessful && response.data != null) {
-        final updated = ConversationModel.fromJson(
-          response.data as Map<String, dynamic>,
-        );
+        final rawData = response.data;
+        final convData = rawData is Map && rawData.containsKey('data')
+            ? rawData['data'] as Map<String, dynamic>
+            : rawData as Map<String, dynamic>;
+        final updated = ConversationModel.fromJson(convData);
         conversation.value = updated;
         if (updated.groupMembers != null) {
           members.value = List.from(updated.groupMembers!);

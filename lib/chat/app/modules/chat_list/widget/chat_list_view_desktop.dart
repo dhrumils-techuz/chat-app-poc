@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
+import '../../../data/auth/jwt_auth_service.dart';
+import '../../../data/model/conversation_model.dart';
+import '../../../data/repository/message_repository.dart';
+import '../../../data/service/socket/socket_service.dart';
 import '../../../routes/app_pages.dart';
 import '../../../widgets/adaptive_layout.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../chat_detail/chat_detail_controller.dart';
+import '../../chat_detail/widget/chat_detail_view_desktop.dart';
 import '../chat_list_controller.dart';
 import 'chat_folder_tabs.dart';
 import 'chat_list_item.dart';
@@ -41,7 +48,7 @@ class ChatListViewDesktop extends GetView<ChatListController> {
         elevation: 0,
         scrolledUnderElevation: 0.5,
         title: Text(
-          'WhatsUp',
+          Keys.AppName.tr,
           style: ChatTextStyles.appBarTitle.copyWith(
             color: colors.primaryColor,
           ),
@@ -84,17 +91,17 @@ class ChatListViewDesktop extends GetView<ChatListController> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'new_chat',
-                child: Text('New Chat'),
+                child: Text(Keys.New_Chat.tr),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'new_group',
-                child: Text('New Group'),
+                child: Text(Keys.New_Group.tr),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'settings',
-                child: Text('Settings'),
+                child: Text(Keys.Settings.tr),
               ),
             ],
           ),
@@ -139,11 +146,11 @@ class ChatListViewDesktop extends GetView<ChatListController> {
         return EmptyStateWidget(
           icon: Icons.chat_bubble_outline_rounded,
           title: controller.searchQuery.value.isNotEmpty
-              ? 'No results found'
-              : 'No conversations yet',
+              ? Keys.No_results_found.tr
+              : Keys.No_conversations.tr,
           subtitle: controller.searchQuery.value.isNotEmpty
-              ? 'Try a different search term'
-              : 'Start a new chat to begin messaging',
+              ? Keys.Try_different_search.tr
+              : Keys.Start_new_chat.tr,
         );
       }
 
@@ -171,18 +178,70 @@ class ChatListViewDesktop extends GetView<ChatListController> {
   }
 
   Widget _buildDetailPanel(BuildContext context) {
-    final colors = ChatColors.getInstance(context);
+    final conversationId = controller.selectedConversationId.value;
+    if (conversationId == null) return const SizedBox.shrink();
 
-    return Scaffold(
-      backgroundColor: colors.backgroundColor,
-      body: Center(
-        child: EmptyStateWidget(
-          icon: Icons.chat_bubble_outline_rounded,
-          title: 'Chat Detail',
-          subtitle:
-              'Chat detail view will appear here.\nConversation ID: ${controller.selectedConversationId.value ?? ""}',
-        ),
+    // Find the conversation from the loaded list
+    final conversation = controller.conversations.firstWhereOrNull(
+      (c) => c.id == conversationId,
+    );
+    if (conversation == null) return const SizedBox.shrink();
+
+    // Use a keyed widget so Flutter recreates when the conversation changes
+    return _EmbeddedChatDetail(
+      key: ValueKey(conversationId),
+      conversation: conversation,
+    );
+  }
+}
+
+/// A stateful widget that manages a [ChatDetailController] lifecycle
+/// for the desktop split-view embedded detail panel.
+class _EmbeddedChatDetail extends StatefulWidget {
+  const _EmbeddedChatDetail({
+    super.key,
+    required this.conversation,
+  });
+
+  final ConversationModel conversation;
+
+  @override
+  State<_EmbeddedChatDetail> createState() => _EmbeddedChatDetailState();
+}
+
+class _EmbeddedChatDetailState extends State<_EmbeddedChatDetail> {
+  @override
+  void initState() {
+    super.initState();
+    _createController();
+  }
+
+  void _createController() {
+    // Remove any previously registered controller (from a prior selection)
+    if (Get.isRegistered<ChatDetailController>()) {
+      Get.delete<ChatDetailController>();
+    }
+
+    Get.put(
+      ChatDetailController(
+        messageRepository: Get.find<MessageRepository>(),
+        socketService: Get.find<SocketService>(),
+        authService: Get.find<JwtAuthService>(),
+        conversation: widget.conversation,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    if (Get.isRegistered<ChatDetailController>()) {
+      Get.delete<ChatDetailController>();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const ChatDetailViewDesktop();
   }
 }

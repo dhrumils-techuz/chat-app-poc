@@ -6,6 +6,8 @@ enum ConversationType {
   const ConversationType(this.value);
 
   static ConversationType fromValue(String value) {
+    // Server uses 'direct' for 1:1 conversations
+    if (value == 'direct') return ConversationType.private_chat;
     return ConversationType.values.firstWhere(
       (e) => e.value == value,
       orElse: () => ConversationType.private_chat,

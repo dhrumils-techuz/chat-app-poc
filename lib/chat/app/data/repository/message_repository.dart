@@ -9,15 +9,15 @@ class MessageRepository {
 
   Future<ApiResponseModel> getMessages({
     required String conversationId,
-    int page = 1,
-    int pageSize = 50,
-    String? beforeMessageId,
+    int limit = 50,
+    String? cursor,
+    String direction = 'forward',
   }) {
     return _messageService.getMessages(
       conversationId: conversationId,
-      page: page,
-      pageSize: pageSize,
-      beforeMessageId: beforeMessageId,
+      limit: limit,
+      cursor: cursor,
+      direction: direction,
     );
   }
 
@@ -25,23 +25,25 @@ class MessageRepository {
     required String conversationId,
     required String content,
     required String type,
-    String? replyToMessageId,
-    Map<String, dynamic>? attachment,
+    String? replyToId,
+    String? mediaId,
   }) {
     return _messageService.sendMessage(
       conversationId: conversationId,
       content: content,
       type: type,
-      replyToMessageId: replyToMessageId,
-      attachment: attachment,
+      replyToId: replyToId,
+      mediaId: mediaId,
     );
   }
 
   Future<ApiResponseModel> deleteMessage({
+    required String conversationId,
     required String messageId,
     bool deleteForEveryone = false,
   }) {
     return _messageService.deleteMessage(
+      conversationId: conversationId,
       messageId: messageId,
       deleteForEveryone: deleteForEveryone,
     );

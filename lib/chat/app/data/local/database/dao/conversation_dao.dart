@@ -6,8 +6,6 @@ import '../app_database.dart';
 /// Data Access Object for conversation-related database operations.
 class ConversationDao {
   static const String _tag = 'ConversationDao';
-  static const String _table = 'conversations';
-
   final AppDatabase _appDatabase;
 
   ConversationDao(this._appDatabase);
@@ -18,8 +16,8 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      final map = _conversationToMap(conversation);
-      // await db.insert(_table, map, conflictAlgorithm: ConflictAlgorithm.replace);
+      _conversationToMap(conversation);
+      // await db.insert('conversations', map, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Upsert conversation error: $e');
     }
@@ -214,6 +212,7 @@ class ConversationDao {
     };
   }
 
+  // ignore: unused_element
   ConversationModel _mapToConversation(Map<String, dynamic> map) {
     return ConversationModel(
       id: map['id'] as String,

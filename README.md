@@ -23,7 +23,9 @@ A WhatsApp-style secure messaging platform built for medical sales representativ
   - [Step 9 — Run the Flutter App](#step-9--run-the-flutter-app)
   - [Step 10 — First Login](#step-10--first-login)
 - [Environment Variables Reference](#environment-variables-reference)
+- [Test Credentials](#test-credentials)
 - [API Endpoints Reference](#api-endpoints-reference)
+- [API Detailed Documentation](#api-detailed-documentation)
 - [Socket Events Reference](#socket-events-reference)
 - [Database Schema](#database-schema)
 - [App Routes (Flutter)](#app-routes-flutter)
@@ -81,30 +83,31 @@ A WhatsApp-style secure messaging platform built for medical sales representativ
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Mobile/Desktop Client** | Flutter 3.x, Dart ^3.6.1 | Cross-platform UI |
-| **State Management** | GetX 4.x | Reactive state, routing, dependency injection |
-| **Local Storage** | SQLCipher (sqflite_sqlcipher) | AES-256 encrypted offline database |
-| **HTTP Client** | Dio 5.x | REST API calls with interceptors |
-| **Real-time** | Socket.IO Client 3.x | WebSocket messaging, typing, presence |
-| **Backend Runtime** | Node.js 20+, Express 4.x | REST API server |
-| **Backend Language** | TypeScript 5.x (ES2022 target) | Type-safe server code |
-| **Real-time Server** | Socket.IO 4.x + Redis Adapter | Scalable WebSocket with pub/sub |
-| **Database** | PostgreSQL 15+ | Relational data, multi-tenant |
-| **Cache / PubSub** | Redis 7+ | Session cache, socket scaling, presence |
-| **File Storage** | AWS S3 with SSE-KMS | HIPAA-compliant encrypted media storage |
-| **Push Notifications** | Firebase Cloud Messaging | Background notifications (no PHI) |
-| **Authentication** | JWT RS256 | Asymmetric token signing |
-| **Password Hashing** | bcryptjs | Salted password storage |
-| **Validation** | Zod | Runtime request schema validation |
-| **Logging** | Winston | Structured server logging |
+| Layer                     | Technology                     | Purpose                                       |
+| ------------------------- | ------------------------------ | --------------------------------------------- |
+| **Mobile/Desktop Client** | Flutter 3.x, Dart ^3.6.1       | Cross-platform UI                             |
+| **State Management**      | GetX 4.x                       | Reactive state, routing, dependency injection |
+| **Local Storage**         | SQLCipher (sqflite_sqlcipher)  | AES-256 encrypted offline database            |
+| **HTTP Client**           | Dio 5.x                        | REST API calls with interceptors              |
+| **Real-time**             | Socket.IO Client 3.x           | WebSocket messaging, typing, presence         |
+| **Backend Runtime**       | Node.js 20+, Express 4.x       | REST API server                               |
+| **Backend Language**      | TypeScript 5.x (ES2022 target) | Type-safe server code                         |
+| **Real-time Server**      | Socket.IO 4.x + Redis Adapter  | Scalable WebSocket with pub/sub               |
+| **Database**              | PostgreSQL 15+                 | Relational data, multi-tenant                 |
+| **Cache / PubSub**        | Redis 7+                       | Session cache, socket scaling, presence       |
+| **File Storage**          | AWS S3 with SSE-KMS            | HIPAA-compliant encrypted media storage       |
+| **Push Notifications**    | Firebase Cloud Messaging       | Background notifications (no PHI)             |
+| **Authentication**        | JWT RS256                      | Asymmetric token signing                      |
+| **Password Hashing**      | bcryptjs                       | Salted password storage                       |
+| **Validation**            | Zod                            | Runtime request schema validation             |
+| **Logging**               | Winston                        | Structured server logging                     |
 
 ---
 
 ## Features
 
 ### Messaging
+
 - One-to-one direct messaging
 - Group conversations with admin/member roles
 - Text, image, audio, and document messages
@@ -114,23 +117,27 @@ A WhatsApp-style secure messaging platform built for medical sales representativ
 - Cursor-based pagination for message history
 
 ### Real-time
+
 - Typing indicators (animated dots with user names)
 - Online/offline presence tracking
 - Read receipts and delivery confirmations
 - Real-time conversation updates
 
 ### Organization
+
 - Folder-based chat grouping (admin-defined org-wide + user-created personal)
 - Conversation search
 - Unread message badges
 
 ### Responsive UI
+
 - Adaptive layout: single-panel (mobile) ↔ split-panel (tablet/desktop)
 - Breakpoint at 600px width
 - Platform-specific fonts: Roboto (Android/Windows), SourceSansPro (iOS)
 - WhatsApp-style message bubbles with green sent / grey received
 
 ### Security & Compliance
+
 - HIPAA-compliant transport (TLS) and at-rest encryption
 - JWT RS256 with 15-min access tokens and 30-day rotating refresh tokens
 - Role-based access control (super_admin / tenant_admin / user)
@@ -142,6 +149,7 @@ A WhatsApp-style secure messaging platform built for medical sales representativ
 - Screenshot prevention (configurable)
 
 ### Offline Support
+
 - SQLCipher encrypted local database
 - Offline message caching
 - Automatic sync on reconnection
@@ -152,41 +160,41 @@ A WhatsApp-style secure messaging platform built for medical sales representativ
 
 ### Development Machine
 
-| Requirement | Minimum | Recommended |
-|-------------|---------|-------------|
-| **OS** | macOS 12+, Windows 10+, Ubuntu 20.04+ | macOS 14+ (for iOS builds) |
-| **RAM** | 8 GB | 16 GB |
-| **Disk** | 10 GB free | 20 GB free |
-| **Flutter SDK** | 3.22+ (Dart SDK ^3.6.1) | Latest stable |
-| **Node.js** | 20.0.0 | 20 LTS |
-| **Java JDK** | 11 (for Android builds) | 17 |
-| **Xcode** | 15+ (macOS only, for iOS builds) | Latest |
-| **Android Studio** | Hedgehog+ | Latest |
-| **PostgreSQL** | 15 | 16 |
-| **Redis** | 7.0 | 7.2+ |
+| Requirement        | Minimum                               | Recommended                |
+| ------------------ | ------------------------------------- | -------------------------- |
+| **OS**             | macOS 12+, Windows 10+, Ubuntu 20.04+ | macOS 14+ (for iOS builds) |
+| **RAM**            | 8 GB                                  | 16 GB                      |
+| **Disk**           | 10 GB free                            | 20 GB free                 |
+| **Flutter SDK**    | 3.22+ (Dart SDK ^3.6.1)               | Latest stable              |
+| **Node.js**        | 20.0.0                                | 20 LTS                     |
+| **Java JDK**       | 11 (for Android builds)               | 17                         |
+| **Xcode**          | 15+ (macOS only, for iOS builds)      | Latest                     |
+| **Android Studio** | Hedgehog+                             | Latest                     |
+| **PostgreSQL**     | 15                                    | 16                         |
+| **Redis**          | 7.0                                   | 7.2+                       |
 
 ### Target Platforms
 
-| Platform | Minimum Target |
-|----------|---------------|
+| Platform    | Minimum Target                                 |
+| ----------- | ---------------------------------------------- |
 | **Android** | API 21 (Android 5.0) — set by Flutter defaults |
-| **iOS** | iOS 12.0 |
-| **Web** | Chrome 88+, Safari 14+, Firefox 85+, Edge 88+ |
-| **macOS** | macOS 10.14+ |
-| **Windows** | Windows 10+ |
-| **Linux** | Ubuntu 20.04+ |
+| **iOS**     | iOS 12.0                                       |
+| **Web**     | Chrome 88+, Safari 14+, Firefox 85+, Edge 88+  |
+| **macOS**   | macOS 10.14+                                   |
+| **Windows** | Windows 10+                                    |
+| **Linux**   | Ubuntu 20.04+                                  |
 
 ### Server (Production)
 
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| **CPU** | 2 vCPUs | 4 vCPUs |
-| **RAM** | 2 GB | 4 GB |
-| **Disk** | 20 GB SSD | 50 GB SSD |
-| **PostgreSQL** | 1 GB RAM, 10 GB disk | 2 GB RAM, 50 GB disk |
-| **Redis** | 512 MB RAM | 1 GB RAM |
-| **Network** | 100 Mbps | 1 Gbps |
-| **OS** | Ubuntu 22.04 LTS / Amazon Linux 2023 | Same |
+| Resource       | Minimum                              | Recommended          |
+| -------------- | ------------------------------------ | -------------------- |
+| **CPU**        | 2 vCPUs                              | 4 vCPUs              |
+| **RAM**        | 2 GB                                 | 4 GB                 |
+| **Disk**       | 20 GB SSD                            | 50 GB SSD            |
+| **PostgreSQL** | 1 GB RAM, 10 GB disk                 | 2 GB RAM, 50 GB disk |
+| **Redis**      | 512 MB RAM                           | 1 GB RAM             |
+| **Network**    | 100 Mbps                             | 1 Gbps               |
+| **OS**         | Ubuntu 22.04 LTS / Amazon Linux 2023 | Same                 |
 
 ---
 
@@ -367,6 +375,7 @@ medchat/
 ### Step 1 — Install Prerequisites
 
 **macOS (Homebrew):**
+
 ```bash
 # Flutter (if not already installed)
 brew install --cask flutter
@@ -385,6 +394,7 @@ brew services start redis
 ```
 
 **Ubuntu / Debian:**
+
 ```bash
 # Node.js 20
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -402,6 +412,7 @@ sudo systemctl start redis-server
 ```
 
 **Windows:**
+
 ```powershell
 # Using Chocolatey
 choco install nodejs --version=20
@@ -412,6 +423,7 @@ choco install redis-64
 ```
 
 **Verify installations:**
+
 ```bash
 flutter --version          # Should show Flutter 3.x, Dart 3.6+
 node --version             # Should show v20.x.x
@@ -435,6 +447,7 @@ EOF
 ```
 
 **Verify the connection:**
+
 ```bash
 psql -U medical_chat_user -d medical_chat -h localhost -c "SELECT 1;"
 ```
@@ -446,6 +459,7 @@ psql -U medical_chat_user -d medical_chat -h localhost -c "SELECT 1;"
 ### Step 3 — Redis Setup
 
 Redis should be running from Step 1. Verify:
+
 ```bash
 redis-cli ping
 # Should return: PONG
@@ -542,6 +556,7 @@ ENCRYPTION_KEY=<paste-256-bit-hex-key>
 ```
 
 **Generate the encryption key:**
+
 ```bash
 openssl rand -hex 32
 ```
@@ -567,6 +582,7 @@ npm run dev
 ```
 
 **Expected output:**
+
 ```
 [info] Server listening on http://0.0.0.0:3000
 [info] PostgreSQL pool connected
@@ -575,6 +591,7 @@ npm run dev
 ```
 
 **Verify the server is healthy:**
+
 ```bash
 curl http://localhost:3000/api/health
 # Should return: { "status": "ok", ... }
@@ -609,16 +626,17 @@ flutter pub get
 
 Edit `assets/.env.chat` (or the env config at `lib/chat/core/env/env.dart`):
 
-| Environment | API URL | Socket URL |
-|-------------|---------|------------|
-| **Development** | `http://localhost:3000/api` | `http://localhost:3000` |
-| **Android Emulator** | `http://10.0.2.2:3000/api` | `http://10.0.2.2:3000` |
-| **iOS Simulator** | `http://localhost:3000/api` | `http://localhost:3000` |
-| **Physical Device** | `http://<your-local-ip>:3000/api` | `http://<your-local-ip>:3000` |
+| Environment          | API URL                           | Socket URL                    |
+| -------------------- | --------------------------------- | ----------------------------- |
+| **Development**      | `http://localhost:3000/api`       | `http://localhost:3000`       |
+| **Android Emulator** | `http://10.0.2.2:3000/api`        | `http://10.0.2.2:3000`        |
+| **iOS Simulator**    | `http://localhost:3000/api`       | `http://localhost:3000`       |
+| **Physical Device**  | `http://<your-local-ip>:3000/api` | `http://<your-local-ip>:3000` |
 
 > **Tip:** Find your local IP with `ifconfig | grep "inet " | grep -v 127.0.0.1`
 
 **iOS additional setup:**
+
 ```bash
 cd ios
 pod install
@@ -649,14 +667,15 @@ flutter run --release
 
 Use the seeded super admin credentials:
 
-| Field | Value |
-|-------|-------|
-| **Email** | `admin@medical-chat.local` |
-| **Password** | `Admin@1234!` |
+| Field        | Value                      |
+| ------------ | -------------------------- |
+| **Email**    | `admin@medical-chat.local` |
+| **Password** | `Admin@1234!`              |
 
 > These defaults can be overridden by setting `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD` environment variables before running the seed script.
 
 After first login, you can:
+
 1. Create new tenants (organizations) via admin routes
 2. Create users within each tenant
 3. Start conversations between users in the same tenant
@@ -667,115 +686,578 @@ After first login, you can:
 
 ### Server (`server/.env`)
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `NODE_ENV` | No | `development` | `development`, `production`, or `test` |
-| `PORT` | No | `3000` | HTTP server port |
-| `HOST` | No | `0.0.0.0` | Bind address |
-| `DATABASE_URL` | **Yes** | — | PostgreSQL connection string |
-| `DATABASE_POOL_MIN` | No | `2` | Min DB pool connections |
-| `DATABASE_POOL_MAX` | No | `20` | Max DB pool connections |
-| `REDIS_URL` | **Yes** | — | Redis connection string |
-| `JWT_PRIVATE_KEY_BASE64` | **Yes** | — | Base64-encoded RSA private key |
-| `JWT_PUBLIC_KEY_BASE64` | **Yes** | — | Base64-encoded RSA public key |
-| `JWT_ACCESS_TOKEN_EXPIRY` | No | `15m` | Access token TTL |
-| `JWT_REFRESH_TOKEN_EXPIRY_DAYS` | No | `30` | Refresh token TTL in days |
-| `AWS_REGION` | No | `us-east-1` | AWS S3 region |
-| `AWS_ACCESS_KEY_ID` | No* | — | AWS credentials (*required for media) |
-| `AWS_SECRET_ACCESS_KEY` | No* | — | AWS credentials (*required for media) |
-| `S3_BUCKET_NAME` | No* | `medical-chat-media` | S3 bucket for uploads |
-| `S3_PRESIGNED_URL_EXPIRY` | No | `900` | Pre-signed URL TTL (seconds) |
-| `FIREBASE_SERVICE_ACCOUNT_BASE64` | No | — | FCM service account (for push) |
-| `CORS_ALLOWED_ORIGINS` | No | `http://localhost:3000` | Comma-separated allowed origins |
-| `RATE_LIMIT_WINDOW_MS` | No | `900000` | Rate limit window (15 min) |
-| `RATE_LIMIT_MAX_REQUESTS` | No | `100` | Max requests per window |
-| `AUDIT_LOG_RETENTION_DAYS` | No | `2555` | ~7 years (HIPAA requirement) |
-| `ENCRYPTION_KEY` | No | — | 256-bit hex key for PHI encryption |
+| Variable                          | Required | Default                 | Description                            |
+| --------------------------------- | -------- | ----------------------- | -------------------------------------- |
+| `NODE_ENV`                        | No       | `development`           | `development`, `production`, or `test` |
+| `PORT`                            | No       | `3000`                  | HTTP server port                       |
+| `HOST`                            | No       | `0.0.0.0`               | Bind address                           |
+| `DATABASE_URL`                    | **Yes**  | —                       | PostgreSQL connection string           |
+| `DATABASE_POOL_MIN`               | No       | `2`                     | Min DB pool connections                |
+| `DATABASE_POOL_MAX`               | No       | `20`                    | Max DB pool connections                |
+| `REDIS_URL`                       | **Yes**  | —                       | Redis connection string                |
+| `JWT_PRIVATE_KEY_BASE64`          | **Yes**  | —                       | Base64-encoded RSA private key         |
+| `JWT_PUBLIC_KEY_BASE64`           | **Yes**  | —                       | Base64-encoded RSA public key          |
+| `JWT_ACCESS_TOKEN_EXPIRY`         | No       | `15m`                   | Access token TTL                       |
+| `JWT_REFRESH_TOKEN_EXPIRY_DAYS`   | No       | `30`                    | Refresh token TTL in days              |
+| `AWS_REGION`                      | No       | `us-east-1`             | AWS S3 region                          |
+| `AWS_ACCESS_KEY_ID`               | No\*     | —                       | AWS credentials (\*required for media) |
+| `AWS_SECRET_ACCESS_KEY`           | No\*     | —                       | AWS credentials (\*required for media) |
+| `S3_BUCKET_NAME`                  | No\*     | `medical-chat-media`    | S3 bucket for uploads                  |
+| `S3_PRESIGNED_URL_EXPIRY`         | No       | `900`                   | Pre-signed URL TTL (seconds)           |
+| `FIREBASE_SERVICE_ACCOUNT_BASE64` | No       | —                       | FCM service account (for push)         |
+| `CORS_ALLOWED_ORIGINS`            | No       | `http://localhost:3000` | Comma-separated allowed origins        |
+| `RATE_LIMIT_WINDOW_MS`            | No       | `900000`                | Rate limit window (15 min)             |
+| `RATE_LIMIT_MAX_REQUESTS`         | No       | `100`                   | Max requests per window                |
+| `AUDIT_LOG_RETENTION_DAYS`        | No       | `2555`                  | ~7 years (HIPAA requirement)           |
+| `ENCRYPTION_KEY`                  | No       | —                       | 256-bit hex key for PHI encryption     |
 
 ### Flutter Client (`assets/.env.chat`)
 
-| Variable | Description |
-|----------|-------------|
-| `DEV_URL` | Development API base URL (e.g., `http://localhost:3000/api`) |
-| `STAGING_URL` | Staging API base URL |
-| `PROD_URL` | Production API base URL |
+| Variable      | Description                                                  |
+| ------------- | ------------------------------------------------------------ |
+| `DEV_URL`     | Development API base URL (e.g., `http://localhost:3000/api`) |
+| `STAGING_URL` | Staging API base URL                                         |
+| `PROD_URL`    | Production API base URL                                      |
+
+---
+
+## Test Credentials
+
+All test accounts use the password shown below. Use any of these to login via the Flutter app or API.
+
+### Super Admin (System-wide access)
+
+| Email                      | Password      | Role        | Tenant               |
+| -------------------------- | ------------- | ----------- | -------------------- |
+| `admin@medical-chat.local` | `Admin@1234!` | super_admin | Default Organization |
+
+### Tenant Admins (1 per tenant)
+
+| Email                      | Password     | Role         | Tenant                |
+| -------------------------- | ------------ | ------------ | --------------------- |
+| `john.admin@acme.com`      | `Test@1234!` | tenant_admin | Acme Pharma           |
+| `lisa.admin@medtech.com`   | `Test@1234!` | tenant_admin | MedTech Solutions     |
+| `mark.admin@biovista.com`  | `Test@1234!` | tenant_admin | BioVista Health       |
+| `diana.admin@novacare.com` | `Test@1234!` | tenant_admin | NovaCare Medical      |
+| `peter.admin@pinnacle.com` | `Test@1234!` | tenant_admin | Pinnacle Therapeutics |
+
+### Regular Users (4 per tenant)
+
+| Email                      | Password     | Role | Tenant                |
+| -------------------------- | ------------ | ---- | --------------------- |
+| `sarah.rep@acme.com`       | `Test@1234!` | user | Acme Pharma           |
+| `david.rep@acme.com`       | `Test@1234!` | user | Acme Pharma           |
+| `emily.rep@acme.com`       | `Test@1234!` | user | Acme Pharma           |
+| `alex.rep@acme.com`        | `Test@1234!` | user | Acme Pharma           |
+| `tom.rep@medtech.com`      | `Test@1234!` | user | MedTech Solutions     |
+| `nina.rep@medtech.com`     | `Test@1234!` | user | MedTech Solutions     |
+| `chris.rep@medtech.com`    | `Test@1234!` | user | MedTech Solutions     |
+| `rachel.rep@medtech.com`   | `Test@1234!` | user | MedTech Solutions     |
+| `anna.rep@biovista.com`    | `Test@1234!` | user | BioVista Health       |
+| `james.rep@biovista.com`   | `Test@1234!` | user | BioVista Health       |
+| `olivia.rep@biovista.com`  | `Test@1234!` | user | BioVista Health       |
+| `ryan.rep@biovista.com`    | `Test@1234!` | user | BioVista Health       |
+| `kevin.rep@novacare.com`   | `Test@1234!` | user | NovaCare Medical      |
+| `laura.rep@novacare.com`   | `Test@1234!` | user | NovaCare Medical      |
+| `brian.rep@novacare.com`   | `Test@1234!` | user | NovaCare Medical      |
+| `megan.rep@novacare.com`   | `Test@1234!` | user | NovaCare Medical      |
+| `sophia.rep@pinnacle.com`  | `Test@1234!` | user | Pinnacle Therapeutics |
+| `daniel.rep@pinnacle.com`  | `Test@1234!` | user | Pinnacle Therapeutics |
+| `jessica.rep@pinnacle.com` | `Test@1234!` | user | Pinnacle Therapeutics |
+| `andrew.rep@pinnacle.com`  | `Test@1234!` | user | Pinnacle Therapeutics |
+
+### Role Permissions Summary
+
+| Role           | Can Chat | Manage Users | Manage Tenants | View Audit Logs |
+| -------------- | -------- | ------------ | -------------- | --------------- |
+| `user`         | Yes      | No           | No             | No              |
+| `tenant_admin` | Yes      | Own tenant   | No             | Own tenant      |
+| `super_admin`  | Yes      | All tenants  | Yes            | All tenants     |
 
 ---
 
 ## API Endpoints Reference
 
 ### Authentication — `/api/auth`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `POST` | `/auth/login` | Login with email + password | No |
-| `POST` | `/auth/refresh` | Refresh access token | No (uses refresh token) |
-| `POST` | `/auth/logout` | Revoke refresh token | Yes |
-| `POST` | `/auth/change-password` | Change user password | Yes |
+
+| Method | Path                    | Description                 | Auth                    |
+| ------ | ----------------------- | --------------------------- | ----------------------- |
+| `POST` | `/auth/login`           | Login with email + password | No                      |
+| `POST` | `/auth/refresh`         | Refresh access token        | No (uses refresh token) |
+| `POST` | `/auth/logout`          | Revoke refresh token        | Yes                     |
+| `POST` | `/auth/change-password` | Change user password        | Yes                     |
 
 ### Users — `/api/users`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `GET` | `/users/me` | Get current user profile | Yes |
-| `GET` | `/users/search` | Search users in tenant | Yes |
-| `GET` | `/users` | List all users | Admin |
-| `POST` | `/users` | Create new user | Admin |
-| `GET` | `/users/:id` | Get user by ID | Yes |
-| `PUT` | `/users/:id` | Update user | Admin |
+
+| Method | Path            | Description              | Auth  |
+| ------ | --------------- | ------------------------ | ----- |
+| `GET`  | `/users/me`     | Get current user profile | Yes   |
+| `GET`  | `/users/search` | Search users in tenant   | Yes   |
+| `GET`  | `/users`        | List all users           | Admin |
+| `POST` | `/users`        | Create new user          | Admin |
+| `GET`  | `/users/:id`    | Get user by ID           | Yes   |
+| `PUT`  | `/users/:id`    | Update user              | Admin |
 
 ### Conversations — `/api/conversations`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `POST` | `/conversations` | Create conversation | Yes |
-| `GET` | `/conversations` | List user conversations | Yes |
-| `GET` | `/conversations/:id` | Get conversation detail | Yes |
-| `PUT` | `/conversations/:id` | Update conversation | Yes |
-| `POST` | `/conversations/:id/participants` | Add participant | Yes |
-| `DELETE` | `/conversations/:id/participants/:userId` | Remove participant | Yes |
+
+| Method   | Path                                      | Description             | Auth |
+| -------- | ----------------------------------------- | ----------------------- | ---- |
+| `POST`   | `/conversations`                          | Create conversation     | Yes  |
+| `GET`    | `/conversations`                          | List user conversations | Yes  |
+| `GET`    | `/conversations/:id`                      | Get conversation detail | Yes  |
+| `PUT`    | `/conversations/:id`                      | Update conversation     | Yes  |
+| `POST`   | `/conversations/:id/participants`         | Add participant         | Yes  |
+| `DELETE` | `/conversations/:id/participants/:userId` | Remove participant      | Yes  |
 
 ### Messages — `/api/messages`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `POST` | `/messages/:conversationId` | Send message | Yes |
-| `GET` | `/messages/:conversationId` | Get messages (cursor paginated) | Yes |
-| `GET` | `/messages/:conversationId/:messageId` | Get single message | Yes |
-| `DELETE` | `/messages/:conversationId/:messageId` | Delete message | Yes |
+
+| Method   | Path                                   | Description                     | Auth |
+| -------- | -------------------------------------- | ------------------------------- | ---- |
+| `POST`   | `/messages/:conversationId`            | Send message                    | Yes  |
+| `GET`    | `/messages/:conversationId`            | Get messages (cursor paginated) | Yes  |
+| `GET`    | `/messages/:conversationId/:messageId` | Get single message              | Yes  |
+| `DELETE` | `/messages/:conversationId/:messageId` | Delete message                  | Yes  |
 
 ### Media — `/api/media`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `POST` | `/media/upload-url` | Get S3 pre-signed upload URL | Yes |
-| `POST` | `/media/confirm-upload` | Confirm upload completed | Yes |
-| `GET` | `/media/:id/download-url` | Get S3 pre-signed download URL | Yes |
-| `GET` | `/media/conversation/:conversationId` | List conversation media | Yes |
+
+| Method | Path                                  | Description                    | Auth |
+| ------ | ------------------------------------- | ------------------------------ | ---- |
+| `POST` | `/media/upload-url`                   | Get S3 pre-signed upload URL   | Yes  |
+| `POST` | `/media/confirm-upload`               | Confirm upload completed       | Yes  |
+| `GET`  | `/media/:id/download-url`             | Get S3 pre-signed download URL | Yes  |
+| `GET`  | `/media/conversation/:conversationId` | List conversation media        | Yes  |
 
 ### Folders — `/api/folders`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `POST` | `/folders` | Create folder | Yes |
-| `GET` | `/folders` | List folders | Yes |
-| `PUT` | `/folders/:id` | Update folder | Yes |
-| `DELETE` | `/folders/:id` | Delete folder | Yes |
-| `POST` | `/folders/:id/conversations` | Add conversation to folder | Yes |
-| `DELETE` | `/folders/:id/conversations/:conversationId` | Remove from folder | Yes |
-| `GET` | `/folders/:id/conversations` | List conversations in folder | Yes |
+
+| Method   | Path                                         | Description                  | Auth |
+| -------- | -------------------------------------------- | ---------------------------- | ---- |
+| `POST`   | `/folders`                                   | Create folder                | Yes  |
+| `GET`    | `/folders`                                   | List folders                 | Yes  |
+| `PUT`    | `/folders/:id`                               | Update folder                | Yes  |
+| `DELETE` | `/folders/:id`                               | Delete folder                | Yes  |
+| `POST`   | `/folders/:id/conversations`                 | Add conversation to folder   | Yes  |
+| `DELETE` | `/folders/:id/conversations/:conversationId` | Remove from folder           | Yes  |
+| `GET`    | `/folders/:id/conversations`                 | List conversations in folder | Yes  |
 
 ### Admin — `/api/admin`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `POST` | `/admin/tenants` | Create tenant | Super Admin |
-| `GET` | `/admin/tenants` | List tenants | Super Admin |
-| `GET` | `/admin/tenants/:id` | Get tenant | Super Admin |
-| `PUT` | `/admin/tenants/:id` | Update tenant | Super Admin |
-| `GET` | `/admin/tenants/:id/stats` | Tenant statistics | Super Admin |
-| `GET` | `/admin/audit-logs` | Tenant audit logs | Tenant Admin+ |
-| `GET` | `/admin/audit-logs/:tenantId` | Specific tenant logs | Super Admin |
+
+| Method | Path                          | Description          | Auth          |
+| ------ | ----------------------------- | -------------------- | ------------- |
+| `POST` | `/admin/tenants`              | Create tenant        | Super Admin   |
+| `GET`  | `/admin/tenants`              | List tenants         | Super Admin   |
+| `GET`  | `/admin/tenants/:id`          | Get tenant           | Super Admin   |
+| `PUT`  | `/admin/tenants/:id`          | Update tenant        | Super Admin   |
+| `GET`  | `/admin/tenants/:id/stats`    | Tenant statistics    | Super Admin   |
+| `GET`  | `/admin/audit-logs`           | Tenant audit logs    | Tenant Admin+ |
+| `GET`  | `/admin/audit-logs/:tenantId` | Specific tenant logs | Super Admin   |
 
 ### Health — `/api/health`
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `GET` | `/health` | Overall health check | No |
-| `GET` | `/health/ready` | Readiness probe (DB + Redis) | No |
-| `GET` | `/health/live` | Liveness probe | No |
+
+| Method | Path            | Description                  | Auth |
+| ------ | --------------- | ---------------------------- | ---- |
+| `GET`  | `/health`       | Overall health check         | No   |
+| `GET`  | `/health/ready` | Readiness probe (DB + Redis) | No   |
+| `GET`  | `/health/live`  | Liveness probe               | No   |
+
+---
+
+## API Detailed Documentation
+
+> **Base URL**: `http://localhost:3000/api`
+> **Auth**: Pass `Authorization: Bearer <token>` header for protected endpoints.
+> All request/response bodies are JSON. All timestamps are ISO 8601.
+
+### Authentication
+
+#### POST `/api/auth/login`
+
+Login and receive JWT tokens.
+
+```json
+// Request
+{
+  "email": "sarah.rep@acme.com",
+  "password": "Test@1234!",
+  "deviceId": "optional-uuid",
+  "deviceName": "iPhone 15",
+  "platform": "ios",
+  "fcmToken": "firebase-token"
+}
+
+// Response 200
+{
+  "success": true,
+  "data": {
+    "tokens": {
+      "accessToken": "eyJhbG...",
+      "refreshToken": "d746c9...",
+      "expiresIn": "15m"
+    },
+    "user": {
+      "id": "uuid",
+      "email": "sarah.rep@acme.com",
+      "fullName": "Sarah Rep",
+      "role": "user",
+      "tenantId": "uuid"
+    }
+  }
+}
+```
+
+#### POST `/api/auth/refresh`
+
+Rotate tokens using a refresh token.
+
+```json
+// Request
+{ "refreshToken": "d746c9..." }
+
+// Response 200
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbG...",
+    "refreshToken": "new-token...",
+    "expiresIn": "15m"
+  }
+}
+```
+
+#### POST `/api/auth/logout` (Auth required)
+
+Revokes refresh tokens for the current device.
+
+#### POST `/api/auth/change-password` (Auth required)
+
+```json
+// Request
+{
+  "currentPassword": "Test@1234!",
+  "newPassword": "NewPass@5678!"
+}
+```
+
+### Users
+
+#### GET `/api/users/me` (Auth required)
+
+Returns the authenticated user's profile.
+
+#### GET `/api/users/search?q=sarah&limit=20` (Auth required)
+
+Search users within the same tenant. Returns id, email, fullName, avatarUrl, role.
+
+#### GET `/api/users?search=&role=user&isActive=true&limit=20&offset=0` (tenant_admin+)
+
+List all users in the tenant with pagination.
+
+#### POST `/api/users` (tenant_admin+)
+
+```json
+// Request
+{
+  "email": "newuser@example.com",
+  "password": "Secure@1234!",
+  "fullName": "New User",
+  "phone": "+1234567890",
+  "role": "user"
+}
+
+// Response 201
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "tenantId": "uuid",
+    "email": "newuser@example.com",
+    "fullName": "New User",
+    "role": "user",
+    "isActive": true,
+    "createdAt": "2026-03-13T08:00:00.000Z"
+  }
+}
+```
+
+#### GET `/api/users/:id` (Auth required)
+
+Get a specific user by ID (within same tenant).
+
+#### PUT `/api/users/:id` (Self or tenant_admin+)
+
+```json
+// Request (all fields optional)
+{
+  "fullName": "Updated Name",
+  "phone": "+9876543210",
+  "avatarUrl": "https://...",
+  "isActive": false
+}
+```
+
+### Conversations
+
+#### POST `/api/conversations` (Auth required)
+
+```json
+// Request
+{
+  "type": "direct",
+  "participantIds": ["user-uuid-1", "user-uuid-2"]
+}
+
+// For group chat:
+{
+  "type": "group",
+  "name": "Sales Team",
+  "participantIds": ["uuid-1", "uuid-2", "uuid-3"]
+}
+```
+
+#### GET `/api/conversations?limit=20&offset=0` (Auth required)
+
+List conversations for the authenticated user. Returns unreadCount, messageCount, lastMessageAt.
+
+#### GET `/api/conversations/:id` (Auth required)
+
+Get conversation detail with full participant list.
+
+#### PUT `/api/conversations/:id` (Auth required)
+
+```json
+{ "name": "Updated Group Name", "avatarUrl": "https://..." }
+```
+
+#### POST `/api/conversations/:id/participants` (Auth required)
+
+```json
+{ "userId": "user-uuid", "role": "member" }
+```
+
+#### DELETE `/api/conversations/:id/participants/:userId` (Auth required)
+
+### Messages
+
+#### POST `/api/messages/:conversationId` (Auth required)
+
+```json
+// Text message
+{ "type": "text", "content": "Hello!" }
+
+// Media message
+{ "type": "image", "mediaId": "media-uuid", "content": "Photo caption" }
+
+// Reply
+{ "type": "text", "content": "Reply text", "replyToId": "message-uuid" }
+```
+
+#### GET `/api/messages/:conversationId?cursor=&limit=20&direction=forward` (Auth required)
+
+Cursor-based pagination. Returns messages with sender info, nextCursor, prevCursor, hasMore.
+
+#### GET `/api/messages/:conversationId/:messageId` (Auth required)
+
+Get a single message by ID.
+
+#### DELETE `/api/messages/:conversationId/:messageId` (Auth required)
+
+Soft-delete a message (sender or conversation admin only).
+
+### Media
+
+#### POST `/api/media/upload-url` (Auth required, rate limited)
+
+```json
+// Request
+{
+  "conversationId": "conv-uuid",
+  "fileName": "photo.jpg",
+  "mimeType": "image/jpeg",
+  "fileSize": 1048576
+}
+
+// Response 200
+{
+  "success": true,
+  "data": {
+    "mediaId": "media-uuid",
+    "uploadUrl": "https://s3.amazonaws.com/...",
+    "s3Key": "tenants/uuid/media/...",
+    "expiresIn": 3600
+  }
+}
+```
+
+Upload the file directly to the `uploadUrl` via PUT, then confirm:
+
+#### POST `/api/media/confirm-upload` (Auth required)
+
+```json
+{
+  "mediaId": "media-uuid",
+  "s3Key": "tenants/uuid/media/...",
+  "conversationId": "conv-uuid",
+  "fileName": "photo.jpg",
+  "mimeType": "image/jpeg",
+  "fileSize": 1048576
+}
+```
+
+#### GET `/api/media/:id/download-url` (Auth required)
+
+Returns a presigned S3 download URL (valid for 1 hour).
+
+#### GET `/api/media/conversation/:conversationId?limit=20&offset=0&mimeType=image/jpeg` (Auth required)
+
+List all media in a conversation with optional MIME type filter.
+
+### Folders
+
+#### POST `/api/folders` (Auth required)
+
+```json
+{ "name": "Important", "color": "#FF5733" }
+```
+
+#### GET `/api/folders` (Auth required)
+
+List all folders for the authenticated user.
+
+#### PUT `/api/folders/:id` (Auth required)
+
+```json
+{ "name": "Urgent", "color": "#E43D3D", "sortOrder": 0 }
+```
+
+#### DELETE `/api/folders/:id` (Auth required)
+
+#### POST `/api/folders/:id/conversations` (Auth required)
+
+```json
+{ "conversationId": "conv-uuid" }
+```
+
+#### DELETE `/api/folders/:id/conversations/:conversationId` (Auth required)
+
+#### GET `/api/folders/:id/conversations` (Auth required)
+
+### Admin (Super Admin Only)
+
+#### POST `/api/admin/tenants` (super_admin)
+
+```json
+// Request
+{
+  "name": "New Pharma Co",
+  "adminEmail": "admin@newpharma.com",
+  "adminPassword": "Secure@1234!",
+  "adminFullName": "Admin Name",
+  "domain": "newpharma.com",
+  "settings": {}
+}
+
+// Response 201
+{
+  "success": true,
+  "data": {
+    "tenant": {
+      "id": "uuid",
+      "name": "New Pharma Co",
+      "is_active": true,
+      "created_at": "2026-03-13T08:00:00.000Z"
+    },
+    "admin": {
+      "id": "uuid",
+      "email": "admin@newpharma.com",
+      "fullName": "Admin Name",
+      "role": "tenant_admin"
+    }
+  }
+}
+```
+
+#### GET `/api/admin/tenants?limit=20&offset=0` (super_admin)
+
+List all tenants with user and conversation counts.
+
+#### GET `/api/admin/tenants/:id` (super_admin)
+
+Get tenant detail with stats.
+
+#### PUT `/api/admin/tenants/:id` (super_admin)
+
+Update tenant name, domain, or settings.
+
+#### GET `/api/admin/tenants/:id/stats` (super_admin)
+
+Returns userCount, activeUserCount, conversationCount, messageCount, mediaCount, totalMediaSize.
+
+### Audit Logs
+
+#### GET `/api/admin/audit-logs?userId=&action=LOGIN&resourceType=session&startDate=&endDate=&limit=50&offset=0` (tenant_admin+)
+
+View audit logs for the authenticated user's tenant.
+
+#### GET `/api/admin/audit-logs/:tenantId` (super_admin)
+
+View audit logs for a specific tenant.
+
+### Health Checks (No Auth)
+
+| Endpoint                | Purpose                     |
+| ----------------------- | --------------------------- |
+| `GET /api/health`       | Overall status (DB + Redis) |
+| `GET /api/health/ready` | Readiness probe             |
+| `GET /api/health/live`  | Liveness probe              |
+
+### Error Response Format
+
+All errors follow this structure:
+
+```json
+{
+  "error": "Human-readable error message",
+  "code": "MACHINE_READABLE_CODE",
+  "requestId": "uuid"
+}
+```
+
+Common error codes: `VALIDATION_ERROR`, `INVALID_CREDENTIALS`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `RATE_LIMIT_EXCEEDED`, `ACCOUNT_LOCKED`, `INTERNAL_ERROR`.
+
+### Quick Start with cURL
+
+```bash
+# 1. Login (get token)
+curl -s -X POST http://localhost:3000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d @- <<< '{"email":"sarah.rep@acme.com","password":"Test@1234!"}'
+
+# 2. Use token for authenticated requests
+TOKEN="eyJhbG..."
+
+# Get my profile
+curl -s http://localhost:3000/api/users/me \
+  -H "Authorization: Bearer $TOKEN"
+
+# Search users
+curl -s "http://localhost:3000/api/users/search?q=david" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Create a direct conversation
+curl -s -X POST http://localhost:3000/api/conversations \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"type":"direct","participantIds":["other-user-uuid"]}'
+
+# Send a message
+curl -s -X POST http://localhost:3000/api/messages/CONV_UUID \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"type":"text","content":"Hello from cURL!"}'
+
+# List conversations
+curl -s "http://localhost:3000/api/conversations?limit=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
 
 ---
 
@@ -783,40 +1265,40 @@ After first login, you can:
 
 ### Client → Server (Emit)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `authenticate` | `{ token }` | Authenticate socket connection |
-| `send_message` | `{ conversationId, content, type, ... }` | Send a message |
-| `start_typing` | `{ conversationId }` | User started typing |
-| `stop_typing` | `{ conversationId }` | User stopped typing |
-| `join_conversation` | `{ conversationId }` | Join conversation room |
-| `leave_conversation` | `{ conversationId }` | Leave conversation room |
-| `mark_read` | `{ conversationId, messageId }` | Mark message as read |
-| `mark_delivered` | `{ conversationId, messageId }` | Mark as delivered |
+| Event                | Payload                                  | Description                    |
+| -------------------- | ---------------------------------------- | ------------------------------ |
+| `authenticate`       | `{ token }`                              | Authenticate socket connection |
+| `send_message`       | `{ conversationId, content, type, ... }` | Send a message                 |
+| `start_typing`       | `{ conversationId }`                     | User started typing            |
+| `stop_typing`        | `{ conversationId }`                     | User stopped typing            |
+| `join_conversation`  | `{ conversationId }`                     | Join conversation room         |
+| `leave_conversation` | `{ conversationId }`                     | Leave conversation room        |
+| `mark_read`          | `{ conversationId, messageId }`          | Mark message as read           |
+| `mark_delivered`     | `{ conversationId, messageId }`          | Mark as delivered              |
 
 ### Server → Client (Listen)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `authenticated` | `{ userId }` | Auth successful |
-| `authentication_error` | `{ message }` | Auth failed |
-| `new_message` | `MessageModel` | New message received |
-| `message_delivered` | `{ messageId, userId }` | Delivery confirmation |
-| `message_read` | `{ messageId, userId }` | Read confirmation |
-| `message_deleted` | `{ messageId, deletedFor }` | Message was deleted |
-| `message_updated` | `MessageModel` | Message was edited |
-| `user_typing` | `{ conversationId, user }` | Someone is typing |
-| `user_stopped_typing` | `{ conversationId, userId }` | Stopped typing |
-| `user_online` | `{ userId }` | User came online |
-| `user_offline` | `{ userId, lastSeen }` | User went offline |
-| `presence_update` | `{ userId, status }` | Presence changed |
-| `conversation_updated` | `ConversationModel` | Conversation metadata changed |
-| `conversation_created` | `ConversationModel` | New conversation |
-| `member_added` | `{ conversationId, user }` | Member added to group |
-| `member_removed` | `{ conversationId, userId }` | Member removed from group |
-| `read_receipt` | `{ messageId, userId, readAt }` | Read receipt |
-| `delivery_receipt` | `{ messageId, userId }` | Delivery receipt |
-| `error` | `{ message, code }` | Error event |
+| Event                  | Payload                         | Description                   |
+| ---------------------- | ------------------------------- | ----------------------------- |
+| `authenticated`        | `{ userId }`                    | Auth successful               |
+| `authentication_error` | `{ message }`                   | Auth failed                   |
+| `new_message`          | `MessageModel`                  | New message received          |
+| `message_delivered`    | `{ messageId, userId }`         | Delivery confirmation         |
+| `message_read`         | `{ messageId, userId }`         | Read confirmation             |
+| `message_deleted`      | `{ messageId, deletedFor }`     | Message was deleted           |
+| `message_updated`      | `MessageModel`                  | Message was edited            |
+| `user_typing`          | `{ conversationId, user }`      | Someone is typing             |
+| `user_stopped_typing`  | `{ conversationId, userId }`    | Stopped typing                |
+| `user_online`          | `{ userId }`                    | User came online              |
+| `user_offline`         | `{ userId, lastSeen }`          | User went offline             |
+| `presence_update`      | `{ userId, status }`            | Presence changed              |
+| `conversation_updated` | `ConversationModel`             | Conversation metadata changed |
+| `conversation_created` | `ConversationModel`             | New conversation              |
+| `member_added`         | `{ conversationId, user }`      | Member added to group         |
+| `member_removed`       | `{ conversationId, userId }`    | Member removed from group     |
+| `read_receipt`         | `{ messageId, userId, readAt }` | Read receipt                  |
+| `delivery_receipt`     | `{ messageId, userId }`         | Delivery receipt              |
+| `error`                | `{ message, code }`             | Error event                   |
 
 ---
 
@@ -824,20 +1306,20 @@ After first login, you can:
 
 12 tables with shared-schema multi-tenant isolation:
 
-| Table | Description | Key Columns |
-|-------|-------------|-------------|
-| `tenants` | Organizations | `id`, `name`, `slug`, `settings` |
-| `users` | All users across tenants | `id`, `tenant_id`, `email`, `password_hash`, `role` |
-| `devices` | Registered devices (FCM) | `id`, `user_id`, `fcm_token`, `platform` |
-| `conversations` | Chat threads | `id`, `tenant_id`, `type` (direct/group), `name` |
-| `conversation_participants` | Membership | `conversation_id`, `user_id`, `role` (owner/admin/member) |
-| `messages` | All messages | `id`, `conversation_id`, `sender_id`, `content`, `type`, `reply_to_id` |
-| `message_status` | Per-user read/delivery tracking | `message_id`, `user_id`, `status`, `timestamp` |
-| `media` | File metadata | `id`, `message_id`, `s3_key`, `mime_type`, `size` |
-| `chat_folders` | Chat folders | `id`, `tenant_id`, `user_id`, `name`, `type` (admin/user) |
-| `chat_folder_conversations` | Folder membership | `folder_id`, `conversation_id` |
-| `refresh_tokens` | Active refresh tokens | `id`, `user_id`, `token_hash`, `device_id`, `expires_at` |
-| `audit_logs` | Append-only audit trail | `id`, `tenant_id`, `user_id`, `action`, `resource`, `details` |
+| Table                       | Description                     | Key Columns                                                            |
+| --------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| `tenants`                   | Organizations                   | `id`, `name`, `slug`, `settings`                                       |
+| `users`                     | All users across tenants        | `id`, `tenant_id`, `email`, `password_hash`, `role`                    |
+| `devices`                   | Registered devices (FCM)        | `id`, `user_id`, `fcm_token`, `platform`                               |
+| `conversations`             | Chat threads                    | `id`, `tenant_id`, `type` (direct/group), `name`                       |
+| `conversation_participants` | Membership                      | `conversation_id`, `user_id`, `role` (owner/admin/member)              |
+| `messages`                  | All messages                    | `id`, `conversation_id`, `sender_id`, `content`, `type`, `reply_to_id` |
+| `message_status`            | Per-user read/delivery tracking | `message_id`, `user_id`, `status`, `timestamp`                         |
+| `media`                     | File metadata                   | `id`, `message_id`, `s3_key`, `mime_type`, `size`                      |
+| `chat_folders`              | Chat folders                    | `id`, `tenant_id`, `user_id`, `name`, `type` (admin/user)              |
+| `chat_folder_conversations` | Folder membership               | `folder_id`, `conversation_id`                                         |
+| `refresh_tokens`            | Active refresh tokens           | `id`, `user_id`, `token_hash`, `device_id`, `expires_at`               |
+| `audit_logs`                | Append-only audit trail         | `id`, `tenant_id`, `user_id`, `action`, `resource`, `details`          |
 
 > The `audit_logs` table has database-level protections preventing UPDATE and DELETE operations.
 
@@ -845,17 +1327,17 @@ After first login, you can:
 
 ## App Routes (Flutter)
 
-| Route | Screen | Description |
-|-------|--------|-------------|
-| `/sign-in` | `SignInScreen` | Email + password login |
-| `/chat-list` | `ChatListScreen` | Conversation list (home screen) |
-| `/chat-detail` | `ChatDetailScreen` | Message thread view |
-| `/contacts` | `ContactsScreen` | User search / contact picker |
-| `/new-group` | `CreateGroupScreen` | Create new group conversation |
-| `/group-info` | `GroupInfoScreen` | Group details, members, settings |
-| `/profile` | `ProfileScreen` | Current user profile |
-| `/settings` | `SettingsScreen` | App settings + logout |
-| `/media-viewer` | `ImageViewerScreen` | Full-screen image viewer |
+| Route           | Screen              | Description                      |
+| --------------- | ------------------- | -------------------------------- |
+| `/sign-in`      | `SignInScreen`      | Email + password login           |
+| `/chat-list`    | `ChatListScreen`    | Conversation list (home screen)  |
+| `/chat-detail`  | `ChatDetailScreen`  | Message thread view              |
+| `/contacts`     | `ContactsScreen`    | User search / contact picker     |
+| `/new-group`    | `CreateGroupScreen` | Create new group conversation    |
+| `/group-info`   | `GroupInfoScreen`   | Group details, members, settings |
+| `/profile`      | `ProfileScreen`     | Current user profile             |
+| `/settings`     | `SettingsScreen`    | App settings + logout            |
+| `/media-viewer` | `ImageViewerScreen` | Full-screen image viewer         |
 
 ---
 
@@ -863,41 +1345,42 @@ After first login, you can:
 
 ### Colors
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `primary` | `#10C17D` | Primary actions, links, badges |
-| `primaryLight` | `#01F094` | Gradient end color |
-| `sentBubble` | `#E7FFED` | Outgoing message background |
-| `receivedBubble` | `#F2F4F7` | Incoming message background |
-| `black` | `#09101D` | Primary text |
-| `grey3` | `#545D69` | Secondary text |
-| `grey5` | `#858C94` | Placeholder text |
-| `divider` | `#DADEE3` | Borders and dividers |
-| `error` | `#E43D3D` | Error states |
-| `onlineGreen` | `#4CAF50` | Online presence indicator |
-| `backgroundGrey` | `#F7F8FA` | Page backgrounds |
-| `inputBackground` | `#F2F4F7` | Input field backgrounds |
+| Token             | Hex       | Usage                          |
+| ----------------- | --------- | ------------------------------ |
+| `primary`         | `#10C17D` | Primary actions, links, badges |
+| `primaryLight`    | `#01F094` | Gradient end color             |
+| `sentBubble`      | `#E7FFED` | Outgoing message background    |
+| `receivedBubble`  | `#F2F4F7` | Incoming message background    |
+| `black`           | `#09101D` | Primary text                   |
+| `grey3`           | `#545D69` | Secondary text                 |
+| `grey5`           | `#858C94` | Placeholder text               |
+| `divider`         | `#DADEE3` | Borders and dividers           |
+| `error`           | `#E43D3D` | Error states                   |
+| `onlineGreen`     | `#4CAF50` | Online presence indicator      |
+| `backgroundGrey`  | `#F7F8FA` | Page backgrounds               |
+| `inputBackground` | `#F2F4F7` | Input field backgrounds        |
 
 ### Typography
 
 Platform-aware font selection:
+
 - **Android / Windows:** Roboto
 - **iOS / macOS:** SourceSansPro (with Roboto fallback if not bundled)
 
-| Style | Size | Weight | Usage |
-|-------|------|--------|-------|
-| `title` | 26px | Bold (700) | Page titles |
-| `heading` | 18px | SemiBold (600) | Section headers, contact names |
-| `body` | 16px | Regular (400) | Message text, body copy |
-| `bodyMedium` | 16px | Medium (500) | Emphasized body text |
-| `caption` | 14px | Regular (400) | Timestamps, metadata |
-| `small` | 12px | Regular (400) | Badges, minor labels |
+| Style        | Size | Weight         | Usage                          |
+| ------------ | ---- | -------------- | ------------------------------ |
+| `title`      | 26px | Bold (700)     | Page titles                    |
+| `heading`    | 18px | SemiBold (600) | Section headers, contact names |
+| `body`       | 16px | Regular (400)  | Message text, body copy        |
+| `bodyMedium` | 16px | Medium (500)   | Emphasized body text           |
+| `caption`    | 14px | Regular (400)  | Timestamps, metadata           |
+| `small`      | 12px | Regular (400)  | Badges, minor labels           |
 
 ### Responsive Breakpoints
 
-| Width | Layout | Description |
-|-------|--------|-------------|
-| `< 600px` | Mobile | Single panel, full-screen navigation |
+| Width     | Layout  | Description                                           |
+| --------- | ------- | ----------------------------------------------------- |
+| `< 600px` | Mobile  | Single panel, full-screen navigation                  |
 | `≥ 600px` | Desktop | Split panel — conversation list (350px) + chat detail |
 
 ---
@@ -912,31 +1395,31 @@ All data is scoped by `tenant_id`, enforced at:
 
 **Roles:**
 
-| Role | Scope | Capabilities |
-|------|-------|-------------|
-| `super_admin` | Global | Manage tenants, view cross-tenant audit logs |
+| Role           | Scope         | Capabilities                                  |
+| -------------- | ------------- | --------------------------------------------- |
+| `super_admin`  | Global        | Manage tenants, view cross-tenant audit logs  |
 | `tenant_admin` | Single tenant | Manage users, folders, view tenant audit logs |
-| `user` | Single tenant | Chat, create personal folders |
+| `user`         | Single tenant | Chat, create personal folders                 |
 
 ---
 
 ## HIPAA Compliance
 
-| Control | Implementation | Status |
-|---------|---------------|--------|
-| **Transport encryption** | TLS 1.2+ enforced on all connections | ✅ |
-| **At-rest encryption (server)** | PostgreSQL TDE, S3 SSE-KMS (AES-256) | ✅ |
-| **At-rest encryption (client)** | SQLCipher encrypted local database | ✅ |
-| **Authentication** | JWT RS256, bcrypt password hashing | ✅ |
-| **Session management** | 15-min access tokens, 30-day rotating refresh tokens | ✅ |
-| **Inactivity timeout** | 15-minute auto-lock on client | ✅ |
-| **Audit logging** | Append-only, ~7-year retention (2555 days) | ✅ |
-| **Push notifications** | No PHI in notification payloads | ✅ |
-| **Access control** | RBAC (super_admin / tenant_admin / user) | ✅ |
-| **Password policy** | Min 8 chars, upper + lower + number + special | ✅ |
-| **Login lockout** | Account lockout after repeated failed attempts | ✅ |
-| **Multi-tenant isolation** | tenant_id scoping on all queries + socket rooms | ✅ |
-| **Media security** | Time-limited pre-signed S3 URLs (15 min) | ✅ |
+| Control                         | Implementation                                       | Status |
+| ------------------------------- | ---------------------------------------------------- | ------ |
+| **Transport encryption**        | TLS 1.2+ enforced on all connections                 | ✅     |
+| **At-rest encryption (server)** | PostgreSQL TDE, S3 SSE-KMS (AES-256)                 | ✅     |
+| **At-rest encryption (client)** | SQLCipher encrypted local database                   | ✅     |
+| **Authentication**              | JWT RS256, bcrypt password hashing                   | ✅     |
+| **Session management**          | 15-min access tokens, 30-day rotating refresh tokens | ✅     |
+| **Inactivity timeout**          | 15-minute auto-lock on client                        | ✅     |
+| **Audit logging**               | Append-only, ~7-year retention (2555 days)           | ✅     |
+| **Push notifications**          | No PHI in notification payloads                      | ✅     |
+| **Access control**              | RBAC (super_admin / tenant_admin / user)             | ✅     |
+| **Password policy**             | Min 8 chars, upper + lower + number + special        | ✅     |
+| **Login lockout**               | Account lockout after repeated failed attempts       | ✅     |
+| **Multi-tenant isolation**      | tenant_id scoping on all queries + socket rooms      | ✅     |
+| **Media security**              | Time-limited pre-signed S3 URLs (15 min)             | ✅     |
 
 > **Note:** This implementation provides HIPAA technical safeguards. Full HIPAA compliance also requires administrative safeguards (BAAs, training, incident response plans) that are outside the scope of this software.
 
@@ -944,11 +1427,11 @@ All data is scoped by `tenant_id`, enforced at:
 
 ## File Upload Limits
 
-| File Type | Max Size | Allowed MIME Types |
-|-----------|----------|-------------------|
-| **Images** | 16 MB | JPEG, PNG, WebP |
-| **Audio** | 25 MB | AAC, M4A, MP3 |
-| **Documents** | 100 MB | PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX |
+| File Type     | Max Size | Allowed MIME Types                   |
+| ------------- | -------- | ------------------------------------ |
+| **Images**    | 16 MB    | JPEG, PNG, WebP                      |
+| **Audio**     | 25 MB    | AAC, M4A, MP3                        |
+| **Documents** | 100 MB   | PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX |
 
 All uploads use S3 pre-signed URLs — files go directly from client to S3, never through the server.
 
@@ -956,15 +1439,15 @@ All uploads use S3 pre-signed URLs — files go directly from client to S3, neve
 
 ## Server Commands Reference
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server with hot-reload (ts-node-dev) |
-| `npm run build` | Compile TypeScript → `dist/` |
-| `npm start` | Run compiled production build from `dist/` |
-| `npm run typecheck` | Type-check without emitting files |
-| `npm run lint` | Run ESLint on server source |
-| `npx ts-node src/migrations/run.ts` | Run database migrations |
-| `npx ts-node src/seeds/seed-admin.ts` | Seed default tenant + admin |
+| Command                               | Description                                    |
+| ------------------------------------- | ---------------------------------------------- |
+| `npm run dev`                         | Start dev server with hot-reload (ts-node-dev) |
+| `npm run build`                       | Compile TypeScript → `dist/`                   |
+| `npm start`                           | Run compiled production build from `dist/`     |
+| `npm run typecheck`                   | Type-check without emitting files              |
+| `npm run lint`                        | Run ESLint on server source                    |
+| `npx ts-node src/migrations/run.ts`   | Run database migrations                        |
+| `npx ts-node src/seeds/seed-admin.ts` | Seed default tenant + admin                    |
 
 ---
 
@@ -1100,37 +1583,37 @@ flutter build windows --release
 
 ### Server Issues
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| `ECONNREFUSED` on PostgreSQL | PostgreSQL not running | `brew services start postgresql@15` or `sudo systemctl start postgresql` |
-| `ECONNREFUSED` on Redis | Redis not running | `brew services start redis` or `sudo systemctl start redis-server` |
-| `JWT_PRIVATE_KEY_BASE64 is required` | Missing `.env` values | Complete Step 4 and Step 5 |
-| `relation "users" does not exist` | Migrations not run | `npx ts-node src/migrations/run.ts` |
-| `password authentication failed` | Wrong DB credentials | Check `DATABASE_URL` in `.env` matches Step 2 |
-| Port 3000 already in use | Another process on port | `lsof -i :3000` to find it, or change `PORT` in `.env` |
-| Socket.IO connection drops | Redis adapter not connected | Verify Redis is running and `REDIS_URL` is correct |
+| Problem                              | Cause                       | Solution                                                                 |
+| ------------------------------------ | --------------------------- | ------------------------------------------------------------------------ |
+| `ECONNREFUSED` on PostgreSQL         | PostgreSQL not running      | `brew services start postgresql@15` or `sudo systemctl start postgresql` |
+| `ECONNREFUSED` on Redis              | Redis not running           | `brew services start redis` or `sudo systemctl start redis-server`       |
+| `JWT_PRIVATE_KEY_BASE64 is required` | Missing `.env` values       | Complete Step 4 and Step 5                                               |
+| `relation "users" does not exist`    | Migrations not run          | `npx ts-node src/migrations/run.ts`                                      |
+| `password authentication failed`     | Wrong DB credentials        | Check `DATABASE_URL` in `.env` matches Step 2                            |
+| Port 3000 already in use             | Another process on port     | `lsof -i :3000` to find it, or change `PORT` in `.env`                   |
+| Socket.IO connection drops           | Redis adapter not connected | Verify Redis is running and `REDIS_URL` is correct                       |
 
 ### Flutter Issues
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| `SocketException: Connection refused` | Wrong API URL | Use `10.0.2.2` for Android emulator, `localhost` for iOS sim |
-| `sqflite_sqlcipher` build error (iOS) | Missing pods | `cd ios && pod install && cd ..` |
-| `sqflite_sqlcipher` build error (Android) | NDK issue | Ensure Android NDK is installed via Android Studio |
-| Firebase initialization failed | Missing config files | Add `google-services.json` / `GoogleService-Info.plist` |
-| `flutter pub get` fails | Dart SDK version mismatch | Ensure Flutter 3.22+ with Dart ^3.6.1 |
-| White screen on web | CORS error | Add `http://localhost:<port>` to `CORS_ALLOWED_ORIGINS` |
-| Fonts not rendering | Missing font files | Check `assets/fonts/` has Roboto and SourceSansPro TTFs |
-| GetX binding error | Missing DI registration | Check `main.dart` registers all services before navigation |
+| Problem                                   | Cause                     | Solution                                                     |
+| ----------------------------------------- | ------------------------- | ------------------------------------------------------------ |
+| `SocketException: Connection refused`     | Wrong API URL             | Use `10.0.2.2` for Android emulator, `localhost` for iOS sim |
+| `sqflite_sqlcipher` build error (iOS)     | Missing pods              | `cd ios && pod install && cd ..`                             |
+| `sqflite_sqlcipher` build error (Android) | NDK issue                 | Ensure Android NDK is installed via Android Studio           |
+| Firebase initialization failed            | Missing config files      | Add `google-services.json` / `GoogleService-Info.plist`      |
+| `flutter pub get` fails                   | Dart SDK version mismatch | Ensure Flutter 3.22+ with Dart ^3.6.1                        |
+| White screen on web                       | CORS error                | Add `http://localhost:<port>` to `CORS_ALLOWED_ORIGINS`      |
+| Fonts not rendering                       | Missing font files        | Check `assets/fonts/` has Roboto and SourceSansPro TTFs      |
+| GetX binding error                        | Missing DI registration   | Check `main.dart` registers all services before navigation   |
 
 ### General
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Can't log in | Admin not seeded | Run `npx ts-node src/seeds/seed-admin.ts` |
-| Messages not real-time | Socket not authenticated | Check JWT token is passed on socket `authenticate` event |
-| Media upload fails | AWS not configured | Set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME` |
-| Push notifications not working | Firebase not set up | Complete Step 7 (optional — app works without it) |
+| Problem                        | Cause                    | Solution                                                           |
+| ------------------------------ | ------------------------ | ------------------------------------------------------------------ |
+| Can't log in                   | Admin not seeded         | Run `npx ts-node src/seeds/seed-admin.ts`                          |
+| Messages not real-time         | Socket not authenticated | Check JWT token is passed on socket `authenticate` event           |
+| Media upload fails             | AWS not configured       | Set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME` |
+| Push notifications not working | Firebase not set up      | Complete Step 7 (optional — app works without it)                  |
 
 ---
 

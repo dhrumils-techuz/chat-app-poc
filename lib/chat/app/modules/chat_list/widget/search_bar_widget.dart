@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -28,7 +29,7 @@ class ChatSearchBarWidget extends GetView<ChatListController> {
             color: colors.textPrimary,
           ),
           decoration: InputDecoration(
-            hintText: 'Search conversations...',
+            hintText: Keys.Search_conversations.tr,
             hintStyle: ChatTextStyles.body.copyWith(
               color: colors.textTimestamp,
             ),

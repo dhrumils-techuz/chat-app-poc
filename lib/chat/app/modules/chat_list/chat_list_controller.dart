@@ -55,6 +55,13 @@ class ChatListController extends GetxController {
     super.onInit();
     loadConversations();
     loadFolders();
+    _initSocket();
+  }
+
+  /// Initializes the socket connection and sets up listeners.
+  /// Safe to call multiple times — the socket will only connect once.
+  Future<void> _initSocket() async {
+    await _socketService.init();
     _setupSocketListeners();
   }
 
@@ -94,7 +101,11 @@ class ChatListController extends GetxController {
       final ApiResponseModel response = await _folderRepository.getFolders();
 
       if (response.isSuccessful && response.data != null) {
-        final folderList = (response.data as List)
+        final rawData = response.data;
+        final List folderData = rawData is Map
+            ? (rawData['data'] as List? ?? [])
+            : (rawData as List);
+        final folderList = folderData
             .map((e) => ChatFolderModel.fromJson(e as Map<String, dynamic>))
             .toList();
         folders.value = folderList;

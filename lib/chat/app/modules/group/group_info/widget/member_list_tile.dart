@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:get/get.dart';
+
+import '../../../../../core/values/app_strings.dart';
 import '../../../../../core/theme/color.dart';
 import '../../../../../core/theme/text_style.dart';
 import '../../../../../core/values/app_sizes.dart';
@@ -45,7 +48,7 @@ class MemberListTile extends StatelessWidget {
           if (isCurrentUser) ...[
             const SizedBox(width: AppSizes.dimenToPx6),
             Text(
-              '(You)',
+              '(${Keys.You.tr})',
               style: ChatTextStyles.small.copyWith(
                 color: colors.textSecondary,
               ),
@@ -56,7 +59,7 @@ class MemberListTile extends StatelessWidget {
       subtitle: member.isAdmin
           ? null
           : Text(
-              'Member',
+              Keys.Member.tr,
               style: ChatTextStyles.small.copyWith(
                 color: colors.textSecondary,
               ),
@@ -72,7 +75,7 @@ class MemberListTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
               ),
               child: Text(
-                'Admin',
+                Keys.Admin.tr,
                 style: ChatTextStyles.caption.copyWith(
                   color: colors.primaryColor,
                 ),

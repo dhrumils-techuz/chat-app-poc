@@ -91,6 +91,27 @@ class DioRemoteApiClient extends GetxService {
     apiClient.interceptors.addAll(interceptors);
   }
 
+  /// Parses expiresIn string like "15m", "1h", "30s" to seconds.
+  static int _parseExpiresIn(dynamic value) {
+    if (value is String) {
+      final match = RegExp(r'^(\d+)([smhd]?)$').firstMatch(value.trim());
+      if (match != null) {
+        final num = int.parse(match.group(1)!);
+        switch (match.group(2) ?? 's') {
+          case 'm':
+            return num * 60;
+          case 'h':
+            return num * 3600;
+          case 'd':
+            return num * 86400;
+          default:
+            return num;
+        }
+      }
+    }
+    return 900; // Default 15 minutes
+  }
+
   bool _isAuthEndpoint(String path) {
     return path.contains('/auth/login') ||
         path.contains('/auth/register') ||
@@ -138,10 +159,14 @@ class DioRemoteApiClient extends GetxService {
       if (response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! <= 299) {
-        final newAccessToken = response.data['data']['accessToken'] as String;
-        final newRefreshToken =
-            response.data['data']['refreshToken'] as String;
-        final expiresIn = response.data['data']['expiresIn'] as int;
+        final data = response.data['data'] as Map<String, dynamic>;
+        final newAccessToken = data['accessToken'] as String;
+        final newRefreshToken = data['refreshToken'] as String;
+        // expiresIn may be int (seconds) or string ("15m")
+        final rawExpiresIn = data['expiresIn'];
+        final expiresIn = rawExpiresIn is int
+            ? rawExpiresIn
+            : _parseExpiresIn(rawExpiresIn);
 
         await _tokenRepository.saveAccessToken(newAccessToken);
         await _tokenRepository.saveRefreshToken(newRefreshToken);

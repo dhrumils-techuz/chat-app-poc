@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -18,7 +19,7 @@ class FolderManagement extends GetView<FolderManagementController> {
       backgroundColor: colors.backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Manage Folders',
+          Keys.Manage_Folders.tr,
           style: ChatTextStyles.appBarTitle.copyWith(
             color: colors.textPrimary,
           ),
@@ -46,14 +47,14 @@ class FolderManagement extends GetView<FolderManagementController> {
                 ),
                 const SizedBox(height: AppSizes.dimenToPx16),
                 Text(
-                  'No folders yet',
+                  Keys.No_folders_yet.tr,
                   style: ChatTextStyles.body.copyWith(
                     color: colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: AppSizes.dimenToPx8),
                 Text(
-                  'Create a folder to organize your conversations',
+                  Keys.Create_folder_hint.tr,
                   style: ChatTextStyles.caption.copyWith(
                     color: colors.textLight,
                   ),
@@ -133,7 +134,7 @@ class FolderManagement extends GetView<FolderManagementController> {
             ),
           ),
           subtitle: Text(
-            '${folder.conversationCount} conversations',
+            Keys.N_conversations.tr.replaceAll('@count', '${folder.conversationCount}'),
             style: ChatTextStyles.caption.copyWith(
               color: colors.textSecondary,
             ),
@@ -169,19 +170,18 @@ class FolderManagement extends GetView<FolderManagementController> {
           borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
         ),
         title: Text(
-          'Delete Folder',
+          Keys.Delete_Folder.tr,
           style: ChatTextStyles.heading.copyWith(color: colors.textPrimary),
         ),
         content: Text(
-          'Are you sure you want to delete "$folderName"? '
-          'Conversations inside will not be deleted.',
+          Keys.Confirm_delete_folder.tr.replaceAll('@name', folderName),
           style: ChatTextStyles.body.copyWith(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
-              'Cancel',
+              Keys.Cancel.tr,
               style: ChatTextStyles.bodySemiBold.copyWith(
                 color: colors.textSecondary,
               ),
@@ -190,7 +190,7 @@ class FolderManagement extends GetView<FolderManagementController> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
-              'Delete',
+              Keys.Delete.tr,
               style: ChatTextStyles.bodySemiBold.copyWith(
                 color: colors.errorColor,
               ),
@@ -213,7 +213,7 @@ class FolderManagement extends GetView<FolderManagementController> {
           borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
         ),
         title: Text(
-          'New Folder',
+          Keys.New_Folder.tr,
           style: ChatTextStyles.heading.copyWith(color: colors.textPrimary),
         ),
         content: TextField(
@@ -221,7 +221,7 @@ class FolderManagement extends GetView<FolderManagementController> {
           autofocus: true,
           style: ChatTextStyles.body.copyWith(color: colors.textPrimary),
           decoration: InputDecoration(
-            hintText: 'Folder name',
+            hintText: Keys.Folder_Name.tr,
             hintStyle: ChatTextStyles.body.copyWith(color: colors.textLight),
             filled: true,
             fillColor: colors.inputBackgroundColor,
@@ -239,7 +239,7 @@ class FolderManagement extends GetView<FolderManagementController> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'Cancel',
+              Keys.Cancel.tr,
               style: ChatTextStyles.bodySemiBold.copyWith(
                 color: colors.textSecondary,
               ),
@@ -254,7 +254,7 @@ class FolderManagement extends GetView<FolderManagementController> {
               }
             },
             child: Text(
-              'Create',
+              Keys.Create.tr,
               style: ChatTextStyles.bodySemiBold.copyWith(
                 color: colors.primaryColor,
               ),
@@ -286,7 +286,11 @@ class FolderManagementController extends GetxController {
       isLoading.value = true;
       final response = await _folderRepository.getFolders();
       if (response.data != null) {
-        final list = (response.data as List)
+        final rawData = response.data;
+        final List folderData = rawData is Map
+            ? (rawData['data'] as List? ?? [])
+            : (rawData as List);
+        final list = folderData
             .map((json) =>
                 ChatFolderModel.fromJson(json as Map<String, dynamic>))
             .toList();
@@ -294,8 +298,8 @@ class FolderManagementController extends GetxController {
       }
     } catch (_) {
       Get.snackbar(
-        'Error',
-        'Failed to load folders',
+        Keys.Error.tr,
+        Keys.Failed_to_load_folders.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -307,15 +311,17 @@ class FolderManagementController extends GetxController {
     try {
       final response = await _folderRepository.createFolder(name: name);
       if (response.data != null) {
-        final folder = ChatFolderModel.fromJson(
-          response.data as Map<String, dynamic>,
-        );
+        final rawData = response.data;
+        final folderJson = rawData is Map && rawData.containsKey('data')
+            ? rawData['data'] as Map<String, dynamic>
+            : rawData as Map<String, dynamic>;
+        final folder = ChatFolderModel.fromJson(folderJson);
         folders.add(folder);
       }
     } catch (_) {
       Get.snackbar(
-        'Error',
-        'Failed to create folder',
+        Keys.Error.tr,
+        Keys.Failed_to_create_folder.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -327,8 +333,8 @@ class FolderManagementController extends GetxController {
       folders.removeWhere((f) => f.id == folderId);
     } catch (_) {
       Get.snackbar(
-        'Error',
-        'Failed to delete folder',
+        Keys.Error.tr,
+        Keys.Failed_to_delete_folder.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       loadFolders();

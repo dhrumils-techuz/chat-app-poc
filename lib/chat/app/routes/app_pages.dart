@@ -39,6 +39,7 @@ class ChatAppPages {
         Get.lazyPut(() => SignInController(
               authRepository: Get.find<AuthRepository>(),
               tokenRepository: Get.find<TokenRepository>(),
+              authService: Get.find<JwtAuthService>(),
             ));
       }),
     ),

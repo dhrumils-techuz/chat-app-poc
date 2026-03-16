@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
-import '../../../../core/extension/datetime_extensions.dart';
 import '../../../data/model/message_model.dart';
-import '../../../data/types/message_type.dart';
 import 'media_preview_widget.dart';
 import 'message_status_indicator.dart';
 
@@ -114,7 +114,7 @@ class MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Text(
-        message.senderName ?? 'Unknown',
+        message.senderName ?? Keys.Unknown.tr,
         style: ChatTextStyles.captionSemiBold.copyWith(
           color: AppColor.primary,
         ),
@@ -156,7 +156,7 @@ class MessageBubble extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  message.replyToSenderName ?? 'Unknown',
+                  message.replyToSenderName ?? Keys.Unknown.tr,
                   style: ChatTextStyles.captionSemiBold.copyWith(
                     color: colors.primaryColor,
                   ),
@@ -189,7 +189,7 @@ class MessageBubble extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(bottom: 2),
         child: Text(
-          'This message was deleted',
+          Keys.Message_deleted.tr,
           style: ChatTextStyles.messageBody.copyWith(
             color: colors.textTimestamp,
             fontStyle: FontStyle.italic,
@@ -277,7 +277,6 @@ class MessageBubble extends StatelessWidget {
   void _showContextMenu(BuildContext context) {
     if (message.isDeleted) return;
 
-    final colors = ChatColors.getInstance(context);
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final offset = renderBox.localToGlobal(Offset.zero);
 
@@ -292,17 +291,17 @@ class MessageBubble extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: [
         if (onReply != null)
-          const PopupMenuItem(value: 'reply', child: Text('Reply')),
+          PopupMenuItem(value: 'reply', child: Text(Keys.Reply.tr)),
         if (message.isTextMessage && message.content != null)
-          const PopupMenuItem(value: 'copy', child: Text('Copy')),
+          PopupMenuItem(value: 'copy', child: Text(Keys.Copy.tr)),
         if (isMyMessage && onDelete != null) ...[
-          const PopupMenuItem(value: 'delete_me', child: Text('Delete for me')),
-          const PopupMenuItem(
+          PopupMenuItem(value: 'delete_me', child: Text(Keys.Delete_for_me.tr)),
+          PopupMenuItem(
             value: 'delete_all',
-            child: Text('Delete for everyone'),
+            child: Text(Keys.Delete_for_everyone.tr),
           ),
         ] else if (onDelete != null)
-          const PopupMenuItem(value: 'delete_me', child: Text('Delete for me')),
+          PopupMenuItem(value: 'delete_me', child: Text(Keys.Delete_for_me.tr)),
       ],
     ).then((value) {
       if (value == null) return;

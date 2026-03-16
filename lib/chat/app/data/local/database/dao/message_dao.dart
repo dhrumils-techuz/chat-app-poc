@@ -8,8 +8,6 @@ import '../app_database.dart';
 /// Data Access Object for message-related database operations.
 class MessageDao {
   static const String _tag = 'MessageDao';
-  static const String _table = 'messages';
-
   final AppDatabase _appDatabase;
 
   MessageDao(this._appDatabase);
@@ -20,8 +18,8 @@ class MessageDao {
     if (db == null) return;
 
     try {
-      final map = _messageToMap(message);
-      // await db.insert(_table, map, conflictAlgorithm: ConflictAlgorithm.replace);
+      _messageToMap(message);
+      // await db.insert('messages', map, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Insert message error: $e');
     }
@@ -212,6 +210,7 @@ class MessageDao {
     };
   }
 
+  // ignore: unused_element
   MessageModel _mapToMessage(Map<String, dynamic> map) {
     MediaAttachmentModel? attachment;
     if (map['attachment_id'] != null) {

@@ -39,39 +39,37 @@ class ConversationModel {
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
+    final lastMsg = json['lastMessage'] ?? json['last_message'];
+    final createdAt = json['createdAt'] ?? json['created_at'];
+    final updatedAt = json['updatedAt'] ?? json['updated_at'];
+    final lastMsgAt = json['lastMessageAt'] ?? json['last_message_at'];
+
     return ConversationModel(
       id: json['id'] as String,
       type: ConversationType.fromValue(json['type'] as String),
       name: json['name'] as String?,
-      avatarUrl: json['avatarUrl'] as String?,
-      lastMessage: json['lastMessage'] != null
-          ? MessageModel.fromJson(
-              json['lastMessage'] as Map<String, dynamic>)
+      avatarUrl: (json['avatarUrl'] ?? json['avatar_url']) as String?,
+      lastMessage: lastMsg != null
+          ? MessageModel.fromJson(lastMsg as Map<String, dynamic>)
           : null,
-      unreadCount: json['unreadCount'] as int? ?? 0,
-      isMuted: json['isMuted'] as bool? ?? false,
-      isPinned: json['isPinned'] as bool? ?? false,
-      isArchived: json['isArchived'] as bool? ?? false,
+      unreadCount: (json['unreadCount'] ?? json['unread_count']) as int? ?? 0,
+      isMuted: (json['isMuted'] ?? json['is_muted']) as bool? ?? false,
+      isPinned: (json['isPinned'] ?? json['is_pinned']) as bool? ?? false,
+      isArchived: (json['isArchived'] ?? json['is_archived']) as bool? ?? false,
       participants: json['participants'] != null
           ? (json['participants'] as List)
               .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
-      groupMembers: json['groupMembers'] != null
-          ? (json['groupMembers'] as List)
+      groupMembers: (json['groupMembers'] ?? json['group_members']) != null
+          ? ((json['groupMembers'] ?? json['group_members']) as List)
               .map((e) => GroupMemberModel.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
-      createdBy: json['createdBy'] as String?,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
-      lastMessageAt: json['lastMessageAt'] != null
-          ? DateTime.parse(json['lastMessageAt'] as String)
-          : null,
+      createdBy: (json['createdBy'] ?? json['created_by']) as String?,
+      createdAt: createdAt != null ? DateTime.parse(createdAt as String) : null,
+      updatedAt: updatedAt != null ? DateTime.parse(updatedAt as String) : null,
+      lastMessageAt: lastMsgAt != null ? DateTime.parse(lastMsgAt as String) : null,
     );
   }
 

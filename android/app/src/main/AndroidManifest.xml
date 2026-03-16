@@ -2,7 +2,7 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="bluebird_p2_project"
+        android:label="chat_app_poc"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

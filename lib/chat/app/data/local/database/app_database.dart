@@ -14,9 +14,6 @@ import 'migrations/migration_v1.dart';
 /// Uses sqflite_sqlcipher for AES-256 encryption at rest.
 class AppDatabase extends GetxService {
   static const String _tag = 'AppDatabase';
-  static const String _dbName = 'medichat.db';
-  static const int _dbVersion = 1;
-
   dynamic _database;
 
   dynamic get database => _database;

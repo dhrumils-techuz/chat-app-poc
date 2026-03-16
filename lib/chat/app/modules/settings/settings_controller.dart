@@ -3,11 +3,11 @@ import 'package:get/get.dart';
 import '../../data/auth/jwt_auth_service.dart';
 import '../../data/repository/auth_repository.dart';
 import '../../data/repository/token_repository.dart';
+import '../../data/service/socket/socket_service.dart';
 import '../../routes/app_pages.dart';
 
 class SettingsController extends GetxController {
   final AuthRepository _authRepository;
-  final TokenRepository _tokenRepository;
   final JwtAuthService _authService;
 
   SettingsController({
@@ -15,7 +15,6 @@ class SettingsController extends GetxController {
     required TokenRepository tokenRepository,
     required JwtAuthService authService,
   })  : _authRepository = authRepository,
-        _tokenRepository = tokenRepository,
         _authService = authService;
 
   final isLoggingOut = false.obs;
@@ -23,6 +22,14 @@ class SettingsController extends GetxController {
   Future<void> logout() async {
     try {
       isLoggingOut.value = true;
+
+      // Disconnect socket before clearing session
+      try {
+        Get.find<SocketService>().disconnect();
+      } catch (_) {
+        // SocketService might not be initialized
+      }
+
       await _authRepository.logout();
     } catch (_) {
       // Best-effort logout on server

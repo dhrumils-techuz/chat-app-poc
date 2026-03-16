@@ -20,20 +20,20 @@ class ChatFolderModel {
   });
 
   factory ChatFolderModel.fromJson(Map<String, dynamic> json) {
+    final createdAt = json['createdAt'] ?? json['created_at'];
+    final updatedAt = json['updatedAt'] ?? json['updated_at'];
+    final convIds = json['conversationIds'] ?? json['conversation_ids'];
+
     return ChatFolderModel(
       id: json['id'] as String,
       name: json['name'] as String,
-      type: FolderType.fromValue(json['type'] as String),
-      conversationIds: json['conversationIds'] != null
-          ? List<String>.from(json['conversationIds'] as List)
-          : [],
-      sortOrder: json['sortOrder'] as int?,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
+      type: json['type'] != null
+          ? FolderType.fromValue(json['type'] as String)
+          : FolderType.user,
+      conversationIds: convIds != null ? List<String>.from(convIds as List) : [],
+      sortOrder: (json['sortOrder'] ?? json['sort_order']) as int?,
+      createdAt: createdAt != null ? DateTime.parse(createdAt as String) : null,
+      updatedAt: updatedAt != null ? DateTime.parse(updatedAt as String) : null,
     );
   }
 

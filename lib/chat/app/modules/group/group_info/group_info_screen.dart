@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -26,7 +27,7 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'Group Info',
+          Keys.Group_Info.tr,
           style: ChatTextStyles.appBarTitle.copyWith(
             color: colors.textPrimary,
           ),
@@ -180,7 +181,7 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
 
           // Member count
           Obx(() => Text(
-                '${controller.members.length} members',
+                '${controller.members.length} ${Keys.Members.tr}',
                 style: ChatTextStyles.small.copyWith(
                   color: colors.textSecondary,
                 ),
@@ -198,7 +199,7 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
           ListTile(
             leading: Icon(Icons.photo, color: colors.iconColor),
             title: Text(
-              'Media, Links, and Docs',
+              Keys.Media_Links_Docs.tr,
               style: ChatTextStyles.body.copyWith(color: colors.textPrimary),
             ),
             trailing: Icon(
@@ -228,7 +229,7 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
               AppSizes.dimenToPx8,
             ),
             child: Obx(() => Text(
-                  '${controller.members.length} members',
+                  '${controller.members.length} ${Keys.Members.tr}',
                   style: ChatTextStyles.smallSemiBold.copyWith(
                     color: colors.textSecondary,
                   ),
@@ -252,7 +253,7 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
                 ),
               ),
               title: Text(
-                'Add Member',
+                Keys.Add_Member.tr,
                 style: ChatTextStyles.bodySemiBold.copyWith(
                   color: colors.primaryColor,
                 ),
@@ -290,7 +291,7 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
       child: ListTile(
         leading: Icon(Icons.exit_to_app, color: colors.errorColor),
         title: Text(
-          'Leave Group',
+          Keys.Leave_Group.tr,
           style: ChatTextStyles.bodySemiBold.copyWith(
             color: colors.errorColor,
           ),

@@ -11,6 +11,9 @@ import routes from './routes';
 
 const app = express();
 
+// Trust proxy (must be set before rate limiting middleware)
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 
@@ -32,9 +35,6 @@ app.use(globalRateLimit);
 
 // Audit logging
 app.use(auditMiddleware);
-
-// Trust proxy (for rate limiting behind reverse proxy)
-app.set('trust proxy', 1);
 
 // API routes
 app.use('/api', routes);

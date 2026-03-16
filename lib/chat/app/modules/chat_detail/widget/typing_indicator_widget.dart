@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 
@@ -37,12 +39,12 @@ class _TypingIndicatorWidgetState extends State<TypingIndicatorWidget>
   String get _typingText {
     if (widget.typingUsers.isEmpty) return '';
     if (widget.typingUsers.length == 1) {
-      return '${widget.typingUsers.first} is typing';
+      return '${widget.typingUsers.first} ${Keys.Is_typing.tr}';
     }
     if (widget.typingUsers.length == 2) {
-      return '${widget.typingUsers[0]} and ${widget.typingUsers[1]} are typing';
+      return '${widget.typingUsers[0]} and ${widget.typingUsers[1]} ${Keys.People_typing.tr}';
     }
-    return '${widget.typingUsers.length} people are typing';
+    return '${widget.typingUsers.length} ${Keys.People_typing.tr}';
   }
 
   @override

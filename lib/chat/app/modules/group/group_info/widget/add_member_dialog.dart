@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/data/api_response_model.dart';
+import '../../../../../core/values/app_strings.dart';
 import '../../../../../core/theme/color.dart';
 import '../../../../../core/theme/text_style.dart';
 import '../../../../../core/utils/logs_helper.dart';
@@ -61,7 +62,11 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
       final ApiResponseModel response =
           await widget.chatRepository.searchUsers(query);
       if (response.isSuccessful && response.data != null) {
-        final users = (response.data as List)
+        final rawData = response.data;
+        final List usersJson = rawData is Map
+            ? (rawData['data'] as List? ?? [])
+            : (rawData as List);
+        final users = usersJson
             .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
             .where((u) => !widget.existingMemberIds.contains(u.id))
             .toList();
@@ -93,7 +98,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Add Member',
+              Keys.Add_Member.tr,
               style: ChatTextStyles.heading.copyWith(
                 color: colors.textPrimary,
               ),
@@ -106,7 +111,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
               onChanged: _onSearchChanged,
               style: ChatTextStyles.body.copyWith(color: colors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Search users...',
+                hintText: Keys.Search_users.tr,
                 hintStyle: ChatTextStyles.small.copyWith(
                   color: colors.textLight,
                 ),
@@ -138,8 +143,8 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                       ? Center(
                           child: Text(
                             _searchController.text.isEmpty
-                                ? 'Search for users to add'
-                                : 'No users found',
+                                ? Keys.Search_for_users.tr
+                                : Keys.No_users_found.tr,
                             style: ChatTextStyles.body.copyWith(
                               color: colors.textSecondary,
                             ),
@@ -189,7 +194,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
               child: TextButton(
                 onPressed: () => Get.back(),
                 child: Text(
-                  'Cancel',
+                  Keys.Cancel.tr,
                   style: ChatTextStyles.buttonText.copyWith(
                     color: colors.textSecondary,
                   ),

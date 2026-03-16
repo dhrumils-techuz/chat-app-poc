@@ -3,20 +3,21 @@ import '../../../../core/data/api_response_model.dart';
 abstract class MessageRemoteService {
   Future<ApiResponseModel> getMessages({
     required String conversationId,
-    int page = 1,
-    int pageSize = 50,
-    String? beforeMessageId,
+    int limit = 50,
+    String? cursor,
+    String direction = 'forward',
   });
 
   Future<ApiResponseModel> sendMessage({
     required String conversationId,
     required String content,
     required String type,
-    String? replyToMessageId,
-    Map<String, dynamic>? attachment,
+    String? replyToId,
+    String? mediaId,
   });
 
   Future<ApiResponseModel> deleteMessage({
+    required String conversationId,
     required String messageId,
     bool deleteForEveryone = false,
   });

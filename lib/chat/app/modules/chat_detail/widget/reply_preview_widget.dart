@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../data/model/message_model.dart';
@@ -47,7 +49,7 @@ class ReplyPreviewWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  message.senderName ?? 'Unknown',
+                  message.senderName ?? Keys.Unknown.tr,
                   style: ChatTextStyles.captionSemiBold.copyWith(
                     color: colors.primaryColor,
                   ),
@@ -85,19 +87,19 @@ class ReplyPreviewWidget extends StatelessWidget {
   }
 
   String _getPreviewText() {
-    if (message.isDeleted) return 'This message was deleted';
+    if (message.isDeleted) return Keys.Message_deleted.tr;
     if (message.content != null && message.content!.isNotEmpty) {
       return message.content!;
     }
     switch (message.type) {
       case MessageType.image:
-        return 'Photo';
+        return Keys.Photo.tr;
       case MessageType.audio:
-        return 'Audio';
+        return Keys.Audio.tr;
       case MessageType.document:
-        return 'Document';
+        return Keys.Document.tr;
       case MessageType.file:
-        return 'File';
+        return Keys.File.tr;
       default:
         return '';
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -38,7 +39,7 @@ class SignInScreen extends GetView<SignInController> {
 
                   // Subtitle
                   Text(
-                    'Sign in to continue',
+                    Keys.Sign_in_to_continue.tr,
                     style: ChatTextStyles.body.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -69,7 +70,7 @@ class SignInScreen extends GetView<SignInController> {
                   // Sign In button
                   Obx(
                     () => GradientButton(
-                      text: 'Sign In',
+                      text: Keys.Sign_In.tr,
                       onTap: controller.login,
                       isLoading: controller.isLoading.value,
                       isEnable: !controller.isLoading.value &&
@@ -91,7 +92,7 @@ class SignInScreen extends GetView<SignInController> {
 
   Widget _buildAppTitle() {
     return Text(
-      'WhatsUp',
+      Keys.AppName.tr,
       style: ChatTextStyles.title.copyWith(
         color: AppColor.primary,
         fontSize: 32,

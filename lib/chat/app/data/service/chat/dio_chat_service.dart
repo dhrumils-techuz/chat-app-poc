@@ -24,8 +24,8 @@ class DioChatService implements ChatRemoteService {
       request: () => _dioClient.apiClient.get(
         ApiEndpoints.conversations,
         queryParameters: {
-          'page': page,
-          'pageSize': pageSize,
+          'limit': pageSize,
+          'offset': (page - 1) * pageSize,
           if (folderId != null) 'folderId': folderId,
         },
       ),
@@ -47,8 +47,8 @@ class DioChatService implements ChatRemoteService {
       request: () => _dioClient.apiClient.post(
         ApiEndpoints.createConversation,
         data: json.encode({
-          'type': 'private',
-          'participantId': userId,
+          'type': 'direct',
+          'participantIds': [userId],
         }),
       ),
     );
@@ -62,11 +62,11 @@ class DioChatService implements ChatRemoteService {
   }) async {
     return await _dioClient.apiClient.safeApiCall(
       request: () => _dioClient.apiClient.post(
-        ApiEndpoints.createGroup,
+        ApiEndpoints.createConversation,
         data: json.encode({
+          'type': 'group',
           'name': name,
-          'memberIds': memberIds,
-          if (avatarUrl != null) 'avatarUrl': avatarUrl,
+          'participantIds': memberIds,
         }),
       ),
     );

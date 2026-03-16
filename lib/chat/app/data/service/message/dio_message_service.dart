@@ -15,17 +15,17 @@ class DioMessageService implements MessageRemoteService {
   @override
   Future<ApiResponseModel> getMessages({
     required String conversationId,
-    int page = 1,
-    int pageSize = 50,
-    String? beforeMessageId,
+    int limit = 50,
+    String? cursor,
+    String direction = 'forward',
   }) async {
     return await _dioClient.apiClient.safeApiCall(
       request: () => _dioClient.apiClient.get(
         ApiEndpoints.messagesByConversation(conversationId),
         queryParameters: {
-          'page': page,
-          'pageSize': pageSize,
-          if (beforeMessageId != null) 'before': beforeMessageId,
+          'limit': limit,
+          if (cursor != null) 'cursor': cursor,
+          'direction': direction,
         },
       ),
     );
@@ -36,8 +36,8 @@ class DioMessageService implements MessageRemoteService {
     required String conversationId,
     required String content,
     required String type,
-    String? replyToMessageId,
-    Map<String, dynamic>? attachment,
+    String? replyToId,
+    String? mediaId,
   }) async {
     return await _dioClient.apiClient.safeApiCall(
       request: () => _dioClient.apiClient.post(
@@ -45,8 +45,8 @@ class DioMessageService implements MessageRemoteService {
         data: json.encode({
           'content': content,
           'type': type,
-          if (replyToMessageId != null) 'replyToMessageId': replyToMessageId,
-          if (attachment != null) 'attachment': attachment,
+          if (replyToId != null) 'replyToId': replyToId,
+          if (mediaId != null) 'mediaId': mediaId,
         }),
       ),
     );
@@ -54,15 +54,13 @@ class DioMessageService implements MessageRemoteService {
 
   @override
   Future<ApiResponseModel> deleteMessage({
+    required String conversationId,
     required String messageId,
     bool deleteForEveryone = false,
   }) async {
     return await _dioClient.apiClient.safeApiCall(
       request: () => _dioClient.apiClient.delete(
-        ApiEndpoints.deleteMessage(messageId),
-        queryParameters: {
-          'deleteForEveryone': deleteForEveryone,
-        },
+        ApiEndpoints.deleteMessage(conversationId, messageId),
       ),
     );
   }

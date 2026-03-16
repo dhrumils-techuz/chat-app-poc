@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart' as get_x;
 import 'package:get/get_core/src/get_main.dart';
 
 import '../../app/routes/app_pages.dart';
+import '../theme/color.dart';
 import '../data/api_response_model.dart';
 import '../data/data_state.dart';
 import '../utils/dialog_helper.dart';
@@ -50,8 +50,8 @@ extension DioExtensions on Dio {
         Get.snackbar(
           Keys.You_are_Offline.tr,
           Keys.Please_connect_to_internet.tr,
-          colorText: Colors.white,
-          backgroundColor: const Color(0xFF10C17D),
+          colorText: AppColor.white,
+          backgroundColor: AppColor.primary,
         );
       }
       return DataFailed(error: Keys.Please_connect_to_internet.tr);
@@ -88,7 +88,7 @@ extension DioExtensions on Dio {
         var result = dioException.response;
         statusCode = result?.statusCode;
         if (result?.data != null) {
-          if (AppConfig.testMode) {
+          if (DebugConfig.testMode) {
             if (detailedError.isNotEmpty) detailedError += "\n";
             detailedError += "Uri: ${dioException.requestOptions.uri}";
             detailedError += "\n\n";

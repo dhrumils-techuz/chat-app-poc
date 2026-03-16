@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/extension/datetime_extensions.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
@@ -123,7 +124,7 @@ class ChatListItem extends StatelessWidget {
 
     if (lastMessage == null) {
       return Text(
-        'No messages yet',
+        Keys.No_messages_yet.tr,
         style: ChatTextStyles.conversationPreview.copyWith(
           color: colors.textSecondary,
           fontStyle: FontStyle.italic,
@@ -144,7 +145,7 @@ class ChatListItem extends StatelessWidget {
           const SizedBox(width: AppSizes.dimenToPx4),
           Expanded(
             child: Text(
-              'This message was deleted',
+              Keys.Message_deleted.tr,
               style: ChatTextStyles.conversationPreview.copyWith(
                 color: colors.textSecondary,
                 fontStyle: FontStyle.italic,
@@ -164,7 +165,7 @@ class ChatListItem extends StatelessWidget {
     if (conversation.isGroup && lastMessage.senderName != null) {
       final isMe = lastMessage.senderId == controller.currentUserId;
       spans.add(TextSpan(
-        text: isMe ? 'You: ' : '${lastMessage.senderName}: ',
+        text: isMe ? '${Keys.You.tr}: ' : '${lastMessage.senderName}: ',
         style: ChatTextStyles.conversationPreview.copyWith(
           color: colors.textSecondary,
           fontWeight: FontWeight.w600,
@@ -248,11 +249,11 @@ class ChatListItem extends StatelessWidget {
     }
 
     if (time.isYesterday) {
-      return 'Yesterday';
+      return Keys.Yesterday.tr;
     }
 
     if (time.isThisWeek) {
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      final days = [Keys.Mon.tr, Keys.Tue.tr, Keys.Wed.tr, Keys.Thu.tr, Keys.Fri.tr, Keys.Sat.tr, Keys.Sun.tr];
       return days[time.weekday - 1];
     }
 
@@ -265,15 +266,15 @@ class ChatListItem extends StatelessWidget {
   String _getMessageTypeLabel(MessageType type) {
     switch (type) {
       case MessageType.image:
-        return 'Photo';
+        return Keys.Photo.tr;
       case MessageType.audio:
-        return 'Audio';
+        return Keys.Audio.tr;
       case MessageType.document:
-        return 'Document';
+        return Keys.Document.tr;
       case MessageType.file:
-        return 'File';
+        return Keys.File.tr;
       case MessageType.system:
-        return 'System message';
+        return Keys.System_message.tr;
       case MessageType.text:
         return '';
     }

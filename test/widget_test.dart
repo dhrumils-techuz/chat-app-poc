@@ -5,7 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widgets
 // tree, read text, and verify that the values of widgets properties are correct.
 
-import 'package:bluebird_p2_project/reporting/app/modules/sign_in/sign_in_screen.dart';
+import 'package:chat_app_poc/reporting/app/modules/sign_in/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

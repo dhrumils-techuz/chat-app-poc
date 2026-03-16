@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/extension/datetime_extensions.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
@@ -85,14 +86,14 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
                   final other = controller.otherParticipant;
                   if (other != null && other.presence.isOnline) {
                     return Text(
-                      'Online',
+                      Keys.Online.tr,
                       style: ChatTextStyles.caption.copyWith(
                         color: colors.onlineIndicatorColor,
                       ),
                     );
                   }
                   return Text(
-                    controller.isGroup ? 'Tap for group info' : 'Offline',
+                    controller.isGroup ? Keys.Tap_for_group_info.tr : Keys.Offline.tr,
                     style: ChatTextStyles.caption.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -143,7 +144,7 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
       if (controller.messages.isEmpty) {
         return Center(
           child: Text(
-            'No messages yet',
+            Keys.No_messages_yet.tr,
             style: ChatTextStyles.body.copyWith(
               color: colors.textSecondary,
             ),
@@ -247,8 +248,8 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
   }
 
   String _formatDateSeparator(DateTime date) {
-    if (date.isToday) return 'Today';
-    if (date.isYesterday) return 'Yesterday';
+    if (date.isToday) return Keys.Today.tr;
+    if (date.isYesterday) return Keys.Yesterday.tr;
 
     final months = [
       'January', 'February', 'March', 'April', 'May', 'June',
@@ -265,8 +266,8 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
 
   String _buildTypingText() {
     final users = controller.typingUsers;
-    if (users.length == 1) return '${users.first} is typing...';
-    if (users.length == 2) return '${users[0]} and ${users[1]} are typing...';
-    return '${users.length} people are typing...';
+    if (users.length == 1) return '${users.first} ${Keys.Is_typing.tr}';
+    if (users.length == 2) return '${users[0]} and ${users[1]} ${Keys.People_typing.tr}';
+    return '${users.length} ${Keys.People_typing.tr}';
   }
 }

@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
-import '../../../core/env/env.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/utils/logs_helper.dart';
 import '../../../core/values/constants/app_constants.dart';
 import '../../../core/values/constants/socket_events.dart';
@@ -10,50 +11,77 @@ import '../repository/token_repository.dart';
 
 /// Socket.IO wrapper service that manages the WebSocket connection.
 ///
-/// This service handles connection, reconnection, authentication,
-/// and provides a clean API for emitting and listening to events.
+/// Authentication is done via the handshake `auth` option (NOT a separate event).
+/// The server validates the JWT token in the Socket.IO middleware before the
+/// `connection` event fires, so on connect the socket is already authenticated.
 ///
-/// Note: Requires the socket_io_client package to be added to pubspec.yaml:
-///   socket_io_client: ^2.0.3+1
+/// Listeners registered via [on] before [connect] are stored and applied
+/// to the socket instance once it is created, ensuring no events are missed.
 class SocketClient extends GetxService {
   static const String _tag = 'SocketClient';
 
   final TokenRepository _tokenRepository;
 
-  dynamic _socket;
+  IO.Socket? _socket;
+
   final _isConnected = false.obs;
   final _isAuthenticated = false.obs;
 
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
 
-  final Map<String, List<Function(dynamic)>> _eventListeners = {};
+  /// Listeners registered before the socket is created.
+  /// They are applied to the socket in [connect] before calling socket.connect().
+  final Map<String, List<Function(dynamic)>> _pendingListeners = {};
 
   bool get isConnected => _isConnected.value;
   bool get isAuthenticated => _isAuthenticated.value;
 
   SocketClient(this._tokenRepository);
 
-  /// Initializes the socket connection with authentication.
+  /// Initializes the socket connection with authentication via handshake.
+  ///
+  /// The server uses Socket.IO middleware to extract the token from
+  /// `socket.handshake.auth.token` and verifies it before the connection
+  /// event fires. No separate "authenticate" event is needed.
   Future<void> connect() async {
+    // Don't reconnect if already connected
+    if (_socket != null && _isConnected.value) {
+      LogsHelper.debugLog(tag: _tag, 'Socket already connected');
+      return;
+    }
+
     final accessToken = await _tokenRepository.getAccessToken();
     if (accessToken == null) {
-      LogsHelper.debugLog(tag: _tag, 'No access token available for socket connection');
+      LogsHelper.debugLog(
+          tag: _tag, 'No access token available for socket connection');
       return;
     }
 
     try {
-      // The actual socket_io_client initialization would be:
-      // _socket = IO.io(Env.socketUrl, OptionBuilder()
-      //     .setTransports(['websocket'])
-      //     .setAuth({'token': accessToken})
-      //     .enableAutoConnect()
-      //     .enableReconnection()
-      //     .setReconnectionAttempts(AppConstants.maxReconnectAttempts)
-      //     .setReconnectionDelay(AppConstants.reconnectDelaySeconds * 1000)
-      //     .build());
+      // Dispose previous socket if any
+      _socket?.dispose();
 
+      _socket = IO.io(
+        AppConfig.socketUrl,
+        IO.OptionBuilder()
+            .setTransports(['websocket'])
+            .setAuth({'token': accessToken})
+            .disableAutoConnect()
+            .enableReconnection()
+            .setReconnectionAttempts(AppConstants.maxReconnectAttempts)
+            .setReconnectionDelay(AppConstants.reconnectDelaySeconds * 1000)
+            .build(),
+      );
+
+      // 1. Set up internal connection handlers
       _setupEventHandlers();
+
+      // 2. Apply any listeners registered before socket was created
+      _applyPendingListeners();
+
+      // 3. Now connect — all listeners are in place, no events will be missed
+      _socket!.connect();
       _reconnectAttempts = 0;
 
       LogsHelper.debugLog(tag: _tag, 'Socket connection initiated');
@@ -64,47 +92,70 @@ class SocketClient extends GetxService {
   }
 
   void _setupEventHandlers() {
-    _onSocketEvent(SocketEvents.connect, (_) {
-      LogsHelper.debugLog(tag: _tag, 'Socket connected');
+    final socket = _socket;
+    if (socket == null) return;
+
+    socket.onConnect((_) {
+      LogsHelper.debugLog(
+          tag: _tag, 'Socket connected (authenticated via handshake)');
       _isConnected.value = true;
+      _isAuthenticated.value = true;
       _reconnectAttempts = 0;
-      _authenticate();
     });
 
-    _onSocketEvent(SocketEvents.disconnect, (_) {
+    socket.onDisconnect((_) {
       LogsHelper.debugLog(tag: _tag, 'Socket disconnected');
       _isConnected.value = false;
       _isAuthenticated.value = false;
     });
 
-    _onSocketEvent(SocketEvents.connectError, (error) {
+    socket.onConnectError((error) {
       LogsHelper.debugLog(tag: _tag, 'Socket connection error: $error');
       _isConnected.value = false;
+      _isAuthenticated.value = false;
       _scheduleReconnect();
     });
 
-    _onSocketEvent(SocketEvents.authenticated, (_) {
-      LogsHelper.debugLog(tag: _tag, 'Socket authenticated');
-      _isAuthenticated.value = true;
+    socket.onError((data) {
+      LogsHelper.debugLog(tag: _tag, 'Socket error: $data');
     });
 
-    _onSocketEvent(SocketEvents.authenticationError, (error) {
-      LogsHelper.debugLog(tag: _tag, 'Socket authentication error: $error');
-      _isAuthenticated.value = false;
+    socket.onReconnect((_) {
+      LogsHelper.debugLog(tag: _tag, 'Socket reconnected');
+      _isConnected.value = true;
+      _isAuthenticated.value = true;
+      _reconnectAttempts = 0;
+    });
+
+    socket.onReconnectAttempt((attempt) {
+      LogsHelper.debugLog(tag: _tag, 'Socket reconnect attempt: $attempt');
+    });
+
+    socket.onReconnectError((error) {
+      LogsHelper.debugLog(tag: _tag, 'Socket reconnect error: $error');
+    });
+
+    socket.onReconnectFailed((_) {
+      LogsHelper.debugLog(tag: _tag, 'Socket reconnect failed');
     });
   }
 
-  Future<void> _authenticate() async {
-    final accessToken = await _tokenRepository.getAccessToken();
-    if (accessToken != null) {
-      emit(SocketEvents.authenticate, {'token': accessToken});
-    }
+  /// Applies all listeners that were registered before the socket was created.
+  void _applyPendingListeners() {
+    final socket = _socket;
+    if (socket == null) return;
+
+    _pendingListeners.forEach((event, handlers) {
+      for (final handler in handlers) {
+        socket.on(event, handler);
+      }
+    });
+    // Keep them so they can be re-applied on reconnect with new token
   }
 
   void _scheduleReconnect() {
     if (_reconnectAttempts >= AppConstants.maxReconnectAttempts) {
-      LogsHelper.debugLog(
-          tag: _tag, 'Max reconnection attempts reached');
+      LogsHelper.debugLog(tag: _tag, 'Max reconnection attempts reached');
       return;
     }
 
@@ -121,45 +172,66 @@ class SocketClient extends GetxService {
     );
   }
 
-  void _onSocketEvent(String event, Function(dynamic) handler) {
-    // In actual implementation: _socket?.on(event, handler);
-    _eventListeners.putIfAbsent(event, () => []).add(handler);
-  }
-
   /// Emits an event to the server.
   void emit(String event, [dynamic data]) {
-    if (!isConnected) {
+    if (!isConnected || _socket == null) {
       LogsHelper.debugLog(
           tag: _tag, 'Cannot emit $event: socket not connected');
       return;
     }
-    // In actual implementation: _socket?.emit(event, data);
-    LogsHelper.debugLog(tag: _tag, 'Emitting event: $event');
+    if (data != null) {
+      _socket!.emit(event, data);
+    } else {
+      _socket!.emit(event);
+    }
+  }
+
+  /// Emits an event with an acknowledgement callback.
+  void emitWithAck(String event, dynamic data, Function(dynamic) callback) {
+    if (!isConnected || _socket == null) {
+      LogsHelper.debugLog(
+          tag: _tag, 'Cannot emit $event: socket not connected');
+      return;
+    }
+    _socket!.emitWithAck(event, data, ack: callback);
   }
 
   /// Listens for an event from the server.
+  ///
+  /// If the socket is not yet created, the listener is stored and applied
+  /// once [connect] creates the socket instance.
   void on(String event, Function(dynamic) handler) {
-    _onSocketEvent(event, handler);
+    // Always store in pending so they can be re-applied on reconnect
+    _pendingListeners.putIfAbsent(event, () => []).add(handler);
+    // If socket exists, also register immediately
+    _socket?.on(event, handler);
   }
 
   /// Removes a specific listener for an event.
   void off(String event, [Function(dynamic)? handler]) {
     if (handler != null) {
-      _eventListeners[event]?.remove(handler);
+      _pendingListeners[event]?.remove(handler);
+      _socket?.off(event, handler);
     } else {
-      _eventListeners.remove(event);
+      _pendingListeners.remove(event);
+      _socket?.off(event);
     }
-    // In actual implementation: _socket?.off(event, handler);
   }
 
-  /// Joins a conversation room.
+  /// Joins conversation rooms.
+  /// Server expects `conversations:join` with `{ conversationIds: string[] }`.
   void joinConversation(String conversationId) {
-    emit(SocketEvents.joinConversation, {'conversationId': conversationId});
+    emit(SocketEvents.joinConversations, {
+      'conversationIds': [conversationId],
+    });
   }
 
-  /// Leaves a conversation room.
-  void leaveConversation(String conversationId) {
-    emit(SocketEvents.leaveConversation, {'conversationId': conversationId});
+  /// Joins multiple conversation rooms at once.
+  void joinConversations(List<String> conversationIds) {
+    if (conversationIds.isEmpty) return;
+    emit(SocketEvents.joinConversations, {
+      'conversationIds': conversationIds,
+    });
   }
 
   /// Sends a typing indicator.
@@ -172,19 +244,27 @@ class SocketClient extends GetxService {
     emit(SocketEvents.stopTyping, {'conversationId': conversationId});
   }
 
+  /// Reconnects the socket with a fresh token.
+  /// Useful after token refresh or re-authentication.
+  Future<void> reconnectWithNewToken() async {
+    disconnect();
+    await connect();
+  }
+
   /// Disconnects the socket.
   void disconnect() {
     _reconnectTimer?.cancel();
-    // In actual implementation: _socket?.disconnect();
+    _socket?.dispose();
+    _socket = null;
     _isConnected.value = false;
     _isAuthenticated.value = false;
-    _eventListeners.clear();
     LogsHelper.debugLog(tag: _tag, 'Socket disconnected manually');
   }
 
   @override
   void onClose() {
     disconnect();
+    _pendingListeners.clear();
     super.onClose();
   }
 }

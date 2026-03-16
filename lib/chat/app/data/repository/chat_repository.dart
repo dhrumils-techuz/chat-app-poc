@@ -1,6 +1,4 @@
 import '../../../core/data/api_response_model.dart';
-import '../../../core/data/paginated_response.dart';
-import '../model/conversation_model.dart';
 import '../service/chat/chat_remote_service.dart';
 
 class ChatRepository {

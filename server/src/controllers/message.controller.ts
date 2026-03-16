@@ -116,6 +116,67 @@ export class MessageController {
       next(error);
     }
   }
+  async markAsRead(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const auth = req.auth!;
+      const conversationId = req.params.conversationId;
+
+      if (!conversationId) {
+        res.status(400).json({ error: 'Conversation ID required', code: 'BAD_REQUEST' });
+        return;
+      }
+
+      const { messageId } = req.body || {};
+
+      if (messageId) {
+        await messageService.updateMessageStatus({
+          messageId,
+          userId: auth.userId,
+          status: 'read',
+          conversationId,
+          tenantId: auth.tenantId,
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Marked as read',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async markAsDelivered(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const auth = req.auth!;
+      const conversationId = req.params.conversationId;
+
+      if (!conversationId) {
+        res.status(400).json({ error: 'Conversation ID required', code: 'BAD_REQUEST' });
+        return;
+      }
+
+      const { messageId } = req.body || {};
+
+      if (messageId) {
+        await messageService.updateMessageStatus({
+          messageId,
+          userId: auth.userId,
+          status: 'delivered',
+          conversationId,
+          tenantId: auth.tenantId,
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Marked as delivered',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const messageController = new MessageController();

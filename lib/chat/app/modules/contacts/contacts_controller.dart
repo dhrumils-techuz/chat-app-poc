@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../core/data/api_response_model.dart';
 import '../../../core/utils/logs_helper.dart';
+import '../../data/model/conversation_model.dart';
 import '../../data/model/user_model.dart';
 import '../../data/repository/chat_repository.dart';
 import '../../routes/app_pages.dart';
@@ -37,7 +38,10 @@ class ContactsController extends GetxController {
       final ApiResponseModel response = await _chatRepository.searchUsers(query);
 
       if (response.isSuccessful && response.data != null) {
-        final users = (response.data as List)
+        final rawData = response.data;
+        final List usersJson =
+            rawData is List ? rawData : (rawData is Map ? (rawData['data'] ?? []) : []);
+        final users = usersJson
             .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
             .toList();
         searchResults.value = users;
@@ -55,7 +59,13 @@ class ContactsController extends GetxController {
       final response = await _chatRepository.createPrivateConversation(user.id);
 
       if (response.isSuccessful && response.data != null) {
-        Get.offNamed(ChatAppRoutes.CHAT_DETAIL, arguments: response.data);
+        final rawData = response.data;
+        final Map<String, dynamic> convJson =
+            rawData is Map<String, dynamic>
+                ? (rawData.containsKey('data') ? rawData['data'] : rawData)
+                : rawData;
+        final conversation = ConversationModel.fromJson(convJson);
+        Get.offNamed(ChatAppRoutes.CHAT_DETAIL, arguments: conversation);
       }
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Error starting conversation: $e');

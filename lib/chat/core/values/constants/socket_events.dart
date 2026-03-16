@@ -1,5 +1,5 @@
 class SocketEvents {
-  // Connection
+  // Connection (built-in socket.io events — remain unchanged)
   static const String connect = 'connect';
   static const String disconnect = 'disconnect';
   static const String reconnect = 'reconnect';
@@ -8,48 +8,37 @@ class SocketEvents {
   static const String reconnectFailed = 'reconnect_failed';
   static const String connectError = 'connect_error';
 
-  // Authentication
-  static const String authenticate = 'authenticate';
-  static const String authenticated = 'authenticated';
-  static const String authenticationError = 'authentication_error';
+  // ── Client → Server events ────────────────────────────────────────────
 
   // Messages
-  static const String sendMessage = 'send_message';
-  static const String newMessage = 'new_message';
-  static const String messageDelivered = 'message_delivered';
-  static const String messageRead = 'message_read';
-  static const String messageDeleted = 'message_deleted';
-  static const String messageUpdated = 'message_updated';
+  static const String sendMessage = 'message:send';
+  static const String messageDelivered = 'message:delivered';
+  static const String messageRead = 'message:read';
 
-  // Typing indicators
-  static const String startTyping = 'start_typing';
-  static const String stopTyping = 'stop_typing';
-  static const String userTyping = 'user_typing';
-  static const String userStoppedTyping = 'user_stopped_typing';
+  // Typing
+  static const String startTyping = 'typing:start';
+  static const String stopTyping = 'typing:stop';
 
   // Presence
-  static const String userOnline = 'user_online';
-  static const String userOffline = 'user_offline';
-  static const String presenceUpdate = 'presence_update';
+  static const String presenceOnline = 'presence:online';
+  static const String presenceOffline = 'presence:offline';
 
   // Conversations
-  static const String joinConversation = 'join_conversation';
-  static const String leaveConversation = 'leave_conversation';
-  static const String conversationUpdated = 'conversation_updated';
-  static const String conversationCreated = 'conversation_created';
-  static const String conversationDeleted = 'conversation_deleted';
+  static const String joinConversations = 'conversations:join';
 
-  // Group events
-  static const String memberAdded = 'member_added';
-  static const String memberRemoved = 'member_removed';
-  static const String memberRoleChanged = 'member_role_changed';
-  static const String groupUpdated = 'group_updated';
+  // ── Server → Client events ────────────────────────────────────────────
 
-  // Read receipts
-  static const String markRead = 'mark_read';
-  static const String markDelivered = 'mark_delivered';
-  static const String readReceipt = 'read_receipt';
-  static const String deliveryReceipt = 'delivery_receipt';
+  // Messages
+  static const String messageNew = 'message:new';
+  static const String messageSent = 'message:sent';
+  static const String messageDeliveredAck = 'message:delivered:ack';
+  static const String messageReadAck = 'message:read:ack';
+
+  // Typing
+  static const String typingIndicator = 'typing:indicator';
+
+  // Presence
+  static const String presenceUpdate = 'presence:update';
 
   // Error
   static const String error = 'error';

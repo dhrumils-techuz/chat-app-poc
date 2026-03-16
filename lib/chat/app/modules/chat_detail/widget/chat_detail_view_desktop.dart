@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/extension/datetime_extensions.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
@@ -116,8 +117,8 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
                 Obx(() {
                   if (controller.typingUsers.isNotEmpty) {
                     final typingText = controller.typingUsers.length == 1
-                        ? '${controller.typingUsers.first} is typing...'
-                        : '${controller.typingUsers.length} people typing...';
+                        ? '${controller.typingUsers.first} ${Keys.Is_typing.tr}'
+                        : '${controller.typingUsers.length} ${Keys.People_typing.tr}';
                     return Text(
                       typingText,
                       style: ChatTextStyles.caption.copyWith(
@@ -130,7 +131,7 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
 
                   if (!controller.isGroup && otherUser != null) {
                     return Text(
-                      otherUser.presence.isOnline ? 'Online' : 'Offline',
+                      otherUser.presence.isOnline ? Keys.Online.tr : Keys.Offline.tr,
                       style: ChatTextStyles.caption.copyWith(
                         color: otherUser.presence.isOnline
                             ? colors.onlineIndicatorColor
@@ -144,7 +145,7 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
                     final memberCount =
                         controller.conversation.participants?.length ?? 0;
                     return Text(
-                      '$memberCount members',
+                      '$memberCount ${Keys.Members.tr}',
                       style: ChatTextStyles.caption.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -200,7 +201,7 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
       if (controller.messages.isEmpty) {
         return Center(
           child: Text(
-            'No messages yet.\nSend the first message!',
+            Keys.Send_first_message.tr,
             textAlign: TextAlign.center,
             style: ChatTextStyles.body.copyWith(
               color: colors.textLight,
@@ -258,9 +259,9 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
       BuildContext context, DateTime date, ChatColors colors) {
     String label;
     if (date.isToday) {
-      label = 'Today';
+      label = Keys.Today.tr;
     } else if (date.isYesterday) {
-      label = 'Yesterday';
+      label = Keys.Yesterday.tr;
     } else if (date.isThisYear) {
       label =
           '${_monthName(date.month)} ${date.day}';
@@ -295,9 +296,9 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
   // ── Helpers ─────────────────────────────────────────────────────────────
 
   String _monthName(int month) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    final months = [
+      Keys.Jan.tr, Keys.Feb.tr, Keys.Mar.tr, Keys.Apr.tr, Keys.May.tr, Keys.Jun.tr,
+      Keys.Jul.tr, Keys.Aug.tr, Keys.Sep.tr, Keys.Oct.tr, Keys.Nov.tr, Keys.Dec.tr,
     ];
     return months[month - 1];
   }

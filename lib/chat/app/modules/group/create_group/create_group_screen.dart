@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -25,7 +26,7 @@ class CreateGroupScreen extends GetView<CreateGroupController> {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'New Group',
+          Keys.New_Group.tr,
           style: ChatTextStyles.appBarTitle.copyWith(
             color: colors.textPrimary,
           ),
@@ -43,7 +44,7 @@ class CreateGroupScreen extends GetView<CreateGroupController> {
               controller: controller.groupNameController,
               style: ChatTextStyles.body.copyWith(color: colors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Group name',
+                hintText: Keys.Group_name.tr,
                 hintStyle: ChatTextStyles.body.copyWith(
                   color: colors.textLight,
                 ),
@@ -101,7 +102,7 @@ class CreateGroupScreen extends GetView<CreateGroupController> {
               onChanged: controller.onSearchChanged,
               style: ChatTextStyles.body.copyWith(color: colors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Search users...',
+                hintText: Keys.Search_users.tr,
                 hintStyle: ChatTextStyles.small.copyWith(
                   color: colors.textLight,
                 ),
@@ -140,7 +141,7 @@ class CreateGroupScreen extends GetView<CreateGroupController> {
                   controller.searchResults.isEmpty) {
                 return Center(
                   child: Text(
-                    'No users found',
+                    Keys.No_users_found.tr,
                     style: ChatTextStyles.body.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -200,7 +201,7 @@ class CreateGroupScreen extends GetView<CreateGroupController> {
                 child: SizedBox(
                   width: double.infinity,
                   child: GradientButton(
-                    text: 'Create Group',
+                    text: Keys.Create_Group.tr,
                     onTap: controller.createGroup,
                     isEnable: controller.isValid,
                     isLoading: controller.isCreating.value,

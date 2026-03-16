@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/theme/color.dart';
+import '../../../../core/values/app_strings.dart';
+import '../../../data/auth/jwt_auth_service.dart';
 import '../../../data/model/login_response_model.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../data/repository/token_repository.dart';
@@ -8,13 +11,14 @@ import '../../../routes/app_pages.dart';
 
 class SignInController extends GetxController {
   final AuthRepository _authRepository;
-  final TokenRepository _tokenRepository;
+  final JwtAuthService _authService;
 
   SignInController({
     required AuthRepository authRepository,
     required TokenRepository tokenRepository,
+    required JwtAuthService authService,
   })  : _authRepository = authRepository,
-        _tokenRepository = tokenRepository;
+        _authService = authService;
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -78,18 +82,19 @@ class SignInController extends GetxController {
       );
 
       if (response.isSuccessful && response.data != null) {
-        final loginData = LoginResponseData.fromJson(
-          response.data as Map<String, dynamic>,
-        );
+        // response.data is the full response body: { success, data: { tokens, user } }
+        // Extract the 'data' field if it exists, otherwise use the whole map.
+        final rawData = response.data is Map<String, dynamic>
+            ? (response.data as Map<String, dynamic>)
+            : <String, dynamic>{};
+        final loginMap = rawData.containsKey('data')
+            ? rawData['data'] as Map<String, dynamic>
+            : rawData;
+        final loginData = LoginResponseData.fromJson(loginMap);
 
-        // Store tokens securely.
-        await _tokenRepository.saveAccessToken(loginData.accessToken);
-        await _tokenRepository.saveRefreshToken(loginData.refreshToken);
-        _tokenRepository.setTokenExpiry(loginData.expiresIn);
-
-        if (loginData.deviceId != null) {
-          await _tokenRepository.saveDeviceId(loginData.deviceId!);
-        }
+        // Store tokens and user session via JwtAuthService.
+        // This sets currentUser, currentUserId, and persists user info.
+        await _authService.handleLoginSuccess(loginData);
 
         // Reset failed attempts on successful login.
         failedAttempts.value = 0;
@@ -99,7 +104,9 @@ class SignInController extends GetxController {
       } else {
         _handleLoginFailure(response.message ?? response.error);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Login error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _handleLoginFailure('An unexpected error occurred. Please try again.');
     } finally {
       isLoading.value = false;
@@ -122,14 +129,21 @@ class SignInController extends GetxController {
       }
     }
 
-    Get.snackbar(
-      'Login Failed',
-      errorMessage.value ?? 'Invalid credentials.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.shade100,
-      colorText: Colors.red.shade900,
-      duration: const Duration(seconds: 3),
-    );
+    // Use addPostFrameCallback to ensure overlay is available.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        Get.snackbar(
+          Keys.Login_Failed.tr,
+          errorMessage.value ?? Keys.Invalid_credentials.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColor.error.withValues(alpha: 0.15),
+          colorText: AppColor.error,
+          duration: const Duration(seconds: 3),
+        );
+      } catch (_) {
+        // Overlay not yet available — silently skip snackbar
+      }
+    });
   }
 
   @override

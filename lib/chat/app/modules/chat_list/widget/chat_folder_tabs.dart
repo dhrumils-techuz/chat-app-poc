@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
@@ -27,7 +28,7 @@ class ChatFolderTabs extends GetView<ChatListController> {
           itemCount: folderCount + 1, // +1 for "All" tab
           itemBuilder: (context, index) {
             final isSelected = selectedIndex == index;
-            final label = index == 0 ? 'All' : controller.folders[index - 1].name;
+            final label = index == 0 ? Keys.All.tr : controller.folders[index - 1].name;
 
             return GestureDetector(
               onTap: () => controller.onFolderTap(index),

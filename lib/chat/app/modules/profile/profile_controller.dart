@@ -12,9 +12,4 @@ class ProfileController extends GetxController {
   final isLoading = false.obs;
 
   UserModel? get currentUser => _authService.currentUser;
-
-  @override
-  void onInit() {
-    super.onInit();
-  }
 }

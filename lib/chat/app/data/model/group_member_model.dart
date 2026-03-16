@@ -15,9 +15,9 @@ class GroupMemberModel {
 
   factory GroupMemberModel.fromJson(Map<String, dynamic> json) {
     return GroupMemberModel(
-      userId: json['userId'] as String,
-      name: json['name'] as String,
-      avatarUrl: json['avatarUrl'] as String?,
+      userId: (json['userId'] ?? json['user_id'] ?? json['id']) as String,
+      name: (json['name'] ?? json['fullName'] ?? json['full_name'] ?? '') as String,
+      avatarUrl: (json['avatarUrl'] ?? json['avatar_url']) as String?,
       role: json['role'] != null
           ? GroupRole.fromValue(json['role'] as String)
           : GroupRole.member,

@@ -64,7 +64,11 @@ class CreateGroupController extends GetxController {
       final ApiResponseModel response =
           await _chatRepository.searchUsers(query);
       if (response.isSuccessful && response.data != null) {
-        final users = (response.data as List)
+        final rawData = response.data;
+        final List userData = rawData is Map
+            ? (rawData['data'] as List? ?? [])
+            : (rawData as List);
+        final users = userData
             .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
             .toList();
         searchResults.value = users;
@@ -119,9 +123,11 @@ class CreateGroupController extends GetxController {
       );
 
       if (response.isSuccessful && response.data != null) {
-        final conversation = ConversationModel.fromJson(
-          response.data as Map<String, dynamic>,
-        );
+        final rawData = response.data;
+        final convData = rawData is Map && rawData.containsKey('data')
+            ? rawData['data'] as Map<String, dynamic>
+            : rawData as Map<String, dynamic>;
+        final conversation = ConversationModel.fromJson(convData);
         Get.offNamed(
           ChatAppRoutes.CHAT_DETAIL,
           arguments: conversation,

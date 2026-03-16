@@ -61,7 +61,7 @@ class ConversationService {
       throw AppError.badRequest('One or more participants not found in this organization');
     }
 
-    return await transaction(async (client) => {
+    const conversationId = await transaction(async (client) => {
       // Create conversation
       const convResult = await client.query(
         `INSERT INTO conversations (tenant_id, type, name, created_by, is_active)
@@ -101,8 +101,11 @@ class ConversationService {
         metadata: { type: input.type, participantCount: input.participantIds.length + 1 },
       });
 
-      return this.getConversationById(conversation.id, tenantId, userId);
+      return conversation.id;
     });
+
+    // Fetch after transaction commits so the data is visible
+    return this.getConversationById(conversationId, tenantId, userId);
   }
 
   async getConversationById(
