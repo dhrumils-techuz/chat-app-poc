@@ -193,7 +193,20 @@ class DialogHelper {
     required Widget Function(BuildContext) contentBuilder,
   }) {
     final context = buildContext ?? Get.context;
-    if (context != null) {
+    if (context == null) return;
+
+    // Verify Overlay exists in the widget tree before calling showDialog.
+    // This prevents "No Overlay widget found" crashes during startup or
+    // when the widget tree is not yet fully built.
+    try {
+      final overlay = Overlay.of(context, rootOverlay: false);
+      // ignore: unnecessary_null_comparison
+      if (overlay == null) return;
+    } catch (_) {
+      return;
+    }
+
+    try {
       showDialog(
         context: context,
         barrierDismissible: barrierDismissible,
@@ -208,6 +221,17 @@ class DialogHelper {
           child: contentBuilder(context),
         ),
       );
+    } catch (_) {
+      // Overlay not available — silently ignore
+    }
+  }
+
+  /// Returns true if the GetX overlay is available for showing snackbars/dialogs.
+  static bool get _isOverlayAvailable {
+    try {
+      return Get.overlayContext != null;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -218,15 +242,20 @@ class DialogHelper {
     Color? textColor,
     Duration duration = const Duration(seconds: 3),
   }) {
-    Get.snackbar(
-      title,
-      message,
-      colorText: textColor ?? Colors.white,
-      backgroundColor: backgroundColor ?? AppColor.primary,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(AppSizes.dimenToPx16),
-      borderRadius: AppSizes.dimenToPx8,
-      duration: duration,
-    );
+    if (!_isOverlayAvailable) return;
+    try {
+      Get.snackbar(
+        title,
+        message,
+        colorText: textColor ?? AppColor.white,
+        backgroundColor: backgroundColor ?? AppColor.primary,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(AppSizes.dimenToPx16),
+        borderRadius: AppSizes.dimenToPx8,
+        duration: duration,
+      );
+    } catch (_) {
+      // Overlay not available — silently ignore
+    }
   }
 }

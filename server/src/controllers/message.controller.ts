@@ -130,8 +130,9 @@ export class MessageController {
       const { messageId } = req.body || {};
 
       if (messageId) {
-        await messageService.updateMessageStatus({
-          messageId,
+        // Mark ALL messages up to (and including) this one as read
+        await messageService.markAllMessagesUpTo({
+          upToMessageId: messageId,
           userId: auth.userId,
           status: 'read',
           conversationId,
@@ -161,8 +162,9 @@ export class MessageController {
       const { messageId } = req.body || {};
 
       if (messageId) {
-        await messageService.updateMessageStatus({
-          messageId,
+        // Mark ALL messages up to (and including) this one as delivered
+        await messageService.markAllMessagesUpTo({
+          upToMessageId: messageId,
           userId: auth.userId,
           status: 'delivered',
           conversationId,

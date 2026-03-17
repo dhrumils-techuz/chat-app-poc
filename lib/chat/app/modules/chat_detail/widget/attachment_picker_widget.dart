@@ -28,7 +28,7 @@ class AttachmentPickerWidget extends StatelessWidget {
   }) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColor.transparent,
       builder: (_) => AttachmentPickerWidget(
         onAttachmentSelected: (type) {
           Navigator.of(context).pop();

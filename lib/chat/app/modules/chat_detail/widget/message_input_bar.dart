@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
+import '../../../../core/utils/screen_util.dart';
 import '../../../../core/values/app_sizes.dart';
 import '../chat_detail_controller.dart';
 import 'attachment_picker_widget.dart';
@@ -15,6 +17,7 @@ class MessageInputBar extends GetView<ChatDetailController> {
   @override
   Widget build(BuildContext context) {
     final colors = ChatColors.getInstance(context);
+    final isMobile = ScreenUtil.isMobileWidth(ScreenUtil.width(context));
 
     return Container(
       decoration: BoxDecoration(
@@ -69,27 +72,10 @@ class MessageInputBar extends GetView<ChatDetailController> {
                         color: colors.inputBackgroundColor,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: TextField(
-                        controller: controller.textController,
-                        onChanged: controller.onTextChanged,
-                        maxLines: 5,
-                        minLines: 1,
-                        textCapitalization: TextCapitalization.sentences,
-                        style: ChatTextStyles.inputText.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: Keys.Type_a_message.tr,
-                          hintStyle: ChatTextStyles.inputText.copyWith(
-                            color: colors.textLight,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          isDense: true,
-                        ),
+                      child: _MessageTextField(
+                        controller: controller,
+                        colors: colors,
+                        isMobile: isMobile,
                       ),
                     ),
                   ),
@@ -150,6 +136,91 @@ class MessageInputBar extends GetView<ChatDetailController> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Text field that handles Enter-to-send on non-mobile platforms and
+/// keeps focus after sending.
+class _MessageTextField extends StatefulWidget {
+  const _MessageTextField({
+    required this.controller,
+    required this.colors,
+    required this.isMobile,
+  });
+
+  final ChatDetailController controller;
+  final ChatColors colors;
+  final bool isMobile;
+
+  @override
+  State<_MessageTextField> createState() => _MessageTextFieldState();
+}
+
+class _MessageTextFieldState extends State<_MessageTextField> {
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  /// On non-mobile: Enter sends message, Shift+Enter inserts newline.
+  /// On mobile: Enter always inserts newline (soft keyboard has its own send).
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (widget.isMobile) return KeyEventResult.ignored;
+
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        !HardwareKeyboard.instance.isShiftPressed) {
+      final text = widget.controller.textController.text.trim();
+      if (text.isNotEmpty) {
+        widget.controller.sendTextMessage();
+        // Re-request focus after send
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_focusNode.canRequestFocus) {
+            _focusNode.requestFocus();
+          }
+        });
+      }
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      onKeyEvent: _handleKeyEvent,
+      child: TextField(
+        controller: widget.controller.textController,
+        focusNode: _focusNode,
+        onChanged: widget.controller.onTextChanged,
+        // On non-mobile, autofocus so user can type immediately
+        autofocus: !widget.isMobile,
+        maxLines: 5,
+        minLines: 1,
+        textCapitalization: TextCapitalization.sentences,
+        // On mobile, Enter inserts newline via textInputAction
+        textInputAction:
+            widget.isMobile ? TextInputAction.newline : TextInputAction.none,
+        style: ChatTextStyles.inputText.copyWith(
+          color: widget.colors.textPrimary,
+        ),
+        decoration: InputDecoration(
+          hintText: Keys.Type_a_message.tr,
+          hintStyle: ChatTextStyles.inputText.copyWith(
+            color: widget.colors.textLight,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
+          isDense: true,
         ),
       ),
     );

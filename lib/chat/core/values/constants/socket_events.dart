@@ -12,6 +12,7 @@ class SocketEvents {
 
   // Messages
   static const String sendMessage = 'message:send';
+  static const String deleteMessage = 'message:delete';
   static const String messageDelivered = 'message:delivered';
   static const String messageRead = 'message:read';
 
@@ -31,6 +32,7 @@ class SocketEvents {
   // Messages
   static const String messageNew = 'message:new';
   static const String messageSent = 'message:sent';
+  static const String messageDeleted = 'message:deleted';
   static const String messageDeliveredAck = 'message:delivered:ack';
   static const String messageReadAck = 'message:read:ack';
 

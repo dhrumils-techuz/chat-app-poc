@@ -18,6 +18,8 @@ class MessageBubble extends StatelessWidget {
     required this.isGroup,
     this.onReply,
     this.onDelete,
+    this.onTapReply,
+    this.isHighlighted = false,
   });
 
   final MessageModel message;
@@ -25,6 +27,8 @@ class MessageBubble extends StatelessWidget {
   final bool isGroup;
   final VoidCallback? onReply;
   final void Function(bool forEveryone)? onDelete;
+  final void Function(String messageId)? onTapReply;
+  final bool isHighlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +37,14 @@ class MessageBubble extends StatelessWidget {
       return _buildSystemMessage(context);
     }
 
+    final colors = ChatColors.getInstance(context);
+
     return Align(
       alignment: isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
         onLongPress: () => _showContextMenu(context),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
           constraints: const BoxConstraints(
             maxWidth: AppSizes.bubbleMaxWidth,
           ),
@@ -52,9 +59,11 @@ class MessageBubble extends StatelessWidget {
             vertical: 6,
           ),
           decoration: BoxDecoration(
-            color: isMyMessage
-                ? AppColor.sentBubble
-                : AppColor.receivedBubble,
+            color: isHighlighted
+                ? colors.primaryColor.withOpacity(0.15)
+                : (isMyMessage
+                    ? AppColor.sentBubble
+                    : AppColor.receivedBubble),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(isMyMessage ? AppSizes.bubbleRadius : 4),
               topRight: Radius.circular(isMyMessage ? 4 : AppSizes.bubbleRadius),
@@ -129,7 +138,13 @@ class MessageBubble extends StatelessWidget {
   Widget _buildReplyPreview(BuildContext context) {
     final colors = ChatColors.getInstance(context);
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        if (message.replyToMessageId != null && onTapReply != null) {
+          onTapReply!(message.replyToMessageId!);
+        }
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
@@ -176,6 +191,7 @@ class MessageBubble extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -277,6 +293,7 @@ class MessageBubble extends StatelessWidget {
   void _showContextMenu(BuildContext context) {
     if (message.isDeleted) return;
 
+    final colors = ChatColors.getInstance(context);
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final offset = renderBox.localToGlobal(Offset.zero);
 
@@ -288,20 +305,68 @@ class MessageBubble extends StatelessWidget {
         offset.dx + renderBox.size.width,
         offset.dy + renderBox.size.height,
       ),
+      color: colors.surfaceColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: [
         if (onReply != null)
-          PopupMenuItem(value: 'reply', child: Text(Keys.Reply.tr)),
+          PopupMenuItem(
+            value: 'reply',
+            child: Row(
+              children: [
+                Icon(Icons.reply, size: 20, color: colors.textPrimary),
+                const SizedBox(width: 12),
+                Text(Keys.Reply.tr,
+                    style: TextStyle(color: colors.textPrimary)),
+              ],
+            ),
+          ),
         if (message.isTextMessage && message.content != null)
-          PopupMenuItem(value: 'copy', child: Text(Keys.Copy.tr)),
+          PopupMenuItem(
+            value: 'copy',
+            child: Row(
+              children: [
+                Icon(Icons.copy, size: 20, color: colors.textPrimary),
+                const SizedBox(width: 12),
+                Text(Keys.Copy.tr,
+                    style: TextStyle(color: colors.textPrimary)),
+              ],
+            ),
+          ),
         if (isMyMessage && onDelete != null) ...[
-          PopupMenuItem(value: 'delete_me', child: Text(Keys.Delete_for_me.tr)),
+          PopupMenuItem(
+            value: 'delete_me',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 20, color: colors.textPrimary),
+                const SizedBox(width: 12),
+                Text(Keys.Delete_for_me.tr,
+                    style: TextStyle(color: colors.textPrimary)),
+              ],
+            ),
+          ),
           PopupMenuItem(
             value: 'delete_all',
-            child: Text(Keys.Delete_for_everyone.tr),
+            child: Row(
+              children: [
+                Icon(Icons.delete_forever, size: 20, color: colors.errorColor),
+                const SizedBox(width: 12),
+                Text(Keys.Delete_for_everyone.tr,
+                    style: TextStyle(color: colors.errorColor)),
+              ],
+            ),
           ),
         ] else if (onDelete != null)
-          PopupMenuItem(value: 'delete_me', child: Text(Keys.Delete_for_me.tr)),
+          PopupMenuItem(
+            value: 'delete_me',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 20, color: colors.textPrimary),
+                const SizedBox(width: 12),
+                Text(Keys.Delete_for_me.tr,
+                    style: TextStyle(color: colors.textPrimary)),
+              ],
+            ),
+          ),
       ],
     ).then((value) {
       if (value == null) return;
@@ -327,8 +392,9 @@ class MessageBubble extends StatelessWidget {
   // ── Helpers ────────────────────────────────────────────────────────────
 
   String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour;
-    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final local = dateTime.toLocal();
+    final hour = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
     final period = hour >= 12 ? 'PM' : 'AM';
     final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
     return '$displayHour:$minute $period';

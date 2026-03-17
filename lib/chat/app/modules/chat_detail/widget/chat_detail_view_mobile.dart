@@ -84,7 +84,7 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
                     );
                   }
                   final other = controller.otherParticipant;
-                  if (other != null && other.presence.isOnline) {
+                  if (other != null && controller.otherUserPresence.value.isOnline) {
                     return Text(
                       Keys.Online.tr,
                       style: ChatTextStyles.caption.copyWith(
@@ -113,17 +113,51 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
         ),
         PopupMenuButton<String>(
           icon: Icon(Icons.more_vert, color: colors.iconColor),
+          color: colors.surfaceColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
           ),
           onSelected: (value) {
             // Handle menu actions
           },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'search', child: Text('Search')),
-            const PopupMenuItem(value: 'media', child: Text('Media')),
-            const PopupMenuItem(value: 'mute', child: Text('Mute')),
-          ],
+          itemBuilder: (context) {
+            final menuColors = ChatColors.getInstance(context);
+            return [
+              PopupMenuItem(
+                value: 'search',
+                child: Row(
+                  children: [
+                    Icon(Icons.search, size: 20, color: menuColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Text(Keys.Search.tr,
+                        style: TextStyle(color: menuColors.textPrimary)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'media',
+                child: Row(
+                  children: [
+                    Icon(Icons.photo_library_outlined, size: 20, color: menuColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Text(Keys.Media.tr,
+                        style: TextStyle(color: menuColors.textPrimary)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'mute',
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications_off_outlined, size: 20, color: menuColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Text(Keys.Mute.tr,
+                        style: TextStyle(color: menuColors.textPrimary)),
+                  ],
+                ),
+              ),
+            ];
+          },
         ),
       ],
     );
@@ -189,14 +223,21 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
             children: [
               if (showDateSeparator)
                 _buildDateSeparator(context, message.createdAt, colors),
-              MessageBubble(
-                message: message,
-                isMyMessage: controller.isMyMessage(message),
-                isGroup: controller.isGroup,
-                onReply: () => controller.setReplyTo(message),
-                onDelete: (forEveryone) =>
-                    controller.deleteMessage(message.id, forEveryone: forEveryone),
-              ),
+              Obx(() => Container(
+                key: controller.getKeyForMessage(message.id),
+                child: MessageBubble(
+                  message: message,
+                  isMyMessage: controller.isMyMessage(message),
+                  isGroup: controller.isGroup,
+                  isHighlighted:
+                      controller.highlightedMessageId.value == message.id,
+                  onReply: () => controller.setReplyTo(message),
+                  onDelete: (forEveryone) =>
+                      controller.deleteMessage(message.id, forEveryone: forEveryone),
+                  onTapReply: (parentId) =>
+                      controller.scrollToMessage(parentId),
+                ),
+              )),
             ],
           );
         },
@@ -212,11 +253,12 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
 
     // In a reversed list, the next message (index + 1) is older.
     // Show separator if this is the oldest message or the next (older) message
-    // is on a different day.
+    // is on a different day. Use local time for day comparison.
     if (index == messages.length - 1) return true;
 
     final olderMessage = messages[index + 1];
-    return !currentMessage.createdAt.isSameDay(olderMessage.createdAt);
+    return !currentMessage.createdAt.toLocal().isSameDay(
+        olderMessage.createdAt.toLocal());
   }
 
   Widget _buildDateSeparator(
@@ -248,18 +290,19 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
   }
 
   String _formatDateSeparator(DateTime date) {
-    if (date.isToday) return Keys.Today.tr;
-    if (date.isYesterday) return Keys.Yesterday.tr;
+    final local = date.toLocal();
+    if (local.isToday) return Keys.Today.tr;
+    if (local.isYesterday) return Keys.Yesterday.tr;
 
     final months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December',
     ];
 
-    if (date.isThisYear) {
-      return '${months[date.month - 1]} ${date.day}';
+    if (local.isThisYear) {
+      return '${months[local.month - 1]} ${local.day}';
     }
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────

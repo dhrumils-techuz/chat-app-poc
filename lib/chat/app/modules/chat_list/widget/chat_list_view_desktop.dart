@@ -77,6 +77,10 @@ class ChatListViewDesktop extends GetView<ChatListController> {
               Icons.more_vert,
               color: colors.iconColor,
             ),
+            color: colors.surfaceColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
+            ),
             onSelected: (value) {
               switch (value) {
                 case 'new_chat':
@@ -90,20 +94,44 @@ class ChatListViewDesktop extends GetView<ChatListController> {
                   break;
               }
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'new_chat',
-                child: Text(Keys.New_Chat.tr),
-              ),
-              PopupMenuItem(
-                value: 'new_group',
-                child: Text(Keys.New_Group.tr),
-              ),
-              PopupMenuItem(
-                value: 'settings',
-                child: Text(Keys.Settings.tr),
-              ),
-            ],
+            itemBuilder: (context) {
+              final menuColors = ChatColors.getInstance(context);
+              return [
+                PopupMenuItem(
+                  value: 'new_chat',
+                  child: Row(
+                    children: [
+                      Icon(Icons.chat_outlined, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.New_Chat.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'new_group',
+                  child: Row(
+                    children: [
+                      Icon(Icons.group_add_outlined, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.New_Group.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings_outlined, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.Settings.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
+              ];
+            },
           ),
         ],
       ),

@@ -119,9 +119,13 @@ class MessageService {
       throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
-    const baseQuery = `SELECT m.*, u.full_name as sender_name, u.avatar_url as sender_avatar_url
+    // LEFT JOIN reply parent message to include replyToContent and replyToSenderName
+    const baseQuery = `SELECT m.*, u.full_name as sender_name, u.avatar_url as sender_avatar_url,
+       rm.content as reply_to_content, ru.full_name as reply_to_sender_name
        FROM messages m
        JOIN users u ON u.id = m.sender_id
+       LEFT JOIN messages rm ON rm.id = m.reply_to_id
+       LEFT JOIN users ru ON ru.id = rm.sender_id
        WHERE m.conversation_id = $1 AND m.is_deleted = false`;
     const baseParams = [conversationId];
 
@@ -201,6 +205,78 @@ class MessageService {
         requestId: null,
         metadata: { conversationId },
       });
+    }
+  }
+
+  /**
+   * Marks ALL messages in a conversation up to (and including) the given
+   * message as delivered or read for the specified user.
+   *
+   * This ensures that when a user opens a conversation, every message they
+   * haven't yet acknowledged is bulk-updated in a single query rather than
+   * requiring one event per message.
+   */
+  async markAllMessagesUpTo(params: {
+    upToMessageId: string;
+    userId: string;
+    status: MessageStatusType;
+    conversationId: string;
+    tenantId: string;
+  }): Promise<void> {
+    const { upToMessageId, userId, status, conversationId, tenantId } = params;
+
+    // Get the created_at of the target message to find all messages up to that point
+    const targetResult = await query(
+      'SELECT created_at FROM messages WHERE id = $1 AND conversation_id = $2',
+      [upToMessageId, conversationId]
+    );
+    if (targetResult.rows.length === 0) return;
+
+    const targetCreatedAt = targetResult.rows[0].created_at;
+
+    // Find all messages in this conversation sent by OTHER users, up to this point,
+    // that don't already have a status >= the requested status for this user
+    const messagesToUpdate = await query(
+      `SELECT m.id FROM messages m
+       WHERE m.conversation_id = $1
+         AND m.sender_id != $2
+         AND m.created_at <= $3
+         AND m.is_deleted = false
+         AND NOT EXISTS (
+           SELECT 1 FROM message_status ms
+           WHERE ms.message_id = m.id
+             AND ms.user_id = $2
+             AND ms.status = $4
+         )`,
+      [conversationId, userId, targetCreatedAt, status]
+    );
+
+    if (messagesToUpdate.rows.length === 0) return;
+
+    const messageIds = messagesToUpdate.rows.map((r: any) => r.id);
+
+    // Bulk upsert status for all these messages
+    // Build a VALUES clause for the bulk insert
+    const values = messageIds
+      .map((_: string, i: number) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`)
+      .join(', ');
+    const flatParams = messageIds.flatMap((id: string) => [id, userId, status]);
+
+    await query(
+      `INSERT INTO message_status (message_id, user_id, status)
+       VALUES ${values}
+       ON CONFLICT (message_id, user_id) DO UPDATE SET status = EXCLUDED.status, timestamp = NOW()`,
+      flatParams
+    );
+
+    if (status === 'read') {
+      // Update last_read_message_id and reset unread count
+      await query(
+        `UPDATE conversation_participants
+         SET last_read_message_id = $1, unread_count = 0
+         WHERE conversation_id = $2 AND user_id = $3 AND left_at IS NULL`,
+        [upToMessageId, conversationId, userId]
+      );
     }
   }
 

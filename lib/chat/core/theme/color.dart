@@ -20,6 +20,10 @@ class AppColor {
   static const Color onlineGreen = Color(0xFF4CAF50);
   static const Color backgroundGrey = Color(0xFFF7F8FA);
   static const Color inputBackground = Color(0xFFF2F4F7);
+  static const Color transparent = Color(0x00000000);
+  static const Color overlayBackground = Color(0xFF000000);
+  static const Color overlayForeground = Color(0xFFFFFFFF);
+  static const Color overlaySubtle = Color(0x8AFFFFFF); // ~54% white
 
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment(-0.7, -0.7),

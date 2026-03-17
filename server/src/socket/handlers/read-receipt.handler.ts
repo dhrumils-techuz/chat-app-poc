@@ -12,8 +12,10 @@ export function handleReadReceiptEvents(socket: Socket, io: Server, auth: JwtPay
       const { messageId, conversationId } = data;
       if (!messageId || !conversationId) return;
 
-      await messageService.updateMessageStatus({
-        messageId,
+      // Mark ALL messages in this conversation up to (and including) the given
+      // messageId as delivered for this user.
+      await messageService.markAllMessagesUpTo({
+        upToMessageId: messageId,
         userId,
         status: 'delivered',
         conversationId,
@@ -22,8 +24,10 @@ export function handleReadReceiptEvents(socket: Socket, io: Server, auth: JwtPay
 
       const now = new Date().toISOString();
 
+      // Broadcast to the conversation room so the sender sees the double-tick
       socket.to(`conversation:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_DELIVERED_ACK, {
         messageId,
+        conversationId,
         userId,
         timestamp: now,
       });
@@ -39,8 +43,10 @@ export function handleReadReceiptEvents(socket: Socket, io: Server, auth: JwtPay
       const { messageId, conversationId } = data;
       if (!messageId || !conversationId) return;
 
-      await messageService.updateMessageStatus({
-        messageId,
+      // Mark ALL messages in this conversation up to (and including) the given
+      // messageId as read for this user.
+      await messageService.markAllMessagesUpTo({
+        upToMessageId: messageId,
         userId,
         status: 'read',
         conversationId,
@@ -49,8 +55,10 @@ export function handleReadReceiptEvents(socket: Socket, io: Server, auth: JwtPay
 
       const now = new Date().toISOString();
 
+      // Broadcast to the conversation room so the sender sees the blue double-tick
       socket.to(`conversation:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_READ_ACK, {
         messageId,
+        conversationId,
         userId,
         timestamp: now,
       });

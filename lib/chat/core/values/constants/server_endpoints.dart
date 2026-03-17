@@ -7,7 +7,7 @@ class ApiEndpoints {
   static String get _authPrefix => '$baseURL/api/auth';
   static String get login => '$_authPrefix/login';
   static String get logout => '$_authPrefix/logout';
-  static String get refreshToken => '$_authPrefix/refresh-token';
+  static String get refreshToken => '$_authPrefix/refresh';
   static String get register => '$_authPrefix/register';
   static String get forgotPassword => '$_authPrefix/forgot-password';
   static String get resetPassword => '$_authPrefix/reset-password';

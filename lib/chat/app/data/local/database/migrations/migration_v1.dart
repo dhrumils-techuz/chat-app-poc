@@ -1,3 +1,5 @@
+import 'package:sqflite_sqlcipher/sqflite.dart';
+
 import '../../../../../core/utils/logs_helper.dart';
 
 /// Initial database schema migration.
@@ -74,6 +76,25 @@ class MigrationV1 {
     )
   ''';
 
+  static const String createPendingMessagesTable = '''
+    CREATE TABLE IF NOT EXISTS pending_messages (
+      local_id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      sender_name TEXT,
+      type TEXT NOT NULL DEFAULT 'text',
+      content TEXT,
+      media_id TEXT,
+      reply_to_id TEXT,
+      reply_to_content TEXT,
+      reply_to_sender_name TEXT,
+      status TEXT DEFAULT 'queued',
+      retry_count INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+    )
+  ''';
+
   static const String createConversationParticipantsTable = '''
     CREATE TABLE IF NOT EXISTS conversation_participants (
       conversation_id TEXT NOT NULL,
@@ -128,35 +149,42 @@ class MigrationV1 {
     ON users(email)
   ''';
 
+  static const String createPendingMessagesConversationIndex = '''
+    CREATE INDEX IF NOT EXISTS idx_pending_messages_conversation_id
+    ON pending_messages(conversation_id)
+  ''';
+
   /// Applies the migration (creates all tables and indexes).
-  static Future<void> up(dynamic db) async {
+  static Future<void> up(Database db) async {
     LogsHelper.debugLog(tag: _tag, 'Applying migration v1');
 
-    // In actual implementation, execute each SQL statement:
-    // await db.execute(createUsersTable);
-    // await db.execute(createConversationsTable);
-    // await db.execute(createMessagesTable);
-    // await db.execute(createConversationParticipantsTable);
-    // await db.execute(createFoldersTable);
-    // await db.execute(createFolderConversationsTable);
-    // await db.execute(createMessageConversationIndex);
-    // await db.execute(createMessageSenderIndex);
-    // await db.execute(createConversationLastMessageIndex);
-    // await db.execute(createUserEmailIndex);
+    await db.execute(createUsersTable);
+    await db.execute(createConversationsTable);
+    await db.execute(createMessagesTable);
+    await db.execute(createPendingMessagesTable);
+    await db.execute(createConversationParticipantsTable);
+    await db.execute(createFoldersTable);
+    await db.execute(createFolderConversationsTable);
+    await db.execute(createMessageConversationIndex);
+    await db.execute(createMessageSenderIndex);
+    await db.execute(createConversationLastMessageIndex);
+    await db.execute(createUserEmailIndex);
+    await db.execute(createPendingMessagesConversationIndex);
 
     LogsHelper.debugLog(tag: _tag, 'Migration v1 applied successfully');
   }
 
   /// Reverses the migration (drops all tables).
-  static Future<void> down(dynamic db) async {
+  static Future<void> down(Database db) async {
     LogsHelper.debugLog(tag: _tag, 'Reverting migration v1');
 
-    // await db.execute('DROP TABLE IF EXISTS folder_conversations');
-    // await db.execute('DROP TABLE IF EXISTS folders');
-    // await db.execute('DROP TABLE IF EXISTS conversation_participants');
-    // await db.execute('DROP TABLE IF EXISTS messages');
-    // await db.execute('DROP TABLE IF EXISTS conversations');
-    // await db.execute('DROP TABLE IF EXISTS users');
+    await db.execute('DROP TABLE IF EXISTS folder_conversations');
+    await db.execute('DROP TABLE IF EXISTS folders');
+    await db.execute('DROP TABLE IF EXISTS conversation_participants');
+    await db.execute('DROP TABLE IF EXISTS pending_messages');
+    await db.execute('DROP TABLE IF EXISTS messages');
+    await db.execute('DROP TABLE IF EXISTS conversations');
+    await db.execute('DROP TABLE IF EXISTS users');
 
     LogsHelper.debugLog(tag: _tag, 'Migration v1 reverted');
   }

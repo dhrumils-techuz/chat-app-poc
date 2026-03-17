@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../core/theme/color.dart';
+
 class ImageViewerScreen extends StatelessWidget {
   const ImageViewerScreen({super.key});
 
@@ -13,10 +15,10 @@ class ImageViewerScreen extends StatelessWidget {
     final title = args?['title'] as String? ?? 'Image';
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColor.overlayBackground,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColor.overlayBackground,
+        foregroundColor: AppColor.overlayForeground,
         title: Text(title),
         elevation: 0,
       ),
@@ -25,12 +27,12 @@ class ImageViewerScreen extends StatelessWidget {
           imageProvider: CachedNetworkImageProvider(imageUrl),
           minScale: PhotoViewComputedScale.contained,
           maxScale: PhotoViewComputedScale.covered * 3,
-          backgroundDecoration: const BoxDecoration(color: Colors.black),
+          backgroundDecoration: const BoxDecoration(color: AppColor.overlayBackground),
           loadingBuilder: (context, event) => const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+            child: CircularProgressIndicator(color: AppColor.overlayForeground),
           ),
           errorBuilder: (context, error, stackTrace) => const Center(
-            child: Icon(Icons.broken_image, color: Colors.white54, size: 64),
+            child: Icon(Icons.broken_image, color: AppColor.overlaySubtle, size: 64),
           ),
         ),
       ),

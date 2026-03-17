@@ -129,19 +129,23 @@ class SignInController extends GetxController {
       }
     }
 
-    // Use addPostFrameCallback to ensure overlay is available.
+    // Show snackbar only if the overlay is available.
+    // Use WidgetsBinding.addPostFrameCallback to ensure the widget tree is
+    // fully built before attempting to show the snackbar.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
-        Get.snackbar(
-          Keys.Login_Failed.tr,
-          errorMessage.value ?? Keys.Invalid_credentials.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColor.error.withValues(alpha: 0.15),
-          colorText: AppColor.error,
-          duration: const Duration(seconds: 3),
-        );
+        if (Get.overlayContext != null && !Get.isSnackbarOpen) {
+          Get.snackbar(
+            Keys.Login_Failed.tr,
+            errorMessage.value ?? Keys.Invalid_credentials.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.error.withValues(alpha: 0.15),
+            colorText: AppColor.error,
+            duration: const Duration(seconds: 3),
+          );
+        }
       } catch (_) {
-        // Overlay not yet available — silently skip snackbar
+        // Overlay not yet available — error already shown via errorMessage
       }
     });
   }

@@ -7,6 +7,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/utils/logs_helper.dart';
 import '../../../core/values/constants/app_constants.dart';
 import '../../../core/values/constants/socket_events.dart';
+import 'dio_remote_api_client.dart';
 import '../repository/token_repository.dart';
 
 /// Socket.IO wrapper service that manages the WebSocket connection.
@@ -34,6 +35,10 @@ class SocketClient extends GetxService {
   /// They are applied to the socket in [connect] before calling socket.connect().
   final Map<String, List<Function(dynamic)>> _pendingListeners = {};
 
+  /// Events queued while the socket is not yet connected.
+  /// Flushed automatically once the socket connects.
+  final List<_QueuedEvent> _eventQueue = [];
+
   bool get isConnected => _isConnected.value;
   bool get isAuthenticated => _isAuthenticated.value;
 
@@ -44,6 +49,9 @@ class SocketClient extends GetxService {
   /// The server uses Socket.IO middleware to extract the token from
   /// `socket.handshake.auth.token` and verifies it before the connection
   /// event fires. No separate "authenticate" event is needed.
+  ///
+  /// If the access token is expired, it will be refreshed via the Dio client's
+  /// refresh mechanism before connecting.
   Future<void> connect() async {
     // Don't reconnect if already connected
     if (_socket != null && _isConnected.value) {
@@ -51,11 +59,37 @@ class SocketClient extends GetxService {
       return;
     }
 
-    final accessToken = await _tokenRepository.getAccessToken();
+    // Ensure we have a valid (non-expired) token before connecting.
+    // If expired, trigger a refresh through DioRemoteApiClient.
+    String? accessToken = await _tokenRepository.getAccessToken();
     if (accessToken == null) {
       LogsHelper.debugLog(
           tag: _tag, 'No access token available for socket connection');
       return;
+    }
+
+    if (_tokenRepository.isAccessTokenExpired()) {
+      LogsHelper.debugLog(
+          tag: _tag, 'Access token expired, refreshing before socket connect');
+      try {
+        // Use Dio client to trigger token refresh (it handles the
+        // refresh token exchange and saves the new tokens)
+        final dioClient = Get.find<DioRemoteApiClient>();
+        // A lightweight request to trigger the interceptor's refresh flow
+        // We just need the refreshed token, so we read it from the repository
+        // after triggering any pending refresh via the Dio client's mechanism.
+        await dioClient.ensureValidToken();
+        accessToken = await _tokenRepository.getAccessToken();
+        if (accessToken == null) {
+          LogsHelper.debugLog(
+              tag: _tag, 'Token refresh failed, cannot connect socket');
+          return;
+        }
+      } catch (e) {
+        LogsHelper.debugLog(
+            tag: _tag, 'Token refresh error before socket connect: $e');
+        return;
+      }
     }
 
     try {
@@ -102,6 +136,12 @@ class SocketClient extends GetxService {
       _isConnected.value = true;
       _isAuthenticated.value = true;
       _reconnectAttempts = 0;
+      _flushEventQueue();
+
+      // Emit presence:online so the server knows we're online.
+      // The server only sets users online when they explicitly emit this event.
+      socket.emit(SocketEvents.presenceOnline);
+      LogsHelper.debugLog(tag: _tag, 'Emitted presence:online');
     });
 
     socket.onDisconnect((_) {
@@ -114,7 +154,18 @@ class SocketClient extends GetxService {
       LogsHelper.debugLog(tag: _tag, 'Socket connection error: $error');
       _isConnected.value = false;
       _isAuthenticated.value = false;
-      _scheduleReconnect();
+
+      // If error is "Token expired", reconnect with a fresh token
+      final errorStr = error.toString();
+      if (errorStr.contains('Token expired') ||
+          errorStr.contains('jwt expired') ||
+          errorStr.contains('Unauthorized')) {
+        LogsHelper.debugLog(
+            tag: _tag, 'Token issue detected, will refresh and reconnect');
+        reconnectWithNewToken();
+      } else {
+        _scheduleReconnect();
+      }
     });
 
     socket.onError((data) {
@@ -174,10 +225,12 @@ class SocketClient extends GetxService {
   }
 
   /// Emits an event to the server.
+  /// If the socket is not yet connected, the event is queued and sent on connect.
   void emit(String event, [dynamic data]) {
     if (!isConnected || _socket == null) {
       LogsHelper.debugLog(
-          tag: _tag, 'Cannot emit $event: socket not connected');
+          tag: _tag, 'Queuing $event (socket not connected yet)');
+      _eventQueue.add(_QueuedEvent(event, data));
       return;
     }
     if (data != null) {
@@ -188,10 +241,12 @@ class SocketClient extends GetxService {
   }
 
   /// Emits an event with an acknowledgement callback.
+  /// If the socket is not yet connected, the event is queued and sent on connect.
   void emitWithAck(String event, dynamic data, Function(dynamic) callback) {
     if (!isConnected || _socket == null) {
       LogsHelper.debugLog(
-          tag: _tag, 'Cannot emit $event: socket not connected');
+          tag: _tag, 'Queuing $event (socket not connected yet)');
+      _eventQueue.add(_QueuedEvent(event, data, ackCallback: callback));
       return;
     }
     _socket!.emitWithAck(event, data, ack: callback);
@@ -252,13 +307,34 @@ class SocketClient extends GetxService {
     await connect();
   }
 
+  /// Flushes queued events after the socket connects.
+  void _flushEventQueue() {
+    if (_eventQueue.isEmpty) return;
+    LogsHelper.debugLog(
+        tag: _tag, 'Flushing ${_eventQueue.length} queued events');
+    final queued = List<_QueuedEvent>.from(_eventQueue);
+    _eventQueue.clear();
+    for (final e in queued) {
+      if (e.ackCallback != null) {
+        emitWithAck(e.event, e.data, e.ackCallback!);
+      } else {
+        emit(e.event, e.data);
+      }
+    }
+  }
+
   /// Disconnects the socket.
   void disconnect() {
     _reconnectTimer?.cancel();
+    // Emit presence:offline before disconnecting so the server knows immediately
+    if (_isConnected.value && _socket != null) {
+      _socket!.emit(SocketEvents.presenceOffline);
+    }
     _socket?.dispose();
     _socket = null;
     _isConnected.value = false;
     _isAuthenticated.value = false;
+    _eventQueue.clear();
     LogsHelper.debugLog(tag: _tag, 'Socket disconnected manually');
   }
 
@@ -268,4 +344,13 @@ class SocketClient extends GetxService {
     _pendingListeners.clear();
     super.onClose();
   }
+}
+
+/// Represents an event queued while the socket was disconnected.
+class _QueuedEvent {
+  final String event;
+  final dynamic data;
+  final Function(dynamic)? ackCallback;
+
+  _QueuedEvent(this.event, this.data, {this.ackCallback});
 }

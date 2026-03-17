@@ -31,6 +31,9 @@ class TokenRepository extends GetxService {
               iOptions: IOSOptions(
                 accessibility: KeychainAccessibility.first_unlock_this_device,
               ),
+              mOptions: MacOsOptions(
+                useDataProtectionKeyChain: false,
+              ),
             );
 
   /// Initializes the repository by loading cached values from secure storage.

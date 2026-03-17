@@ -26,6 +26,7 @@ class SocketService extends GetxService {
   final _messageSentController = StreamController<Map<String, dynamic>>.broadcast();
   final _messageDeliveredController = StreamController<Map<String, dynamic>>.broadcast();
   final _messageReadController = StreamController<Map<String, dynamic>>.broadcast();
+  final _messageDeletedController = StreamController<Map<String, dynamic>>.broadcast();
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
   final _presenceController = StreamController<Map<String, dynamic>>.broadcast();
   final _conversationUpdatedController = StreamController<Map<String, dynamic>>.broadcast();
@@ -34,6 +35,7 @@ class SocketService extends GetxService {
   Stream<Map<String, dynamic>> get onMessageSent => _messageSentController.stream;
   Stream<Map<String, dynamic>> get onMessageDelivered => _messageDeliveredController.stream;
   Stream<Map<String, dynamic>> get onMessageRead => _messageReadController.stream;
+  Stream<Map<String, dynamic>> get onMessageDeleted => _messageDeletedController.stream;
   Stream<Map<String, dynamic>> get onTyping => _typingController.stream;
   Stream<Map<String, dynamic>> get onPresenceUpdate => _presenceController.stream;
   Stream<Map<String, dynamic>> get onConversationUpdated => _conversationUpdatedController.stream;
@@ -70,6 +72,11 @@ class SocketService extends GetxService {
     // Data: { localId, messageId, createdAt }
     _socketClient.on(SocketEvents.messageSent, (data) {
       _messageSentController.add(data as Map<String, dynamic>);
+    });
+
+    // Server emits 'message:deleted' with { messageId, conversationId, forEveryone }
+    _socketClient.on(SocketEvents.messageDeleted, (data) {
+      _messageDeletedController.add(data as Map<String, dynamic>);
     });
 
     // ── Read receipts ─────────────────────────────────────────────────
@@ -130,9 +137,30 @@ class SocketService extends GetxService {
     );
   }
 
+  /// Deletes a message via socket.
+  ///
+  /// Server expects 'message:delete' with:
+  ///   { conversationId, messageId, forEveryone }
+  void deleteMessage({
+    required String conversationId,
+    required String messageId,
+    bool forEveryone = false,
+  }) {
+    _socketClient.emit(SocketEvents.deleteMessage, {
+      'conversationId': conversationId,
+      'messageId': messageId,
+      'forEveryone': forEveryone,
+    });
+  }
+
   /// Joins a conversation room to receive real-time updates.
   void joinConversation(String conversationId) {
     _socketClient.joinConversation(conversationId);
+  }
+
+  /// Joins multiple conversation rooms at once.
+  void joinConversations(List<String> conversationIds) {
+    _socketClient.joinConversations(conversationIds);
   }
 
   /// Leaves a conversation room.
@@ -180,6 +208,7 @@ class SocketService extends GetxService {
     _messageSentController.close();
     _messageDeliveredController.close();
     _messageReadController.close();
+    _messageDeletedController.close();
     _typingController.close();
     _presenceController.close();
     _conversationUpdatedController.close();

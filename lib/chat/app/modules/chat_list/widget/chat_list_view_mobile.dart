@@ -88,6 +88,10 @@ class ChatListViewMobile extends GetView<ChatListController> {
             Icons.more_vert,
             color: colors.iconColor,
           ),
+          color: colors.surfaceColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
+          ),
           onSelected: (value) {
             switch (value) {
               case 'new_group':
@@ -101,20 +105,44 @@ class ChatListViewMobile extends GetView<ChatListController> {
                 break;
             }
           },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'new_group',
-              child: Text(Keys.New_Group.tr),
-            ),
-            PopupMenuItem(
-              value: 'settings',
-              child: Text(Keys.Settings.tr),
-            ),
-            PopupMenuItem(
-              value: 'profile',
-              child: Text(Keys.Profile.tr),
-            ),
-          ],
+          itemBuilder: (context) {
+            final menuColors = ChatColors.getInstance(context);
+            return [
+              PopupMenuItem(
+                value: 'new_group',
+                child: Row(
+                  children: [
+                    Icon(Icons.group_add_outlined, size: 20, color: menuColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Text(Keys.New_Group.tr,
+                        style: TextStyle(color: menuColors.textPrimary)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined, size: 20, color: menuColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Text(Keys.Settings.tr,
+                        style: TextStyle(color: menuColors.textPrimary)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline, size: 20, color: menuColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Text(Keys.Profile.tr,
+                        style: TextStyle(color: menuColors.textPrimary)),
+                  ],
+                ),
+              ),
+            ];
+          },
         ),
       ],
     );
@@ -181,7 +209,7 @@ class ChatListViewMobile extends GetView<ChatListController> {
       ),
       child: FloatingActionButton(
         onPressed: () => Get.toNamed(ChatAppRoutes.CONTACTS),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColor.transparent,
         elevation: 0,
         highlightElevation: 0,
         child: const Icon(

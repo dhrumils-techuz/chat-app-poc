@@ -1,6 +1,7 @@
 export const SOCKET_EVENTS = {
   // Client -> Server
   MESSAGE_SEND: 'message:send',
+  MESSAGE_DELETE: 'message:delete',
   TYPING_START: 'typing:start',
   TYPING_STOP: 'typing:stop',
   PRESENCE_ONLINE: 'presence:online',
@@ -12,6 +13,7 @@ export const SOCKET_EVENTS = {
   // Server -> Client
   MESSAGE_NEW: 'message:new',
   MESSAGE_SENT: 'message:sent',
+  MESSAGE_DELETED: 'message:deleted',
   MESSAGE_DELIVERED_ACK: 'message:delivered:ack',
   MESSAGE_READ_ACK: 'message:read:ack',
   TYPING_INDICATOR: 'typing:indicator',
@@ -28,6 +30,12 @@ export interface ClientToServerEvents {
     replyToId?: string;
     localId: string;
   }, callback: (response: { success: boolean; messageId?: string; error?: string }) => void) => void;
+
+  'message:delete': (data: {
+    conversationId: string;
+    messageId: string;
+    forEveryone: boolean;
+  }) => void;
 
   'message:delivered': (data: { messageId: string; conversationId: string }) => void;
 
@@ -54,13 +62,27 @@ export interface ServerToClientEvents {
     content: string | null;
     mediaId: string | null;
     replyToId: string | null;
+    replyToContent: string | null;
+    replyToSenderName: string | null;
     createdAt: string;
   }) => void;
 
   'message:sent': (data: {
     localId: string;
     messageId: string;
+    conversationId: string;
+    senderName: string;
+    type: string;
+    content: string | null;
+    replyToContent: string | null;
+    replyToSenderName: string | null;
     createdAt: string;
+  }) => void;
+
+  'message:deleted': (data: {
+    messageId: string;
+    conversationId: string;
+    forEveryone: boolean;
   }) => void;
 
   'message:delivered:ack': (data: {

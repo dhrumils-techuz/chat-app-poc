@@ -14,6 +14,7 @@ import '../../data/repository/message_repository.dart';
 import '../../data/service/socket/socket_service.dart';
 import '../../data/types/message_status_type.dart';
 import '../../data/types/message_type.dart';
+import '../../data/types/user_presence.dart';
 
 class ChatDetailController extends GetxController {
   static const String _tag = 'ChatDetailController';
@@ -49,10 +50,17 @@ class ChatDetailController extends GetxController {
   final replyingTo = Rxn<MessageModel>();
   final typingUsers = <String>[].obs;
   final hasMoreMessages = true.obs;
+  final highlightedMessageId = RxnString();
 
   // ── Controllers ────────────────────────────────────────────────────────
   final textController = TextEditingController();
   final scrollController = ScrollController();
+
+  /// GlobalKey map: messageId → GlobalKey, used for precise reply-tap scrolling.
+  final Map<String, GlobalKey> messageKeys = {};
+
+  /// Reactive presence status for the other participant in 1:1 conversations.
+  final otherUserPresence = UserPresence.offline.obs;
 
   // ── Stream Subscriptions ───────────────────────────────────────────────
   StreamSubscription<MessageModel>? _newMessageSub;
@@ -60,6 +68,8 @@ class ChatDetailController extends GetxController {
   StreamSubscription<Map<String, dynamic>>? _messageDeliveredSub;
   StreamSubscription<Map<String, dynamic>>? _messageReadSub;
   StreamSubscription<Map<String, dynamic>>? _typingSub;
+  StreamSubscription<Map<String, dynamic>>? _messageDeletedSub;
+  StreamSubscription<Map<String, dynamic>>? _presenceSub;
 
   // ── Typing Debounce ────────────────────────────────────────────────────
   Timer? _typingDebounce;
@@ -77,10 +87,14 @@ class ChatDetailController extends GetxController {
   void onInit() {
     super.onInit();
     conversation = _conversationOverride ?? Get.arguments as ConversationModel;
+    // Initialize presence from participant data
+    final other = otherParticipant;
+    if (other != null) {
+      otherUserPresence.value = other.presence;
+    }
     _socketService.joinConversation(conversation.id);
-    loadMessages();
+    loadMessages(); // _markAllAsRead is called after messages load
     _setupSocketListeners();
-    _markAllAsRead();
     scrollController.addListener(_onScroll);
   }
 
@@ -92,6 +106,8 @@ class ChatDetailController extends GetxController {
     _messageDeliveredSub?.cancel();
     _messageReadSub?.cancel();
     _typingSub?.cancel();
+    _messageDeletedSub?.cancel();
+    _presenceSub?.cancel();
     _typingDebounce?.cancel();
     textController.dispose();
     scrollController.dispose();
@@ -108,8 +124,18 @@ class ChatDetailController extends GetxController {
       if (!loadMore) {
         isLoading.value = true;
         _nextCursor = null;
+
+        // 1. Show cached messages immediately
+        final cached = await _messageRepository.getCachedMessages(
+          conversation.id,
+        );
+        if (cached.isNotEmpty) {
+          messages.value = cached;
+          isLoading.value = false;
+        }
       }
 
+      // 2. Fetch from remote
       final ApiResponseModel response = await _messageRepository.getMessages(
         conversationId: conversation.id,
         limit: _pageSize,
@@ -131,12 +157,21 @@ class ChatDetailController extends GetxController {
 
         _nextCursor = rawData['nextCursor'] as String?;
         hasMoreMessages.value = rawData['hasMore'] as bool? ?? false;
+
+        // 3. Cache fetched messages locally
+        _messageRepository.cacheMessages(parsedMessages);
       }
     } catch (e) {
+      // Offline or error — cached data already displayed
       LogsHelper.debugLog(tag: _tag, 'Error loading messages: $e');
     } finally {
       isLoading.value = false;
       isLoadingMore.value = false;
+
+      // Mark messages as read now that we have them loaded
+      if (!loadMore) {
+        _markAllAsRead();
+      }
     }
   }
 
@@ -175,8 +210,20 @@ class ChatDetailController extends GetxController {
     cancelReply();
     _scrollToBottom();
 
-    // Send via socket with the format the server expects:
-    //   { conversationId, type, content?, mediaId?, replyToId?, localId }
+    // Queue in local DB for durability (survives app restart / offline)
+    _messageRepository.queueMessage(
+      localId: tempId,
+      conversationId: conversation.id,
+      senderId: currentUserId,
+      senderName: _authService.currentUser?.name,
+      type: MessageType.text.value,
+      content: text,
+      replyToId: message.replyToMessageId,
+      replyToContent: message.replyToContent,
+      replyToSenderName: message.replyToSenderName,
+    );
+
+    // Send via socket (queued automatically if not connected yet)
     _socketService.sendMessage(
       conversationId: conversation.id,
       type: MessageType.text.value,
@@ -184,31 +231,6 @@ class ChatDetailController extends GetxController {
       content: text,
       replyToId: message.replyToMessageId,
     );
-
-    // Also send via REST for persistence
-    _messageRepository.sendMessage(
-      conversationId: conversation.id,
-      content: text,
-      type: MessageType.text.value,
-      replyToId: message.replyToMessageId,
-    ).then((response) {
-      if (response.isSuccessful && response.data != null) {
-        final rawData = response.data;
-        final messageData = rawData is Map && rawData.containsKey('data')
-            ? rawData['data'] as Map<String, dynamic>
-            : rawData as Map<String, dynamic>;
-        final serverMessage = MessageModel.fromJson(messageData);
-        final index = messages.indexWhere((m) => m.id == tempId);
-        if (index != -1) {
-          messages[index] = serverMessage;
-        }
-      } else {
-        _updateMessageStatus(tempId, MessageStatusType.failed);
-      }
-    }).catchError((e) {
-      LogsHelper.debugLog(tag: _tag, 'Error sending message: $e');
-      _updateMessageStatus(tempId, MessageStatusType.failed);
-    });
   }
 
   void sendMediaMessage(MediaAttachmentModel attachment) {
@@ -232,42 +254,42 @@ class ChatDetailController extends GetxController {
     cancelReply();
     _scrollToBottom();
 
-    // Send via REST (media messages need mediaId from upload)
-    _messageRepository.sendMessage(
+    // Queue in local DB for durability
+    _messageRepository.queueMessage(
+      localId: tempId,
       conversationId: conversation.id,
-      content: attachment.fileName,
+      senderId: currentUserId,
+      senderName: _authService.currentUser?.name,
       type: attachment.mediaType.value,
-      replyToId: message.replyToMessageId,
+      content: attachment.fileName,
       mediaId: attachment.id,
-    ).then((response) {
-      if (response.isSuccessful && response.data != null) {
-        final rawData = response.data;
-        final messageData = rawData is Map && rawData.containsKey('data')
-            ? rawData['data'] as Map<String, dynamic>
-            : rawData as Map<String, dynamic>;
-        final serverMessage = MessageModel.fromJson(messageData);
-        final index = messages.indexWhere((m) => m.id == tempId);
-        if (index != -1) {
-          messages[index] = serverMessage;
-        }
-      } else {
-        _updateMessageStatus(tempId, MessageStatusType.failed);
-      }
-    }).catchError((e) {
-      LogsHelper.debugLog(tag: _tag, 'Error sending media message: $e');
-      _updateMessageStatus(tempId, MessageStatusType.failed);
-    });
+      replyToId: message.replyToMessageId,
+      replyToContent: message.replyToContent,
+      replyToSenderName: message.replyToSenderName,
+    );
+
+    // Send via socket (queued automatically if not connected yet)
+    _socketService.sendMessage(
+      conversationId: conversation.id,
+      type: attachment.mediaType.value,
+      localId: tempId,
+      content: attachment.fileName,
+      mediaId: attachment.id,
+      replyToId: message.replyToMessageId,
+    );
   }
 
   // ── Message Actions ────────────────────────────────────────────────────
 
   void deleteMessage(String messageId, {bool forEveryone = false}) {
-    _messageRepository.deleteMessage(
+    // Send delete via socket
+    _socketService.deleteMessage(
       conversationId: conversation.id,
       messageId: messageId,
-      deleteForEveryone: forEveryone,
+      forEveryone: forEveryone,
     );
 
+    // Optimistic UI update
     if (forEveryone) {
       final index = messages.indexWhere((m) => m.id == messageId);
       if (index != -1) {
@@ -286,6 +308,50 @@ class ChatDetailController extends GetxController {
     replyingTo.value = null;
   }
 
+  /// Returns (or creates) a GlobalKey for the given message ID.
+  /// Used by the view layer to tag each message widget for precise scrolling.
+  GlobalKey getKeyForMessage(String messageId) {
+    return messageKeys.putIfAbsent(messageId, () => GlobalKey());
+  }
+
+  /// Scrolls to a specific message by ID (used for reply-tap navigation).
+  /// Uses GlobalKey-based `Scrollable.ensureVisible` for precise positioning.
+  /// Returns true if the message was found and scrolled to.
+  bool scrollToMessage(String messageId) {
+    final index = messages.indexWhere((m) => m.id == messageId);
+    if (index == -1) return false;
+
+    final key = messageKeys[messageId];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.5, // Center the message in the viewport
+      );
+    } else {
+      // Fallback: if the key isn't rendered yet, use estimated offset
+      if (scrollController.hasClients) {
+        final estimatedOffset = index * 72.0;
+        scrollController.animateTo(
+          estimatedOffset,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+
+    // Briefly highlight the message
+    highlightedMessageId.value = messageId;
+    Future.delayed(const Duration(seconds: 2), () {
+      if (highlightedMessageId.value == messageId) {
+        highlightedMessageId.value = null;
+      }
+    });
+
+    return true;
+  }
+
   // ── Socket Listeners ──────────────────────────────────────────────────
 
   void _setupSocketListeners() {
@@ -297,6 +363,9 @@ class ChatDetailController extends GetxController {
 
       messages.insert(0, message);
       _scrollToBottom();
+
+      // Persist incoming message to local cache
+      _messageRepository.cacheMessage(message);
 
       // Mark as delivered and read since user is viewing this conversation
       _socketService.markAsDelivered(conversation.id, message.id);
@@ -314,30 +383,68 @@ class ChatDetailController extends GetxController {
 
       final index = messages.indexWhere((m) => m.id == localId);
       if (index != -1) {
-        messages[index] = messages[index].copyWith(
+        final confirmedMessage = messages[index].copyWith(
           id: messageId,
           status: MessageStatusType.sent,
           createdAt: createdAtStr != null
               ? DateTime.tryParse(createdAtStr)
               : null,
         );
+        messages[index] = confirmedMessage;
+
+        // Move from pending queue to messages cache
+        _messageRepository.markPendingAsSent(
+            localId, messageId, confirmedMessage);
       }
     });
 
-    // Server emits 'message:delivered:ack' with { messageId, userId, timestamp }
+    // Server emits 'message:delivered:ack' with { messageId, conversationId, userId, timestamp }
     _messageDeliveredSub =
         _socketService.onMessageDelivered.listen((data) {
+      final convId = data['conversationId'] as String?;
+      if (convId != null && convId != conversation.id) return;
       final messageId = data['messageId'] as String?;
       if (messageId == null) return;
       _updateMessageStatus(messageId, MessageStatusType.delivered);
     });
 
-    // Server emits 'message:read:ack' with { messageId, userId, timestamp }
+    // Server emits 'message:read:ack' with { messageId, conversationId, userId, timestamp }
     _messageReadSub = _socketService.onMessageRead.listen((data) {
+      final convId = data['conversationId'] as String?;
+      if (convId != null && convId != conversation.id) return;
       final messageId = data['messageId'] as String?;
       if (messageId == null) return;
-      // Update that specific message (or all own messages up to that point)
       _updateMessageStatus(messageId, MessageStatusType.read);
+    });
+
+    // Server emits 'message:deleted' with { messageId, conversationId, forEveryone }
+    _messageDeletedSub = _socketService.onMessageDeleted.listen((data) {
+      final convId = data['conversationId'] as String?;
+      if (convId != conversation.id) return;
+
+      final messageId = data['messageId'] as String?;
+      final forEveryone = data['forEveryone'] as bool? ?? false;
+      if (messageId == null) return;
+
+      if (forEveryone) {
+        final index = messages.indexWhere((m) => m.id == messageId);
+        if (index != -1) {
+          messages[index] = messages[index].copyWith(isDeleted: true);
+        }
+      }
+    });
+
+    // Server emits 'presence:update' with { userId, status, lastSeenAt }
+    _presenceSub = _socketService.onPresenceUpdate.listen((data) {
+      final userId = data['userId'] as String?;
+      final status = data['status'] as String?;
+      if (userId == null || status == null) return;
+
+      // Update presence for the other participant in 1:1 conversations
+      final other = otherParticipant;
+      if (other != null && other.id == userId) {
+        otherUserPresence.value = UserPresence.fromValue(status);
+      }
     });
 
     // Server emits 'typing:indicator' with { conversationId, userId, userName, isTyping }
@@ -392,16 +499,52 @@ class ChatDetailController extends GetxController {
   bool isMyMessage(MessageModel msg) => msg.senderId == currentUserId;
 
   void _updateMessageStatus(String messageId, MessageStatusType status) {
-    final index = messages.indexWhere((m) => m.id == messageId);
-    if (index != -1) {
-      messages[index] = messages[index].copyWith(status: status);
+    final targetIndex = messages.indexWhere((m) => m.id == messageId);
+    if (targetIndex == -1) return;
+
+    // For read/delivered receipts, update all own messages up to (and including)
+    // the target message. In a reversed list, index 0 is newest. The target
+    // message and all older own messages (higher indices) should be updated.
+    if (status == MessageStatusType.read ||
+        status == MessageStatusType.delivered) {
+      for (int i = targetIndex; i < messages.length; i++) {
+        final msg = messages[i];
+        if (msg.senderId != currentUserId) continue;
+        // Only upgrade status, never downgrade (e.g. don't go from read→delivered)
+        // Skip failed messages — they need to be resent, not upgraded
+        if (msg.status == MessageStatusType.failed) continue;
+        if (_statusRank(msg.status) >= _statusRank(status)) continue;
+        messages[i] = msg.copyWith(status: status);
+      }
+    } else {
+      messages[targetIndex] =
+          messages[targetIndex].copyWith(status: status);
+    }
+  }
+
+  /// Returns a numeric rank for status comparison. Higher = more progressed.
+  static int _statusRank(MessageStatusType status) {
+    switch (status) {
+      case MessageStatusType.sending:
+        return 0;
+      case MessageStatusType.sent:
+        return 1;
+      case MessageStatusType.delivered:
+        return 2;
+      case MessageStatusType.read:
+        return 3;
+      case MessageStatusType.failed:
+        return -1;
     }
   }
 
   void _markAllAsRead() {
-    _messageRepository.markAsRead(conversation.id);
     if (messages.isNotEmpty) {
-      _socketService.markAsRead(conversation.id, messages.first.id);
+      final latestMessageId = messages.first.id;
+      // Mark all messages as delivered first (in case some were missed while offline)
+      _socketService.markAsDelivered(conversation.id, latestMessageId);
+      // Then mark all as read since the user is viewing this conversation
+      _socketService.markAsRead(conversation.id, latestMessageId);
     }
   }
 

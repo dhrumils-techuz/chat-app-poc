@@ -33,7 +33,10 @@ class DioAuthService implements AuthRemoteService {
         ApiEndpoints.login,
         data: json.encode(params),
       ),
-      useDefaultErrorHandler: true,
+      // Login errors (wrong password, etc.) are handled by SignInController.
+      // Don't show the default error dialog — it would show "Session Expired"
+      // for 401s and conflict with the controller's own error display.
+      useDefaultErrorHandler: false,
     );
   }
 

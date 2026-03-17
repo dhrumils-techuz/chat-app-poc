@@ -29,16 +29,44 @@ export function handleMessageEvents(socket: Socket, io: Server, auth: JwtPayload
         replyToId,
       });
 
+      let replyToContent: string | null = null;
+      let replyToSenderName: string | null = null;
+
+      if (replyToId) {
+        try {
+          const replyMsg = await query(
+            `SELECT m.content, u.full_name as sender_name
+             FROM messages m JOIN users u ON u.id = m.sender_id
+             WHERE m.id = $1`,
+            [replyToId]
+          );
+          if (replyMsg.rows.length > 0) {
+            replyToContent = replyMsg.rows[0].content;
+            replyToSenderName = replyMsg.rows[0].sender_name;
+          }
+        } catch (e) {
+          // Non-critical, continue without reply details
+        }
+      }
+
       // Acknowledge to sender with server message ID
       callback({
         success: true,
         messageId: message.id,
       });
 
-      // Send confirmed message back to sender
+      // Send confirmed message back to sender (include full details so
+      // other controllers like ChatListController can update their state)
       socket.emit(SOCKET_EVENTS.MESSAGE_SENT, {
         localId,
         messageId: message.id,
+        conversationId,
+        senderName: message.sender_name,
+        type: message.type,
+        content: message.content,
+        replyToId: message.reply_to_id,
+        replyToContent,
+        replyToSenderName,
         createdAt: message.created_at.toISOString ? message.created_at.toISOString() : String(message.created_at),
       });
 
@@ -52,6 +80,8 @@ export function handleMessageEvents(socket: Socket, io: Server, auth: JwtPayload
         content: message.content,
         mediaId: message.media_id,
         replyToId: message.reply_to_id,
+        replyToContent,
+        replyToSenderName,
         createdAt: message.created_at.toISOString ? message.created_at.toISOString() : String(message.created_at),
       });
 
@@ -92,6 +122,33 @@ export function handleMessageEvents(socket: Socket, io: Server, auth: JwtPayload
         userId,
       });
       callback({ success: false, error: 'Failed to send message' });
+    }
+  });
+
+  socket.on(SOCKET_EVENTS.MESSAGE_DELETE, async (data) => {
+    try {
+      const { conversationId, messageId, forEveryone } = data;
+
+      if (!conversationId || !messageId) return;
+
+      if (forEveryone) {
+        await messageService.deleteMessage(messageId, conversationId, userId, tenantId);
+
+        // Broadcast deletion to all participants in the conversation
+        io.to(`conversation:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_DELETED, {
+          messageId,
+          conversationId,
+          forEveryone: true,
+        });
+      } else {
+        // "Delete for me" — no server-side deletion or broadcast needed.
+        // The client already removes it from local state.
+      }
+    } catch (error) {
+      logger.error('Error handling message:delete', {
+        error: error instanceof Error ? error.message : 'Unknown',
+        userId,
+      });
     }
   });
 }

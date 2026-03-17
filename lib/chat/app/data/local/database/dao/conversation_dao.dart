@@ -1,3 +1,5 @@
+import 'package:sqflite_sqlcipher/sqflite.dart';
+
 import '../../../../../core/utils/logs_helper.dart';
 import '../../../model/conversation_model.dart';
 import '../../../types/conversation_type.dart';
@@ -6,6 +8,7 @@ import '../app_database.dart';
 /// Data Access Object for conversation-related database operations.
 class ConversationDao {
   static const String _tag = 'ConversationDao';
+  static const String _table = 'conversations';
   final AppDatabase _appDatabase;
 
   ConversationDao(this._appDatabase);
@@ -16,8 +19,8 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      _conversationToMap(conversation);
-      // await db.insert('conversations', map, conflictAlgorithm: ConflictAlgorithm.replace);
+      final map = _conversationToMap(conversation);
+      await db.insert(_table, map, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Upsert conversation error: $e');
     }
@@ -29,14 +32,14 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      // await db.transaction((txn) async {
-      //   final batch = txn.batch();
-      //   for (final conversation in conversations) {
-      //     batch.insert(_table, _conversationToMap(conversation),
-      //         conflictAlgorithm: ConflictAlgorithm.replace);
-      //   }
-      //   await batch.commit(noResult: true);
-      // });
+      await db.transaction((txn) async {
+        final batch = txn.batch();
+        for (final conversation in conversations) {
+          batch.insert(_table, _conversationToMap(conversation),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+        await batch.commit(noResult: true);
+      });
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Batch upsert conversations error: $e');
     }
@@ -52,16 +55,15 @@ class ConversationDao {
     if (db == null) return [];
 
     try {
-      // String where = includeArchived ? '' : 'is_archived = 0';
-      // final maps = await db.query(
-      //   _table,
-      //   where: where.isNotEmpty ? where : null,
-      //   orderBy: 'is_pinned DESC, last_message_at DESC',
-      //   limit: limit,
-      //   offset: offset,
-      // );
-      // return maps.map((map) => _mapToConversation(map)).toList();
-      return [];
+      String where = includeArchived ? '' : 'is_archived = 0';
+      final maps = await db.query(
+        _table,
+        where: where.isNotEmpty ? where : null,
+        orderBy: 'is_pinned DESC, last_message_at DESC',
+        limit: limit,
+        offset: offset,
+      );
+      return maps.map((map) => _mapToConversation(map)).toList();
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Get conversations error: $e');
       return [];
@@ -74,13 +76,13 @@ class ConversationDao {
     if (db == null) return null;
 
     try {
-      // final maps = await db.query(
-      //   _table,
-      //   where: 'id = ?',
-      //   whereArgs: [conversationId],
-      //   limit: 1,
-      // );
-      // if (maps.isNotEmpty) return _mapToConversation(maps.first);
+      final maps = await db.query(
+        _table,
+        where: 'id = ?',
+        whereArgs: [conversationId],
+        limit: 1,
+      );
+      if (maps.isNotEmpty) return _mapToConversation(maps.first);
       return null;
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Get conversation by id error: $e');
@@ -94,12 +96,12 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      // await db.update(
-      //   _table,
-      //   {'unread_count': count},
-      //   where: 'id = ?',
-      //   whereArgs: [conversationId],
-      // );
+      await db.update(
+        _table,
+        {'unread_count': count},
+        where: 'id = ?',
+        whereArgs: [conversationId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Update unread count error: $e');
     }
@@ -116,10 +118,10 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      // await db.rawUpdate(
-      //   'UPDATE $_table SET unread_count = unread_count + 1 WHERE id = ?',
-      //   [conversationId],
-      // );
+      await db.rawUpdate(
+        'UPDATE $_table SET unread_count = unread_count + 1 WHERE id = ?',
+        [conversationId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Increment unread count error: $e');
     }
@@ -131,12 +133,12 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      // await db.update(
-      //   _table,
-      //   {'is_pinned': isPinned ? 1 : 0},
-      //   where: 'id = ?',
-      //   whereArgs: [conversationId],
-      // );
+      await db.update(
+        _table,
+        {'is_pinned': isPinned ? 1 : 0},
+        where: 'id = ?',
+        whereArgs: [conversationId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Update pin status error: $e');
     }
@@ -148,12 +150,12 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      // await db.update(
-      //   _table,
-      //   {'is_muted': isMuted ? 1 : 0},
-      //   where: 'id = ?',
-      //   whereArgs: [conversationId],
-      // );
+      await db.update(
+        _table,
+        {'is_muted': isMuted ? 1 : 0},
+        where: 'id = ?',
+        whereArgs: [conversationId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Update mute status error: $e');
     }
@@ -165,11 +167,11 @@ class ConversationDao {
     if (db == null) return;
 
     try {
-      // await db.delete(
-      //   _table,
-      //   where: 'id = ?',
-      //   whereArgs: [conversationId],
-      // );
+      await db.delete(
+        _table,
+        where: 'id = ?',
+        whereArgs: [conversationId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Delete conversation error: $e');
     }
@@ -181,14 +183,13 @@ class ConversationDao {
     if (db == null) return [];
 
     try {
-      // final maps = await db.query(
-      //   _table,
-      //   where: 'name LIKE ?',
-      //   whereArgs: ['%$query%'],
-      //   orderBy: 'last_message_at DESC',
-      // );
-      // return maps.map((map) => _mapToConversation(map)).toList();
-      return [];
+      final maps = await db.query(
+        _table,
+        where: 'name LIKE ?',
+        whereArgs: ['%$query%'],
+        orderBy: 'last_message_at DESC',
+      );
+      return maps.map((map) => _mapToConversation(map)).toList();
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Search conversations error: $e');
       return [];
@@ -212,7 +213,6 @@ class ConversationDao {
     };
   }
 
-  // ignore: unused_element
   ConversationModel _mapToConversation(Map<String, dynamic> map) {
     return ConversationModel(
       id: map['id'] as String,

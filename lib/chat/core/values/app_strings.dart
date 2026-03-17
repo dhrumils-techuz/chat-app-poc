@@ -115,6 +115,8 @@ class Keys {
   static const String Members = 'Members';
   static const String N_members = 'N_members';
   static const String Media_Links_Docs = 'Media_Links_Docs';
+  static const String Media = 'Media';
+  static const String Mute = 'Mute';
 
   // Media
   static const String Camera = 'Camera';
@@ -303,6 +305,8 @@ class ChatStringEnUS {
     Keys.Members: 'Members',
     Keys.N_members: '@count members',
     Keys.Media_Links_Docs: 'Media, Links, and Docs',
+    Keys.Media: 'Media',
+    Keys.Mute: 'Mute',
 
     // Media
     Keys.Camera: 'Camera',

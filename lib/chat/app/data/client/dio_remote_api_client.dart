@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:get/get.dart' show Get, GetNavigation;
 import 'package:get/get_state_manager/src/rx_flutter/rx_disposable.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 import '../../../core/utils/logs_helper.dart';
+import '../../../core/utils/shared_preference_helper.dart';
 import '../../../core/values/constants/server_endpoints.dart';
+import '../../routes/app_pages.dart';
 import '../repository/token_repository.dart';
 
 class DioRemoteApiClient extends GetxService {
@@ -72,6 +76,8 @@ class DioRemoteApiClient extends GetxService {
                 final retryResponse = await apiClient.fetch(error.requestOptions);
                 return handler.resolve(retryResponse);
               }
+              // newToken is null → refresh failed → session expired
+              // _refreshAccessToken already called _handleSessionExpired()
             } catch (e) {
               LogsHelper.debugLog(
                   tag: 'DioClient', 'Token refresh failed during retry: $e');
@@ -114,10 +120,16 @@ class DioRemoteApiClient extends GetxService {
     return 900; // Default 15 minutes
   }
 
+  /// Ensures the access token is valid (refreshes if expired).
+  /// Used by SocketClient before connecting with the token.
+  Future<void> ensureValidToken() async {
+    await _getValidAccessToken();
+  }
+
   bool _isAuthEndpoint(String path) {
     return path.contains('/auth/login') ||
         path.contains('/auth/register') ||
-        path.contains('/auth/refresh-token');
+        path.contains('/auth/refresh');
   }
 
   /// Returns a valid access token. If the token is expired, refreshes it.
@@ -133,8 +145,12 @@ class DioRemoteApiClient extends GetxService {
     return token;
   }
 
+  /// Whether a session expiry redirect is already in progress.
+  bool _isRedirectingToLogin = false;
+
   /// Refreshes the access token using the refresh token.
   /// Queues concurrent callers so only one refresh request is made.
+  /// If the refresh fails (expired/revoked refresh token), redirects to login.
   Future<String?> _refreshAccessToken() async {
     // If a refresh is already in progress, wait for it
     if (_refreshCompleter != null) {
@@ -147,6 +163,7 @@ class DioRemoteApiClient extends GetxService {
       final refreshToken = await _tokenRepository.getRefreshToken();
       if (refreshToken == null) {
         _refreshCompleter!.complete(null);
+        _handleSessionExpired();
         return null;
       }
 
@@ -177,18 +194,55 @@ class DioRemoteApiClient extends GetxService {
         await _tokenRepository.saveRefreshToken(newRefreshToken);
         _tokenRepository.setTokenExpiry(expiresIn);
 
+        LogsHelper.debugLog(tag: 'DioClient', 'Token refreshed successfully');
         _refreshCompleter!.complete(newAccessToken);
         return newAccessToken;
       } else {
+        LogsHelper.debugLog(
+            tag: 'DioClient',
+            'Token refresh returned status: ${response.statusCode}');
         _refreshCompleter!.complete(null);
+        _handleSessionExpired();
         return null;
       }
     } catch (e) {
       LogsHelper.debugLog(tag: 'DioClient', 'Token refresh error: $e');
       _refreshCompleter!.complete(null);
+
+      // If the refresh token request got a 401/403, the session is truly expired.
+      // Redirect to login.
+      if (e is DioException &&
+          e.response?.statusCode != null &&
+          (e.response!.statusCode == 401 || e.response!.statusCode == 403)) {
+        _handleSessionExpired();
+      }
       return null;
     } finally {
       _refreshCompleter = null;
     }
+  }
+
+  /// Clears all stored tokens/session data and redirects to the sign-in screen.
+  /// Ensures only one redirect happens even if multiple requests fail concurrently.
+  void _handleSessionExpired() {
+    if (_isRedirectingToLogin) return;
+    _isRedirectingToLogin = true;
+
+    LogsHelper.debugLog(
+        tag: 'DioClient', 'Session expired — redirecting to login');
+
+    // Use post-frame callback to ensure we're not in the middle of a build.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await _tokenRepository.clearAllTokens();
+        SharedPreferenceHelper.clear();
+        Get.offAllNamed(ChatAppRoutes.SIGN_IN);
+      } catch (e) {
+        LogsHelper.debugLog(
+            tag: 'DioClient', 'Error during session expiry redirect: $e');
+      } finally {
+        _isRedirectingToLogin = false;
+      }
+    });
   }
 }

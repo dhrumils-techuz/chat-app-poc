@@ -91,11 +91,11 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
                 Positioned(
                   right: 0,
                   bottom: 0,
-                  child: OnlineIndicator(
-                    isOnline: otherUser.presence.isOnline,
+                  child: Obx(() => OnlineIndicator(
+                    isOnline: controller.otherUserPresence.value.isOnline,
                     size: AppSizes.onlineIndicatorSize,
                     borderColor: colors.surfaceColor,
-                  ),
+                  )),
                 ),
             ],
           ),
@@ -133,10 +133,11 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
                   }
 
                   if (!controller.isGroup && otherUser != null) {
+                    final isOnline = controller.otherUserPresence.value.isOnline;
                     return Text(
-                      otherUser.presence.isOnline ? Keys.Online.tr : Keys.Offline.tr,
+                      isOnline ? Keys.Online.tr : Keys.Offline.tr,
                       style: ChatTextStyles.caption.copyWith(
-                        color: otherUser.presence.isOnline
+                        color: isOnline
                             ? colors.onlineIndicatorColor
                             : colors.textLight,
                       ),
@@ -226,12 +227,14 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
           final isMyMessage = controller.isMyMessage(message);
 
           // Date separator logic (reversed list: next index is older)
+          // Use local time for day comparison
           Widget? dateSeparator;
           if (index == controller.messages.length - 1) {
             dateSeparator = _buildDateSeparator(context, message.createdAt, colors);
           } else {
             final previousMessage = controller.messages[index + 1];
-            if (!message.createdAt.isSameDay(previousMessage.createdAt)) {
+            if (!message.createdAt.toLocal().isSameDay(
+                previousMessage.createdAt.toLocal())) {
               dateSeparator =
                   _buildDateSeparator(context, message.createdAt, colors);
             }
@@ -241,14 +244,21 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (dateSeparator != null) dateSeparator,
-              MessageBubble(
-                message: message,
-                isMyMessage: isMyMessage,
-                isGroup: controller.isGroup,
-                onReply: () => controller.setReplyTo(message),
-                onDelete: (forEveryone) =>
-                    controller.deleteMessage(message.id, forEveryone: forEveryone),
-              ),
+              Obx(() => Container(
+                key: controller.getKeyForMessage(message.id),
+                child: MessageBubble(
+                  message: message,
+                  isMyMessage: isMyMessage,
+                  isGroup: controller.isGroup,
+                  isHighlighted:
+                      controller.highlightedMessageId.value == message.id,
+                  onReply: () => controller.setReplyTo(message),
+                  onDelete: (forEveryone) =>
+                      controller.deleteMessage(message.id, forEveryone: forEveryone),
+                  onTapReply: (parentId) =>
+                      controller.scrollToMessage(parentId),
+                ),
+              )),
             ],
           );
         },
@@ -260,17 +270,18 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
 
   Widget _buildDateSeparator(
       BuildContext context, DateTime date, ChatColors colors) {
+    final local = date.toLocal();
     String label;
-    if (date.isToday) {
+    if (local.isToday) {
       label = Keys.Today.tr;
-    } else if (date.isYesterday) {
+    } else if (local.isYesterday) {
       label = Keys.Yesterday.tr;
-    } else if (date.isThisYear) {
+    } else if (local.isThisYear) {
       label =
-          '${_monthName(date.month)} ${date.day}';
+          '${_monthName(local.month)} ${local.day}';
     } else {
       label =
-          '${_monthName(date.month)} ${date.day}, ${date.year}';
+          '${_monthName(local.month)} ${local.day}, ${local.year}';
     }
 
     return Padding(

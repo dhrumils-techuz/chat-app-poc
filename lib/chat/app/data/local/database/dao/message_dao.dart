@@ -1,3 +1,5 @@
+import 'package:sqflite_sqlcipher/sqflite.dart';
+
 import '../../../../../core/utils/logs_helper.dart';
 import '../../../model/message_model.dart';
 import '../../../model/media_attachment_model.dart';
@@ -8,6 +10,7 @@ import '../app_database.dart';
 /// Data Access Object for message-related database operations.
 class MessageDao {
   static const String _tag = 'MessageDao';
+  static const String _table = 'messages';
   final AppDatabase _appDatabase;
 
   MessageDao(this._appDatabase);
@@ -18,8 +21,8 @@ class MessageDao {
     if (db == null) return;
 
     try {
-      _messageToMap(message);
-      // await db.insert('messages', map, conflictAlgorithm: ConflictAlgorithm.replace);
+      final map = _messageToMap(message);
+      await db.insert(_table, map, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Insert message error: $e');
     }
@@ -31,14 +34,14 @@ class MessageDao {
     if (db == null) return;
 
     try {
-      // await db.transaction((txn) async {
-      //   final batch = txn.batch();
-      //   for (final message in messages) {
-      //     batch.insert(_table, _messageToMap(message),
-      //         conflictAlgorithm: ConflictAlgorithm.replace);
-      //   }
-      //   await batch.commit(noResult: true);
-      // });
+      await db.transaction((txn) async {
+        final batch = txn.batch();
+        for (final message in messages) {
+          batch.insert(_table, _messageToMap(message),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+        await batch.commit(noResult: true);
+      });
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Batch insert messages error: $e');
     }
@@ -54,16 +57,15 @@ class MessageDao {
     if (db == null) return [];
 
     try {
-      // final List<Map<String, dynamic>> maps = await db.query(
-      //   _table,
-      //   where: 'conversation_id = ?',
-      //   whereArgs: [conversationId],
-      //   orderBy: 'created_at DESC',
-      //   limit: limit,
-      //   offset: offset,
-      // );
-      // return maps.map((map) => _mapToMessage(map)).toList();
-      return [];
+      final List<Map<String, dynamic>> maps = await db.query(
+        _table,
+        where: 'conversation_id = ?',
+        whereArgs: [conversationId],
+        orderBy: 'created_at DESC',
+        limit: limit,
+        offset: offset,
+      );
+      return maps.map((map) => _mapToMessage(map)).toList();
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Get messages error: $e');
       return [];
@@ -76,13 +78,13 @@ class MessageDao {
     if (db == null) return null;
 
     try {
-      // final List<Map<String, dynamic>> maps = await db.query(
-      //   _table,
-      //   where: 'id = ?',
-      //   whereArgs: [messageId],
-      //   limit: 1,
-      // );
-      // if (maps.isNotEmpty) return _mapToMessage(maps.first);
+      final List<Map<String, dynamic>> maps = await db.query(
+        _table,
+        where: 'id = ?',
+        whereArgs: [messageId],
+        limit: 1,
+      );
+      if (maps.isNotEmpty) return _mapToMessage(maps.first);
       return null;
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Get message by id error: $e');
@@ -99,12 +101,12 @@ class MessageDao {
     if (db == null) return;
 
     try {
-      // await db.update(
-      //   _table,
-      //   {'status': status.value, 'updated_at': DateTime.now().toIso8601String()},
-      //   where: 'id = ?',
-      //   whereArgs: [messageId],
-      // );
+      await db.update(
+        _table,
+        {'status': status.value, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [messageId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Update message status error: $e');
     }
@@ -116,16 +118,16 @@ class MessageDao {
     if (db == null) return;
 
     try {
-      // await db.update(
-      //   _table,
-      //   {
-      //     'is_deleted': 1,
-      //     'content': null,
-      //     'updated_at': DateTime.now().toIso8601String(),
-      //   },
-      //   where: 'id = ?',
-      //   whereArgs: [messageId],
-      // );
+      await db.update(
+        _table,
+        {
+          'is_deleted': 1,
+          'content': null,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [messageId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Mark as deleted error: $e');
     }
@@ -137,11 +139,11 @@ class MessageDao {
     if (db == null) return;
 
     try {
-      // await db.delete(
-      //   _table,
-      //   where: 'conversation_id = ?',
-      //   whereArgs: [conversationId],
-      // );
+      await db.delete(
+        _table,
+        where: 'conversation_id = ?',
+        whereArgs: [conversationId],
+      );
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Delete messages error: $e');
     }
@@ -157,21 +159,20 @@ class MessageDao {
     if (db == null) return [];
 
     try {
-      // String where = 'content LIKE ? AND is_deleted = 0';
-      // List<dynamic> whereArgs = ['%$query%'];
-      // if (conversationId != null) {
-      //   where += ' AND conversation_id = ?';
-      //   whereArgs.add(conversationId);
-      // }
-      // final maps = await db.query(
-      //   _table,
-      //   where: where,
-      //   whereArgs: whereArgs,
-      //   orderBy: 'created_at DESC',
-      //   limit: limit,
-      // );
-      // return maps.map((map) => _mapToMessage(map)).toList();
-      return [];
+      String where = 'content LIKE ? AND is_deleted = 0';
+      List<dynamic> whereArgs = ['%$query%'];
+      if (conversationId != null) {
+        where += ' AND conversation_id = ?';
+        whereArgs.add(conversationId);
+      }
+      final maps = await db.query(
+        _table,
+        where: where,
+        whereArgs: whereArgs,
+        orderBy: 'created_at DESC',
+        limit: limit,
+      );
+      return maps.map((map) => _mapToMessage(map)).toList();
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Search messages error: $e');
       return [];
@@ -210,7 +211,6 @@ class MessageDao {
     };
   }
 
-  // ignore: unused_element
   MessageModel _mapToMessage(Map<String, dynamic> map) {
     MediaAttachmentModel? attachment;
     if (map['attachment_id'] != null) {

@@ -1,15 +1,12 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart' as get_x;
-import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get.dart' hide Response;
 
-import '../../app/routes/app_pages.dart';
 import '../theme/color.dart';
 import '../data/api_response_model.dart';
 import '../data/data_state.dart';
 import '../utils/dialog_helper.dart';
 import '../utils/logs_helper.dart';
 import '../utils/network_helper.dart';
-import '../utils/shared_preference_helper.dart';
 import '../values/app_strings.dart';
 import '../values/constants/app_constants.dart';
 import 'response_extensions.dart';
@@ -47,12 +44,16 @@ extension DioExtensions on Dio {
 
     if (!hasNetwork) {
       if (useDefaultErrorHandler) {
-        Get.snackbar(
-          Keys.You_are_Offline.tr,
-          Keys.Please_connect_to_internet.tr,
-          colorText: AppColor.white,
-          backgroundColor: AppColor.primary,
-        );
+        try {
+          Get.snackbar(
+            Keys.You_are_Offline.tr,
+            Keys.Please_connect_to_internet.tr,
+            colorText: AppColor.white,
+            backgroundColor: AppColor.primary,
+          );
+        } catch (_) {
+          // Overlay not yet available — ignore
+        }
       }
       return DataFailed(error: Keys.Please_connect_to_internet.tr);
     }
@@ -103,12 +104,25 @@ extension DioExtensions on Dio {
             detailedError += "\n\n";
             detailedError += "Response: ${result?.data}";
           }
-          if (result?.data is Map &&
-              result?.data['message'] != null &&
-              statusCode != 500) {
-            errorMessage = result?.data['message'] ?? "";
+          if (result?.data is Map && statusCode != 500) {
+            // Server may return error details in 'message' or 'error' field
+            final msg = result?.data['message'] ?? result?.data['error'];
+            if (msg != null) {
+              errorMessage = msg;
+            } else if (statusCode == 401) {
+              // Only show "Session Expired" for non-auth endpoints
+              final path = dioException.requestOptions.path;
+              if (!path.contains('/auth/')) {
+                errorMessage = Keys.Session_Expired.tr;
+              }
+            } else {
+              errorMessage += "\nError Code = $statusCode";
+            }
           } else if (statusCode == 401) {
-            errorMessage = Keys.Session_Expired.tr;
+            final path = dioException.requestOptions.path;
+            if (!path.contains('/auth/')) {
+              errorMessage = Keys.Session_Expired.tr;
+            }
           } else {
             errorMessage += "\nError Code = $statusCode";
           }
@@ -126,20 +140,17 @@ extension DioExtensions on Dio {
     }
 
     if (useDefaultErrorHandler) {
-      Function()? onSessionExpire;
-      if (statusCode == 401 || statusCode == 403) {
-        onSessionExpire = () {
-          try {
-            SharedPreferenceHelper.clear();
-            get_x.Get.offAllNamed(ChatAppRoutes.SIGN_IN);
-          } catch (_) {}
-        };
+      // Session expiry redirect (401/403) is now handled centrally by
+      // DioRemoteApiClient's interceptor + _handleSessionExpired().
+      // Here we only show the error message to the user.
+      try {
+        DialogHelper.showSimpleMessage(
+          Keys.Message.tr,
+          customErrorMessage ?? errorMessage,
+        );
+      } catch (_) {
+        // Overlay not yet available — ignore
       }
-      DialogHelper.showSimpleMessage(
-        Keys.Message.tr,
-        customErrorMessage ?? errorMessage,
-        onTap: onSessionExpire,
-      );
     }
 
     return DataFailed(error: errorMessage);

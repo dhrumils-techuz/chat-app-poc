@@ -244,22 +244,23 @@ class ChatListItem extends StatelessWidget {
   // ── Helpers ───────────────────────────────────────────────────────────
 
   String _formatTimestamp(DateTime time) {
-    if (time.isToday) {
-      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final local = time.toLocal();
+    if (local.isToday) {
+      return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
     }
 
-    if (time.isYesterday) {
+    if (local.isYesterday) {
       return Keys.Yesterday.tr;
     }
 
-    if (time.isThisWeek) {
+    if (local.isThisWeek) {
       final days = [Keys.Mon.tr, Keys.Tue.tr, Keys.Wed.tr, Keys.Thu.tr, Keys.Fri.tr, Keys.Sat.tr, Keys.Sun.tr];
-      return days[time.weekday - 1];
+      return days[local.weekday - 1];
     }
 
-    final month = time.month.toString().padLeft(2, '0');
-    final day = time.day.toString().padLeft(2, '0');
-    final year = (time.year % 100).toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final year = (local.year % 100).toString().padLeft(2, '0');
     return '$month/$day/$year';
   }
 

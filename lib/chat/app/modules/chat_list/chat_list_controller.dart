@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:get/get.dart';
 
 import '../../../core/data/api_response_model.dart';
-import '../../../core/data/paginated_response.dart';
 import '../../../core/utils/logs_helper.dart';
 import '../../../core/utils/screen_util.dart';
 import '../../data/auth/jwt_auth_service.dart';
@@ -14,6 +13,8 @@ import '../../data/model/user_model.dart';
 import '../../data/repository/chat_repository.dart';
 import '../../data/repository/folder_repository.dart';
 import '../../data/service/socket/socket_service.dart';
+import '../../data/types/message_status_type.dart';
+import '../../data/types/message_type.dart';
 import '../../data/types/user_presence.dart';
 import '../../routes/app_pages.dart';
 
@@ -45,6 +46,7 @@ class ChatListController extends GetxController {
 
   // Stream subscriptions
   StreamSubscription<MessageModel>? _newMessageSub;
+  StreamSubscription<Map<String, dynamic>>? _messageSentSub;
   StreamSubscription<Map<String, dynamic>>? _presenceSub;
   StreamSubscription<Map<String, dynamic>>? _conversationUpdatedSub;
 
@@ -68,6 +70,7 @@ class ChatListController extends GetxController {
   @override
   void onClose() {
     _newMessageSub?.cancel();
+    _messageSentSub?.cancel();
     _presenceSub?.cancel();
     _conversationUpdatedSub?.cancel();
     super.onClose();
@@ -78,17 +81,28 @@ class ChatListController extends GetxController {
   Future<void> loadConversations() async {
     try {
       isLoading.value = true;
-      final ApiResponseModel response =
-          await _chatRepository.getConversations();
 
-      if (response.isSuccessful && response.data != null) {
-        final paginated = PaginatedResponse<ConversationModel>.fromJson(
-          response.data as Map<String, dynamic>,
-          (json) => ConversationModel.fromJson(json),
-        );
-        conversations.value = paginated.items;
+      // 1. Show cached conversations immediately
+      final cached = await _chatRepository.getCachedConversations();
+      if (cached.isNotEmpty) {
+        conversations.value = cached;
         _sortConversations();
+        isLoading.value = false;
       }
+
+      // 2. Refresh from remote in background
+      try {
+        final fresh = await _chatRepository.refreshConversations();
+        conversations.value = fresh;
+        _sortConversations();
+      } catch (e) {
+        // Offline or error — cached data already displayed
+        LogsHelper.debugLog(
+            tag: _tag, 'Remote refresh failed (using cache): $e');
+      }
+
+      // 3. Join all conversation rooms so we receive real-time updates
+      _joinAllConversationRooms();
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Error loading conversations: $e');
     } finally {
@@ -150,10 +164,21 @@ class ChatListController extends GetxController {
 
   void _setupSocketListeners() {
     _newMessageSub = _socketService.onNewMessage.listen(_handleNewMessage);
+    _messageSentSub = _socketService.onMessageSent.listen(_handleMessageSent);
     _presenceSub =
         _socketService.onPresenceUpdate.listen(_handlePresenceUpdate);
     _conversationUpdatedSub =
         _socketService.onConversationUpdated.listen(_handleConversationUpdated);
+  }
+
+  /// Joins socket rooms for all loaded conversations so we receive
+  /// real-time `message:new` events from the server.
+  void _joinAllConversationRooms() {
+    if (conversations.isEmpty) return;
+    final ids = conversations.map((c) => c.id).toList();
+    _socketService.joinConversations(ids);
+    LogsHelper.debugLog(
+        tag: _tag, 'Joined ${ids.length} conversation rooms');
   }
 
   void _handleNewMessage(MessageModel message) {
@@ -173,6 +198,47 @@ class ChatListController extends GetxController {
     } else {
       // New conversation from an unknown contact; reload
       loadConversations();
+    }
+  }
+
+  /// Handles `message:sent` ack — updates the conversation tile for messages
+  /// sent by the current user. Server now sends full message details:
+  /// { localId, messageId, conversationId, senderName, type, content,
+  ///   replyToId, replyToContent, replyToSenderName, createdAt }
+  void _handleMessageSent(Map<String, dynamic> data) {
+    final messageId = data['messageId'] as String?;
+    final conversationId = data['conversationId'] as String?;
+    final createdAtStr = data['createdAt'] as String?;
+    if (messageId == null || conversationId == null) return;
+
+    final createdAt = createdAtStr != null
+        ? DateTime.tryParse(createdAtStr)
+        : DateTime.now();
+
+    // Build a MessageModel from the ack data to use as lastMessage
+    final sentMessage = MessageModel(
+      id: messageId,
+      conversationId: conversationId,
+      senderId: currentUserId,
+      senderName: data['senderName'] as String?,
+      type: MessageType.fromValue(
+          (data['type'] as String?) ?? 'text'),
+      content: data['content'] as String?,
+      status: MessageStatusType.sent,
+      replyToMessageId: data['replyToId'] as String?,
+      replyToContent: data['replyToContent'] as String?,
+      replyToSenderName: data['replyToSenderName'] as String?,
+      createdAt: createdAt ?? DateTime.now(),
+    );
+
+    final index =
+        conversations.indexWhere((c) => c.id == conversationId);
+    if (index != -1) {
+      conversations[index] = conversations[index].copyWith(
+        lastMessage: sentMessage,
+        lastMessageAt: sentMessage.createdAt,
+      );
+      _sortConversations();
     }
   }
 
