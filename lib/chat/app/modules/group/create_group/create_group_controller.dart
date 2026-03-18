@@ -10,6 +10,7 @@ import '../../../data/model/conversation_model.dart';
 import '../../../data/model/user_model.dart';
 import '../../../data/repository/chat_repository.dart';
 import '../../../routes/app_pages.dart';
+import '../../chat_list/chat_list_controller.dart';
 
 class CreateGroupController extends GetxController {
   static const String _tag = 'CreateGroupController';
@@ -28,13 +29,23 @@ class CreateGroupController extends GetxController {
   final isLoading = false.obs;
   final isCreating = false.obs;
   final searchQuery = ''.obs;
+  final groupName = ''.obs;
 
   // Debounce timer for search
   Timer? _debounceTimer;
 
   bool get isValid =>
-      groupNameController.text.trim().isNotEmpty &&
+      groupName.value.trim().isNotEmpty &&
       selectedMembers.length >= 2;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Sync TextEditingController with reactive groupName so Obx can track it
+    groupNameController.addListener(() {
+      groupName.value = groupNameController.text;
+    });
+  }
 
   @override
   void onClose() {
@@ -127,11 +138,19 @@ class CreateGroupController extends GetxController {
         final convData = rawData is Map && rawData.containsKey('data')
             ? rawData['data'] as Map<String, dynamic>
             : rawData as Map<String, dynamic>;
-        final conversation = ConversationModel.fromJson(convData);
-        Get.toNamed(
-          ChatAppRoutes.CHAT_DETAIL,
-          arguments: conversation,
-        );
+        // Go back to chat list — the new group will appear via socket update.
+        // The server emits 'conversation:new' to all participants including
+        // the creator's other screens; the creator's own list is refreshed here.
+        if (Get.isRegistered<ChatListController>()) {
+          final listCtrl = Get.find<ChatListController>();
+          final conversation = ConversationModel.fromJson(convData);
+          if (!listCtrl.conversations.any((c) => c.id == conversation.id)) {
+            listCtrl.conversations.add(conversation);
+            listCtrl.refreshConversations();
+          }
+        }
+        Get.until((route) =>
+            route.settings.name == ChatAppRoutes.CHAT_LIST);
       } else {
         DialogHelper.showSnackBar(
           'Error',

@@ -5,6 +5,14 @@ import Redis from 'ioredis';
 import { env } from './env';
 import { logger } from '../utils/logger';
 
+let _io: Server | null = null;
+
+/** Returns the Socket.IO server instance. Must be called after createSocketServer. */
+export function getIO(): Server {
+  if (!_io) throw new Error('Socket.IO not initialized');
+  return _io;
+}
+
 export function createSocketServer(httpServer: HttpServer): Server {
   const origins = env.CORS_ALLOWED_ORIGINS.split(',').map((o) => o.trim());
   const isDevelopment = env.NODE_ENV === 'development';
@@ -31,6 +39,7 @@ export function createSocketServer(httpServer: HttpServer): Server {
   };
 
   const io = new Server(httpServer, opts);
+  _io = io;
 
   const pubClient = new Redis(env.REDIS_URL);
   const subClient = pubClient.duplicate();

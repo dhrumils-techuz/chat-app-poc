@@ -104,7 +104,12 @@ class SocketService extends GetxService {
       _presenceController.add(data as Map<String, dynamic>);
     });
 
-    // ── Unread count updates ─────────────────────────────────────────
+    // ── Conversation updates ────────────────────────────────────────
+    // Server emits 'conversation:new' when the user is added to a new conversation
+    _socketClient.on(SocketEvents.conversationNew, (data) {
+      _conversationUpdatedController.add(data as Map<String, dynamic>);
+    });
+
     // Server emits 'conversation:unread:update' back to the reader after
     // marking messages as read, with { conversationId, unreadCount }
     _socketClient.on(SocketEvents.conversationUnreadUpdate, (data) {

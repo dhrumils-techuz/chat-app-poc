@@ -32,9 +32,9 @@ class ChatDetailViewDesktop extends StatelessWidget {
 
     final colors = ChatColors.getInstance(context);
 
-    return SafeArea(
-      child: Container(
-        color: colors.backgroundColor,
+    return Scaffold(
+      backgroundColor: colors.backgroundColor,
+      body: SafeArea(
         child: Column(
           children: [
             // ── Header Bar ──────────────────────────────────────────────

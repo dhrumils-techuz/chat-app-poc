@@ -19,18 +19,21 @@ class MessageInputBar extends GetView<ChatDetailController> {
     final colors = ChatColors.getInstance(context);
     final isMobile = ScreenUtil.isMobileWidth(ScreenUtil.width(context));
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfaceColor,
-        boxShadow: [
-          BoxShadow(
-            color: colors.shadowColor,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
+    return Material(
+      color: colors.surfaceColor,
+      elevation: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surfaceColor,
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadowColor,
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -138,6 +141,7 @@ class MessageInputBar extends GetView<ChatDetailController> {
           ],
         ),
       ),
+    ),
     );
   }
 }

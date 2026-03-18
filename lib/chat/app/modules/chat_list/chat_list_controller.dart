@@ -341,7 +341,22 @@ class ChatListController extends GetxController {
   }
 
   void _handleConversationUpdated(Map<String, dynamic> data) {
-    // Reload to get the latest state
+    // If the event contains a full conversation object (e.g. conversation:new),
+    // add it directly if not already present, then join its room.
+    if (data.containsKey('id') && data.containsKey('type')) {
+      try {
+        final conv = ConversationModel.fromJson(data);
+        final exists = conversations.any((c) => c.id == conv.id);
+        if (!exists) {
+          conversations.add(conv);
+          _sortConversations();
+          _socketService.joinConversation(conv.id);
+        }
+        return;
+      } catch (_) {
+        // Fallback to full reload
+      }
+    }
     loadConversations();
   }
 
@@ -454,9 +469,14 @@ class ChatListController extends GetxController {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
 
-      // Then by last message time (most recent first)
-      final aTime = a.lastMessageAt ?? a.createdAt ?? DateTime(2000);
-      final bTime = b.lastMessageAt ?? b.createdAt ?? DateTime(2000);
+      // Sort by most recent activity: lastMessageAt > updatedAt > createdAt.
+      final aTime = a.lastMessageAt ?? a.updatedAt ?? a.createdAt;
+      final bTime = b.lastMessageAt ?? b.updatedAt ?? b.createdAt;
+
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+
       return bTime.compareTo(aTime);
     });
   }

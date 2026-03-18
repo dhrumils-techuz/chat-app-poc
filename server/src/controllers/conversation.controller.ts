@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { conversationService } from '../services/conversation.service';
 import { ConversationMsg, ErrorCode } from '../constants/messages';
+import { getIO } from '../config/socket';
+import { redis, CACHE_KEYS } from '../config/redis';
 import {
   createConversationSchema,
   updateConversationSchema,
@@ -24,6 +26,33 @@ export class ConversationController {
         success: true,
         data: conversation,
       });
+
+      // Notify all OTHER participants via socket so their chat list updates.
+      // Also make their sockets join the new conversation room.
+      try {
+        const io = getIO();
+        const participants = conversation.participants || [];
+        for (const participant of participants) {
+          const uid = participant.userId || (participant as any).id;
+          if (!uid || uid === auth.userId) continue;
+
+          // Find this user's connected sockets
+          const presenceData = await redis.get(CACHE_KEYS.userPresence(uid));
+          if (!presenceData) continue;
+          const parsed = JSON.parse(presenceData);
+          if (!parsed.socketId) continue;
+
+          const targetSocket = io.sockets.sockets.get(parsed.socketId);
+          if (targetSocket) {
+            // Join the new conversation room
+            targetSocket.join(`conversation:${conversation.id}`);
+            // Emit the new conversation data
+            targetSocket.emit('conversation:new', conversation);
+          }
+        }
+      } catch (socketErr) {
+        // Non-critical — the conversation was created successfully
+      }
     } catch (error) {
       next(error);
     }

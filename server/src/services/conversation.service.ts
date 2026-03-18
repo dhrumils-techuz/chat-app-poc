@@ -184,12 +184,17 @@ class ConversationService {
       [tenantId, userId]
     );
 
-    const convResult = await query<Conversation & { unread_count: number }>(
-      `SELECT c.*, cp.unread_count
+    const convResult = await query<Conversation & { unread_count: number; last_message_at: Date | null }>(
+      `SELECT c.*, cp.unread_count,
+              (SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = c.id AND m.is_deleted = false) AS last_message_at
        FROM conversations c
        JOIN conversation_participants cp ON cp.conversation_id = c.id
        WHERE c.tenant_id = $1 AND cp.user_id = $2 AND cp.left_at IS NULL AND c.is_active = true
-       ORDER BY c.updated_at DESC
+       ORDER BY COALESCE(
+         (SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = c.id AND m.is_deleted = false),
+         c.updated_at,
+         c.created_at
+       ) DESC
        LIMIT $3 OFFSET $4`,
       [tenantId, userId, params.limit, params.offset]
     );
@@ -230,6 +235,7 @@ class ConversationService {
         participants: participants.rows,
         lastMessage: lastMessage.rows[0] || null,
         unreadCount: conv.unread_count,
+        lastMessageAt: conv.last_message_at || (lastMessage.rows[0]?.createdAt ?? null),
       });
     }
 
