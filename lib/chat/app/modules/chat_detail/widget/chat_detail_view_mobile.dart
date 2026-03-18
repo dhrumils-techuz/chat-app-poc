@@ -13,6 +13,7 @@ import '../../../widgets/online_indicator.dart';
 import '../chat_detail_controller.dart';
 import 'message_bubble.dart';
 import 'message_input_bar.dart';
+import 'message_search_overlay.dart';
 import 'typing_indicator_widget.dart';
 
 class ChatDetailViewMobile extends GetView<ChatDetailController> {
@@ -25,42 +26,50 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
     return Scaffold(
       backgroundColor: colors.backgroundColor,
       appBar: _buildAppBar(context, colors),
-      body: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                _buildMessageList(context, colors),
-                // Scroll-to-bottom FAB
-                Positioned(
-                  right: 16,
-                  bottom: 8,
-                  child: Obx(() => controller.showScrollToBottom.value
-                      ? FloatingActionButton.small(
-                          onPressed: controller.scrollToBottom,
-                          backgroundColor: colors.surfaceColor,
-                          elevation: 3,
-                          child: Icon(
-                            Icons.keyboard_arrow_down,
-                            color: colors.primaryColor,
-                          ),
-                        )
-                      : const SizedBox.shrink()),
-                ),
-              ],
+      body: Obx(() {
+        // Show search overlay when active
+        if (controller.isSearching.value) {
+          return const MessageSearchOverlay();
+        }
+
+        return Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  _buildMessageList(context, colors),
+                  // Scroll-to-bottom FAB
+                  Positioned(
+                    right: 16,
+                    bottom: 8,
+                    child: Obx(() => controller.showScrollToBottom.value ||
+                            controller.isViewingOldMessages.value
+                        ? FloatingActionButton.small(
+                            onPressed: controller.scrollToBottom,
+                            backgroundColor: colors.surfaceColor,
+                            elevation: 3,
+                            child: Icon(
+                              Icons.keyboard_arrow_down,
+                              color: colors.primaryColor,
+                            ),
+                          )
+                        : const SizedBox.shrink()),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Obx(() {
-            if (controller.typingUsers.isNotEmpty) {
-              return TypingIndicatorWidget(
-                typingUsers: controller.typingUsers,
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          const MessageInputBar(),
-        ],
-      ),
+            Obx(() {
+              if (controller.typingUsers.isNotEmpty) {
+                return TypingIndicatorWidget(
+                  typingUsers: controller.typingUsers,
+                );
+              }
+              return const SizedBox.shrink();
+            }),
+            const MessageInputBar(),
+          ],
+        );
+      }),
     );
   }
 
@@ -186,6 +195,9 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
           ),
           onSelected: (value) {
             switch (value) {
+              case 'search':
+                controller.toggleSearch();
+                break;
               case 'group_info':
                 Get.toNamed(ChatAppRoutes.GROUP_INFO,
                     arguments: controller.conversation);

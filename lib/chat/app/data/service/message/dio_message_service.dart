@@ -97,4 +97,34 @@ class DioMessageService implements MessageRemoteService {
       useDefaultErrorHandler: false,
     );
   }
+
+  @override
+  Future<ApiResponseModel> searchMessages({
+    required String conversationId,
+    required String query,
+    int limit = 20,
+  }) async {
+    return await _dioClient.apiClient.safeApiCall(
+      request: () => _dioClient.apiClient.get(
+        ApiEndpoints.searchMessages(conversationId),
+        queryParameters: {'q': query, 'limit': limit},
+      ),
+      useDefaultErrorHandler: false,
+    );
+  }
+
+  @override
+  Future<ApiResponseModel> getMessagesAround({
+    required String conversationId,
+    required String messageId,
+    int limit = 50,
+  }) async {
+    return await _dioClient.apiClient.safeApiCall(
+      request: () => _dioClient.apiClient.get(
+        ApiEndpoints.messagesAround(conversationId, messageId),
+        queryParameters: {'limit': limit},
+      ),
+      useDefaultErrorHandler: false,
+    );
+  }
 }

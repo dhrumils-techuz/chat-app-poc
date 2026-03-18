@@ -30,4 +30,16 @@ abstract class MessageRemoteService {
     required String conversationId,
     required String messageId,
   });
+
+  Future<ApiResponseModel> searchMessages({
+    required String conversationId,
+    required String query,
+    int limit = 20,
+  });
+
+  Future<ApiResponseModel> getMessagesAround({
+    required String conversationId,
+    required String messageId,
+    int limit = 50,
+  });
 }

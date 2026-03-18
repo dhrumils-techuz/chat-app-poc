@@ -169,4 +169,28 @@ class MessageRepository {
       messageId: messageId,
     );
   }
+
+  Future<ApiResponseModel> searchMessages({
+    required String conversationId,
+    required String query,
+    int limit = 20,
+  }) {
+    return _messageService.searchMessages(
+      conversationId: conversationId,
+      query: query,
+      limit: limit,
+    );
+  }
+
+  Future<ApiResponseModel> getMessagesAround({
+    required String conversationId,
+    required String messageId,
+    int limit = 50,
+  }) {
+    return _messageService.getMessagesAround(
+      conversationId: conversationId,
+      messageId: messageId,
+      limit: limit,
+    );
+  }
 }

@@ -335,6 +335,109 @@ class MessageService {
       [messageId]
     );
   }
+  /**
+   * Searches messages in a conversation by content (case-insensitive).
+   * Returns lightweight results for the search overlay.
+   */
+  async searchMessages(
+    conversationId: string,
+    userId: string,
+    searchQuery: string,
+    limit: number = 20
+  ): Promise<{ id: string; content: string; senderName: string; createdAt: string; type: string }[]> {
+    const isParticipant = await conversationService.isParticipant(conversationId, userId);
+    if (!isParticipant) {
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
+    }
+
+    const result = await query<{ id: string; content: string; senderName: string; createdAt: string; type: string }>(
+      `SELECT m.id, m.content, m.type, m.created_at AS "createdAt", u.full_name AS "senderName"
+       FROM messages m
+       JOIN users u ON u.id = m.sender_id
+       WHERE m.conversation_id = $1 AND m.is_deleted = false
+         AND m.content ILIKE '%' || $2 || '%'
+         AND NOT EXISTS (
+           SELECT 1 FROM message_status ms
+           WHERE ms.message_id = m.id AND ms.user_id = $3 AND ms.status = 'deleted'
+         )
+       ORDER BY m.created_at DESC
+       LIMIT $4`,
+      [conversationId, searchQuery, userId, limit]
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Returns messages surrounding a target message (for jump-to-message).
+   * Fetches limit/2 newer and limit/2 older messages around the target.
+   */
+  async getMessagesAround(
+    conversationId: string,
+    userId: string,
+    targetMessageId: string,
+    tenantId: string,
+    limit: number = 50
+  ): Promise<{ data: MessageWithSender[]; targetIndex: number; hasNewer: boolean; hasOlder: boolean }> {
+    const isParticipant = await conversationService.isParticipant(conversationId, userId);
+    if (!isParticipant) {
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
+    }
+
+    // Get the target message's created_at
+    const targetResult = await query<{ created_at: Date }>(
+      'SELECT created_at FROM messages WHERE id = $1 AND conversation_id = $2',
+      [targetMessageId, conversationId]
+    );
+    if (targetResult.rows.length === 0) {
+      throw AppError.notFound(MessageMsg.NOT_FOUND);
+    }
+    const targetCreatedAt = targetResult.rows[0].created_at;
+    const half = Math.floor(limit / 2);
+
+    const deletedFilter = `AND NOT EXISTS (
+      SELECT 1 FROM message_status ms
+      WHERE ms.message_id = m.id AND ms.user_id = $3 AND ms.status = 'deleted'
+    )`;
+
+    const selectFields = `m.*, u.full_name as sender_name, u.avatar_url as sender_avatar_url,
+      rm.content as reply_to_content, ru.full_name as reply_to_sender_name`;
+    const joins = `JOIN users u ON u.id = m.sender_id
+      LEFT JOIN messages rm ON rm.id = m.reply_to_id
+      LEFT JOIN users ru ON ru.id = rm.sender_id`;
+
+    // Newer messages (created_at > target, sorted ASC, take half)
+    const newerResult = await query<MessageWithSender>(
+      `SELECT ${selectFields} FROM messages m ${joins}
+       WHERE m.conversation_id = $1 AND m.is_deleted = false
+         AND m.created_at > $2 ${deletedFilter}
+       ORDER BY m.created_at ASC LIMIT $4`,
+      [conversationId, targetCreatedAt, userId, half]
+    );
+
+    // Target + older messages (created_at <= target, sorted DESC, take half+1)
+    const olderResult = await query<MessageWithSender>(
+      `SELECT ${selectFields} FROM messages m ${joins}
+       WHERE m.conversation_id = $1 AND m.is_deleted = false
+         AND m.created_at <= $2 ${deletedFilter}
+       ORDER BY m.created_at DESC LIMIT $4`,
+      [conversationId, targetCreatedAt, userId, half + 1]
+    );
+
+    // Check if there are more messages beyond what we fetched
+    const hasNewer = newerResult.rows.length === half;
+    const hasOlder = olderResult.rows.length === half + 1;
+
+    // Combine: newer (reversed to DESC) + older — all sorted newest-first
+    const newer = [...newerResult.rows].reverse();
+    const older = olderResult.rows;
+    const combined = [...newer, ...older];
+
+    // The target message is at index = newer.length (first item in older)
+    const targetIndex = newer.length;
+
+    return { data: combined, targetIndex, hasNewer, hasOlder };
+  }
 }
 
 export const messageService = new MessageService();

@@ -13,6 +13,7 @@ import '../../../widgets/online_indicator.dart';
 import '../chat_detail_controller.dart';
 import 'message_bubble.dart';
 import 'message_input_bar.dart';
+import 'message_search_overlay.dart';
 import 'typing_indicator_widget.dart';
 
 class ChatDetailViewDesktop extends StatelessWidget {
@@ -36,57 +37,61 @@ class ChatDetailViewDesktop extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.backgroundColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header Bar ──────────────────────────────────────────────
-            _buildHeaderBar(context, colors, controller),
+        child: Obx(() {
+          // Show search overlay when active
+          if (controller.isSearching.value) {
+            return Column(
+              children: [
+                _buildHeaderBar(context, colors, controller),
+                const Expanded(child: MessageSearchOverlay()),
+              ],
+            );
+          }
 
-            // ── Body: Messages + Input ─────────────────────────────────
-            Expanded(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        _buildMessageList(context, colors, controller),
-                        // Scroll-to-bottom FAB
-                        Positioned(
-                          right: 16,
-                          bottom: 8,
-                          child: Obx(() => controller.showScrollToBottom.value
-                              ? FloatingActionButton.small(
-                                  onPressed: controller.scrollToBottom,
-                                  backgroundColor: colors.surfaceColor,
-                                  elevation: 3,
-                                  child: Icon(
-                                    Icons.keyboard_arrow_down,
-                                    color: colors.primaryColor,
-                                  ),
-                                )
-                              : const SizedBox.shrink()),
-                        ),
-                      ],
+          return Column(
+            children: [
+              _buildHeaderBar(context, colors, controller),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          _buildMessageList(context, colors, controller),
+                          Positioned(
+                            right: 16,
+                            bottom: 8,
+                            child: Obx(() =>
+                                controller.showScrollToBottom.value ||
+                                        controller.isViewingOldMessages.value
+                                    ? FloatingActionButton.small(
+                                        onPressed: controller.scrollToBottom,
+                                        backgroundColor: colors.surfaceColor,
+                                        elevation: 3,
+                                        child: Icon(
+                                          Icons.keyboard_arrow_down,
+                                          color: colors.primaryColor,
+                                        ),
+                                      )
+                                    : const SizedBox.shrink()),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-
-                  // Typing indicator
-                  Obx(() {
-                    if (!Get.isRegistered<ChatDetailController>()) {
-                      return const SizedBox.shrink();
-                    }
-                    final users = controller.typingUsers.toList();
-                    return TypingIndicatorWidget(
-                      typingUsers: users,
-                    );
-                  }),
-
-                  // Message input bar
-                  const MessageInputBar(),
-                ],
+                    Obx(() {
+                      if (!Get.isRegistered<ChatDetailController>()) {
+                        return const SizedBox.shrink();
+                      }
+                      final users = controller.typingUsers.toList();
+                      return TypingIndicatorWidget(typingUsers: users);
+                    }),
+                    const MessageInputBar(),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -224,9 +229,7 @@ class ChatDetailViewDesktop extends StatelessWidget {
           _HeaderIconButton(
             icon: Icons.search,
             color: colors.iconColor,
-            onTap: () {
-              // Search placeholder
-            },
+            onTap: controller.toggleSearch,
           ),
           _HeaderIconButton(
             icon: Icons.videocam_outlined,
@@ -243,6 +246,9 @@ class ChatDetailViewDesktop extends StatelessWidget {
             ),
             onSelected: (value) {
               switch (value) {
+                case 'search':
+                  controller.toggleSearch();
+                  break;
                 case 'group_info':
                   Get.toNamed(ChatAppRoutes.GROUP_INFO,
                       arguments: controller.conversation);

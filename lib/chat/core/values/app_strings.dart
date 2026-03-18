@@ -169,6 +169,11 @@ class Keys {
   static const String Delete_message_confirm = 'Delete_message_confirm';
   static const String Delete_for_everyone_confirm = 'Delete_for_everyone_confirm';
 
+  // Search
+  static const String Search_messages = 'Search_messages';
+  static const String Search_in_chat = 'Search_in_chat';
+  static const String No_messages_found = 'No_messages_found';
+
   // Empty states
   static const String No_results_found = 'No_results_found';
   static const String Something_went_wrong = 'Something_went_wrong';
@@ -367,6 +372,11 @@ class ChatStringEnUS {
     Keys.Logout_confirm: 'Are you sure you want to logout?',
     Keys.Delete_message_confirm: 'Are you sure you want to delete this message for yourself?',
     Keys.Delete_for_everyone_confirm: 'Are you sure you want to delete this message for everyone?',
+
+    // Search
+    Keys.Search_messages: 'Search messages',
+    Keys.Search_in_chat: 'Search in chat...',
+    Keys.No_messages_found: 'No messages found',
 
     // Empty states
     Keys.No_results_found: 'No results found',

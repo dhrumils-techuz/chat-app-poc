@@ -58,6 +58,15 @@ class ChatDetailController extends GetxController {
   final highlightedMessageId = RxnString();
   final showScrollToBottom = false.obs;
 
+  // ── Search State ─────────────────────────────────────────────────────
+  final isSearching = false.obs;
+  final searchResults = <Map<String, dynamic>>[].obs;
+  final isSearchLoading = false.obs;
+  Timer? _searchDebounce;
+
+  /// Whether we jumped to an old message and the list is not at the latest.
+  final isViewingOldMessages = false.obs;
+
   // ── Controllers ────────────────────────────────────────────────────────
   final textController = TextEditingController();
 
@@ -164,6 +173,7 @@ class ChatDetailController extends GetxController {
     _presenceSub?.cancel();
     _conversationUpdatedSub?.cancel();
     _typingDebounce?.cancel();
+    _searchDebounce?.cancel();
     if (_isCurrentlyTyping) {
       _socketService.stopTyping(conversation.id);
     }
@@ -472,31 +482,137 @@ class ChatDetailController extends GetxController {
     );
   }
 
-  /// Scrolls to a specific message by ID (used for reply-tap navigation).
-  /// Uses `ItemScrollController.scrollTo` for precise index-based scrolling —
-  /// no GlobalKeys, no offset estimation, works with variable-height items.
-  bool scrollToMessage(String messageId) {
-    final index = messages.indexWhere((m) => m.id == messageId);
-    if (index == -1) return false;
+  // ── Search ──────────────────────────────────────────────────────────
 
+  void toggleSearch() {
+    isSearching.value = !isSearching.value;
+    if (!isSearching.value) {
+      searchResults.clear();
+      isSearchLoading.value = false;
+      _searchDebounce?.cancel();
+    }
+  }
+
+  void onSearchQueryChanged(String query) {
+    _searchDebounce?.cancel();
+    if (query.trim().isEmpty) {
+      searchResults.clear();
+      isSearchLoading.value = false;
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      _searchMessages(query.trim());
+    });
+  }
+
+  Future<void> _searchMessages(String query) async {
+    try {
+      isSearchLoading.value = true;
+      final response = await _messageRepository.searchMessages(
+        conversationId: conversation.id,
+        query: query,
+      );
+      if (response.isSuccessful && response.data != null) {
+        final rawData = response.data;
+        final List results = rawData is Map
+            ? (rawData['data'] as List? ?? [])
+            : (rawData as List);
+        searchResults.value = results
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
+    } catch (e) {
+      LogsHelper.debugLog(tag: _tag, 'Error searching messages: $e');
+    } finally {
+      isSearchLoading.value = false;
+    }
+  }
+
+  // ── Jump to Message (search result tap + reply redirect) ────────────
+
+  /// Scrolls to a message by ID. If the message is already loaded, scrolls
+  /// instantly. If not, fetches messages around it from the server.
+  /// Used by both search result taps and reply-tap navigation.
+  Future<bool> scrollToMessage(String messageId) async {
+    // Fast path: message already in memory
+    final index = messages.indexWhere((m) => m.id == messageId);
+    if (index != -1) {
+      _scrollToIndex(index);
+      _highlightMessage(messageId);
+      return true;
+    }
+
+    // Slow path: fetch from server
+    return await _jumpToMessage(messageId);
+  }
+
+  Future<bool> _jumpToMessage(String messageId) async {
+    try {
+      final response = await _messageRepository.getMessagesAround(
+        conversationId: conversation.id,
+        messageId: messageId,
+      );
+
+      if (!response.isSuccessful || response.data == null) return false;
+
+      final rawData = response.data as Map<String, dynamic>;
+      final List messageList = rawData['data'] as List? ?? [];
+      final targetIndex = rawData['targetIndex'] as int? ?? 0;
+      final hasOlder = rawData['hasOlder'] as bool? ?? false;
+
+      final parsedMessages = messageList
+          .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      if (parsedMessages.isEmpty) return false;
+
+      // Replace the message list with the "around" data
+      messages.value = parsedMessages;
+      hasMoreMessages.value = hasOlder;
+      isViewingOldMessages.value = true;
+
+      // Reset cursor for continued backward pagination from the oldest message
+      _nextCursor = null; // Will be rebuilt on next loadMore
+
+      // Wait for the list to build, then scroll + highlight
+      await Future.delayed(const Duration(milliseconds: 100));
+      _scrollToIndex(targetIndex);
+      _highlightMessage(messageId);
+
+      return true;
+    } catch (e) {
+      LogsHelper.debugLog(tag: _tag, 'Error jumping to message: $e');
+      return false;
+    }
+  }
+
+  void _scrollToIndex(int index) {
     if (itemScrollController.isAttached) {
       itemScrollController.scrollTo(
         index: index,
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
-        alignment: 0.3, // 30% from the top of the viewport
+        alignment: 0.3,
       );
     }
+  }
 
-    // Highlight the target message
+  void _highlightMessage(String messageId) {
     highlightedMessageId.value = messageId;
     Future.delayed(const Duration(seconds: 2), () {
       if (highlightedMessageId.value == messageId) {
         highlightedMessageId.value = null;
       }
     });
+  }
 
-    return true;
+  /// Returns to the latest messages (called from scroll-to-bottom FAB
+  /// when viewing old messages after a jump).
+  void returnToLatestMessages() {
+    isViewingOldMessages.value = false;
+    _nextCursor = null;
+    hasMoreMessages.value = true;
+    loadMessages();
   }
 
   // ── Socket Listeners ──────────────────────────────────────────────────
@@ -755,7 +871,12 @@ class ChatDetailController extends GetxController {
   }
 
   /// Scrolls to the bottom of the chat (newest messages). Public for the FAB.
+  /// If viewing old messages (after a jump), reloads the latest messages first.
   void scrollToBottom() {
+    if (isViewingOldMessages.value) {
+      returnToLatestMessages();
+      return;
+    }
     if (itemScrollController.isAttached) {
       itemScrollController.scrollTo(
         index: 0,

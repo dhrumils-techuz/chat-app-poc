@@ -47,6 +47,10 @@ class ApiEndpoints {
       '$_messagePrefix/$conversationId/$messageId';
   static String messageReaders(String conversationId, String messageId) =>
       '$_messagePrefix/$conversationId/$messageId/readers';
+  static String searchMessages(String conversationId) =>
+      '$_messagePrefix/$conversationId/search';
+  static String messagesAround(String conversationId, String messageId) =>
+      '$_messagePrefix/$conversationId/around/$messageId';
   static String markAsRead(String conversationId) =>
       '$_messagePrefix/$conversationId/read';
   static String markAsDelivered(String conversationId) =>
