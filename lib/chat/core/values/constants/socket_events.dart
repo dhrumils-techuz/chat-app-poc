@@ -44,6 +44,7 @@ class SocketEvents {
 
   // Conversation updates (server → client)
   static const String conversationNew = 'conversation:new';
+  static const String conversationUpdated = 'conversation:updated';
   static const String conversationUnreadUpdate = 'conversation:unread:update';
 
   // Error

@@ -7,6 +7,7 @@ import '../../../../core/extension/datetime_extensions.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
+import '../../../routes/app_pages.dart';
 import '../../../widgets/avatar_widget.dart';
 import '../../../widgets/online_indicator.dart';
 import '../chat_detail_controller.dart';
@@ -68,83 +69,108 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
   PreferredSizeWidget _buildAppBar(BuildContext context, ChatColors colors) {
     return AppBar(
       backgroundColor: colors.surfaceColor,
+      foregroundColor: colors.textPrimary,
+      surfaceTintColor: Colors.transparent,
       elevation: 0.5,
+      scrolledUnderElevation: 0.5,
       leading: IconButton(
         icon: Icon(Icons.arrow_back, color: colors.textPrimary),
-        onPressed: () => Get.back(),
+        onPressed: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Get.back();
+          }
+        },
       ),
       titleSpacing: 0,
-      title: Row(
-        children: [
-          Stack(
-            children: [
-              AvatarWidget(
-                imageUrl: controller.isGroup
-                    ? controller.conversation.avatarUrl
-                    : controller.otherParticipant?.avatarUrl ??
-                        controller.conversation.avatarUrl,
-                name: controller.conversation.displayNameFor(controller.currentUserId),
-                size: AppSizes.avatarSmall,
-              ),
-              if (!controller.isGroup && controller.otherParticipant != null)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Obx(() => OnlineIndicator(
-                    isOnline: controller.otherUserPresence.value.isOnline,
-                    size: AppSizes.onlineIndicatorSize - 2,
-                    borderColor: colors.surfaceColor,
-                  )),
-                ),
-            ],
-          ),
-          const SizedBox(width: AppSizes.dimenToPx10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+      title: Obx(() => GestureDetector(
+        onTap: controller.isGroup
+            ? () => Get.toNamed(ChatAppRoutes.GROUP_INFO,
+                arguments: controller.conversation)
+            : null,
+        child: Row(
+          children: [
+            Stack(
               children: [
-                Text(
-                  controller.conversation.displayNameFor(controller.currentUserId),
-                  style: ChatTextStyles.heading.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                AvatarWidget(
+                  imageUrl: controller.isGroup
+                      ? controller.conversation.avatarUrl
+                      : controller.otherParticipant?.avatarUrl ??
+                          controller.conversation.avatarUrl,
+                  name: controller.conversation.displayNameFor(controller.currentUserId),
+                  size: AppSizes.avatarSmall,
                 ),
-                const SizedBox(height: AppSizes.dimenToPx2),
-                Obx(() {
-                  if (controller.typingUsers.isNotEmpty) {
-                    return Text(
-                      _buildTypingText(),
-                      style: ChatTextStyles.caption.copyWith(
-                        color: colors.primaryColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    );
-                  }
-                  final other = controller.otherParticipant;
-                  if (other != null && controller.otherUserPresence.value.isOnline) {
-                    return Text(
-                      Keys.Online.tr,
-                      style: ChatTextStyles.caption.copyWith(
-                        color: colors.onlineIndicatorColor,
-                      ),
-                    );
-                  }
-                  return Text(
-                    controller.isGroup ? Keys.Tap_for_group_info.tr : Keys.Offline.tr,
-                    style: ChatTextStyles.caption.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  );
-                }),
+                if (!controller.isGroup && controller.otherParticipant != null)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Obx(() => OnlineIndicator(
+                      isOnline: controller.otherUserPresence.value.isOnline,
+                      size: AppSizes.onlineIndicatorSize - 2,
+                      borderColor: colors.surfaceColor,
+                    )),
+                  ),
               ],
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: AppSizes.dimenToPx10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    controller.conversation.displayNameFor(controller.currentUserId),
+                    style: ChatTextStyles.heading.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSizes.dimenToPx2),
+                  Obx(() {
+                    if (controller.typingUsers.isNotEmpty) {
+                      return Text(
+                        _buildTypingText(),
+                        style: ChatTextStyles.caption.copyWith(
+                          color: colors.primaryColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    }
+                    final other = controller.otherParticipant;
+                    if (other != null && controller.otherUserPresence.value.isOnline) {
+                      return Text(
+                        Keys.Online.tr,
+                        style: ChatTextStyles.caption.copyWith(
+                          color: colors.onlineIndicatorColor,
+                        ),
+                      );
+                    }
+                    if (controller.isGroup) {
+                      final memberCount =
+                          controller.conversation.participants?.length ?? 0;
+                      return Text(
+                        '$memberCount ${Keys.Members.tr}',
+                        style: ChatTextStyles.caption.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      );
+                    }
+                    return Text(
+                      Keys.Offline.tr,
+                      style: ChatTextStyles.caption.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ),
+      )),
       actions: [
         IconButton(
           icon: Icon(Icons.videocam, color: colors.iconColor),
@@ -159,11 +185,28 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
             borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
           ),
           onSelected: (value) {
-            // Handle menu actions
+            switch (value) {
+              case 'group_info':
+                Get.toNamed(ChatAppRoutes.GROUP_INFO,
+                    arguments: controller.conversation);
+                break;
+            }
           },
           itemBuilder: (context) {
             final menuColors = ChatColors.getInstance(context);
             return [
+              if (controller.isGroup)
+                PopupMenuItem(
+                  value: 'group_info',
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.Group_Info.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
               PopupMenuItem(
                 value: 'search',
                 child: Row(
@@ -278,6 +321,9 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
                     controller.deleteMessage(message.id, forEveryone: forEveryone),
                 onTapReply: (parentId) =>
                     controller.scrollToMessage(parentId),
+                onViewReaders: controller.isGroup
+                    ? () => controller.showMessageReaders(message.id)
+                    : null,
               )),
             ],
           );

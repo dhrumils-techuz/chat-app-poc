@@ -7,6 +7,7 @@ import '../../../../core/extension/datetime_extensions.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
+import '../../../routes/app_pages.dart';
 import '../../../widgets/avatar_widget.dart';
 import '../../../widgets/online_indicator.dart';
 import '../chat_detail_controller.dart';
@@ -119,45 +120,60 @@ class ChatDetailViewDesktop extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Avatar with online indicator
-          Stack(
-            children: [
-              AvatarWidget(
-                imageUrl: avatarUrl,
-                name: avatarName,
-                size: AppSizes.avatarMedium,
-              ),
-              if (!controller.isGroup && otherUser != null)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Obx(() => OnlineIndicator(
-                    isOnline: controller.otherUserPresence.value.isOnline,
-                    size: AppSizes.onlineIndicatorSize,
-                    borderColor: colors.surfaceColor,
-                  )),
-                ),
-            ],
-          ),
-
-          const SizedBox(width: AppSizes.dimenToPx12),
-
-          // Name + status
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // Avatar + Name — tappable for group info
+          GestureDetector(
+            onTap: controller.isGroup
+                ? () => Get.toNamed(ChatAppRoutes.GROUP_INFO,
+                    arguments: controller.conversation)
+                : null,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  displayName,
-                  style: ChatTextStyles.conversationTitle.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Stack(
+                  children: [
+                    AvatarWidget(
+                      imageUrl: avatarUrl,
+                      name: avatarName,
+                      size: AppSizes.avatarMedium,
+                    ),
+                    if (!controller.isGroup && otherUser != null)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Obx(() => OnlineIndicator(
+                          isOnline: controller.otherUserPresence.value.isOnline,
+                          size: AppSizes.onlineIndicatorSize,
+                          borderColor: colors.surfaceColor,
+                        )),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: AppSizes.dimenToPx2),
-                Obx(() {
+                const SizedBox(width: AppSizes.dimenToPx12),
+              ],
+            ),
+          ),
+
+          // Name + status — tappable for group info
+          Expanded(
+            child: GestureDetector(
+              onTap: controller.isGroup
+                  ? () => Get.toNamed(ChatAppRoutes.GROUP_INFO,
+                      arguments: controller.conversation)
+                  : null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Obx(() => Text(
+                    controller.conversation.displayNameFor(controller.currentUserId),
+                    style: ChatTextStyles.conversationTitle.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )),
+                  const SizedBox(height: AppSizes.dimenToPx2),
+                  Obx(() {
                   if (controller.typingUsers.isNotEmpty) {
                     final typingText = controller.typingUsers.length == 1
                         ? '${controller.typingUsers.first} ${Keys.Is_typing.tr}'
@@ -201,6 +217,7 @@ class ChatDetailViewDesktop extends StatelessWidget {
                 }),
               ],
             ),
+            ),
           ),
 
           // Action icons
@@ -225,11 +242,28 @@ class ChatDetailViewDesktop extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
             ),
             onSelected: (value) {
-              // Handle menu actions
+              switch (value) {
+                case 'group_info':
+                  Get.toNamed(ChatAppRoutes.GROUP_INFO,
+                      arguments: controller.conversation);
+                  break;
+              }
             },
             itemBuilder: (ctx) {
               final menuColors = ChatColors.getInstance(ctx);
               return [
+                if (controller.isGroup)
+                  PopupMenuItem(
+                    value: 'group_info',
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 20, color: menuColors.textPrimary),
+                        const SizedBox(width: 12),
+                        Text(Keys.Group_Info.tr,
+                            style: TextStyle(color: menuColors.textPrimary)),
+                      ],
+                    ),
+                  ),
                 PopupMenuItem(
                   value: 'search',
                   child: Row(
@@ -359,6 +393,9 @@ class ChatDetailViewDesktop extends StatelessWidget {
                     controller.deleteMessage(message.id, forEveryone: forEveryone),
                 onTapReply: (parentId) =>
                     controller.scrollToMessage(parentId),
+                onViewReaders: controller.isGroup
+                    ? () => controller.showMessageReaders(message.id)
+                    : null,
               )),
             ],
           );

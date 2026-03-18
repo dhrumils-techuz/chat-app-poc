@@ -192,19 +192,10 @@ class DialogHelper {
     bool barrierDismissible = true,
     required Widget Function(BuildContext) contentBuilder,
   }) {
-    final context = buildContext ?? Get.context;
+    // Prefer the overlay context (guaranteed to have an Overlay ancestor)
+    // over a generic Get.context which may not have one.
+    final context = buildContext ?? Get.overlayContext ?? Get.context;
     if (context == null) return;
-
-    // Verify Overlay exists in the widget tree before calling showDialog.
-    // This prevents "No Overlay widget found" crashes during startup or
-    // when the widget tree is not yet fully built.
-    try {
-      final overlay = Overlay.of(context, rootOverlay: false);
-      // ignore: unnecessary_null_comparison
-      if (overlay == null) return;
-    } catch (_) {
-      return;
-    }
 
     try {
       showDialog(

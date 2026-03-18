@@ -25,4 +25,9 @@ abstract class MessageRemoteService {
   Future<ApiResponseModel> markAsRead(String conversationId);
 
   Future<ApiResponseModel> markAsDelivered(String conversationId);
+
+  Future<ApiResponseModel> getMessageReaders({
+    required String conversationId,
+    required String messageId,
+  });
 }

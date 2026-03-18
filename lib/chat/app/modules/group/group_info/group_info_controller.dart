@@ -61,10 +61,36 @@ class GroupInfoController extends GetxController {
   // ── Data Loading ──────────────────────────────────────────────────────
 
   void _loadMembers() {
-    if (conversation.value.groupMembers != null) {
-      members.value = List.from(conversation.value.groupMembers!);
-    }
+    _extractMembers(conversation.value);
     loadGroupInfo();
+  }
+
+  /// Extracts members from the conversation model.
+  /// Tries `groupMembers` first, falls back to building from `participants`.
+  void _extractMembers(ConversationModel conv) {
+    if (conv.groupMembers != null && conv.groupMembers!.isNotEmpty) {
+      members.value = List.from(conv.groupMembers!);
+    } else if (conv.participants != null && conv.participants!.isNotEmpty) {
+      members.value = conv.participants!
+          .map((p) => GroupMemberModel(
+                userId: p.id,
+                name: p.name,
+                avatarUrl: p.avatarUrl,
+                role: GroupRole.member,
+              ))
+          .toList();
+    }
+    _sortMembers();
+  }
+
+  /// Sorts members: owner first, then admins, then regular members.
+  void _sortMembers() {
+    members.sort((a, b) {
+      final aRank = a.role == GroupRole.owner ? 0 : (a.role == GroupRole.admin ? 1 : 2);
+      final bRank = b.role == GroupRole.owner ? 0 : (b.role == GroupRole.admin ? 1 : 2);
+      if (aRank != bRank) return aRank.compareTo(bRank);
+      return a.name.compareTo(b.name);
+    });
   }
 
   Future<void> loadGroupInfo() async {
@@ -80,10 +106,20 @@ class GroupInfoController extends GetxController {
             : rawData as Map<String, dynamic>;
         final updated = ConversationModel.fromJson(convData);
         conversation.value = updated;
-        if (updated.groupMembers != null) {
-          members.value = List.from(updated.groupMembers!);
+
+        // Build members from the response — participants include role info
+        if (convData['participants'] != null) {
+          final participantList = convData['participants'] as List;
+          members.value = participantList
+              .map((p) =>
+                  GroupMemberModel.fromJson(p as Map<String, dynamic>))
+              .toList();
+        } else {
+          _extractMembers(updated);
         }
-        groupNameController.text = updated.displayName;
+        _sortMembers();
+
+        groupNameController.text = updated.displayNameFor(currentUserId);
       }
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Error loading group info: $e');

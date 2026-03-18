@@ -19,6 +19,7 @@ class ImageViewerScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColor.overlayBackground,
         foregroundColor: AppColor.overlayForeground,
+        surfaceTintColor: Colors.transparent,
         title: Text(title),
         elevation: 0,
       ),

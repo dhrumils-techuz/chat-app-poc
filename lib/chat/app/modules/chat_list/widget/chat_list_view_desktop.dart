@@ -45,6 +45,8 @@ class ChatListViewDesktop extends GetView<ChatListController> {
       backgroundColor: colors.surfaceColor,
       appBar: AppBar(
         backgroundColor: colors.surfaceColor,
+        foregroundColor: colors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0.5,
         title: Text(
@@ -183,6 +185,12 @@ class ChatListViewDesktop extends GetView<ChatListController> {
                       subtitle: controller.searchQuery.value.isNotEmpty
                           ? Keys.Try_different_search.tr
                           : Keys.Start_new_chat.tr,
+                      actionText: controller.searchQuery.value.isEmpty
+                          ? Keys.Start_chat.tr
+                          : null,
+                      onAction: controller.searchQuery.value.isEmpty
+                          ? () => Get.toNamed(ChatAppRoutes.CONTACTS)
+                          : null,
                     ),
                   ),
                 ],

@@ -159,4 +159,14 @@ class MessageRepository {
   Future<ApiResponseModel> markAsDelivered(String conversationId) {
     return _messageService.markAsDelivered(conversationId);
   }
+
+  Future<ApiResponseModel> getMessageReaders({
+    required String conversationId,
+    required String messageId,
+  }) {
+    return _messageService.getMessageReaders(
+      conversationId: conversationId,
+      messageId: messageId,
+    );
+  }
 }

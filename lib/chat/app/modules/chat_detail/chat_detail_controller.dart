@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../core/data/api_response_model.dart';
+import '../../../core/theme/color.dart';
 import '../../../core/utils/logs_helper.dart';
+import '../../../core/values/app_strings.dart';
 import '../../data/auth/jwt_auth_service.dart';
 import '../../data/model/conversation_model.dart';
 import '../chat_list/chat_list_controller.dart';
@@ -40,7 +42,8 @@ class ChatDetailController extends GetxController {
         _conversationOverride = conversation;
 
   // ── Conversation ───────────────────────────────────────────────────────
-  late final ConversationModel conversation;
+  late final Rx<ConversationModel> _conversation;
+  ConversationModel get conversation => _conversation.value;
 
   // ── Observable State ───────────────────────────────────────────────────
   final messages = <MessageModel>[].obs;
@@ -74,6 +77,7 @@ class ChatDetailController extends GetxController {
   StreamSubscription<Map<String, dynamic>>? _typingSub;
   StreamSubscription<Map<String, dynamic>>? _messageDeletedSub;
   StreamSubscription<Map<String, dynamic>>? _presenceSub;
+  StreamSubscription<Map<String, dynamic>>? _conversationUpdatedSub;
 
   // ── Typing Debounce ────────────────────────────────────────────────────
   Timer? _typingDebounce;
@@ -90,7 +94,8 @@ class ChatDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    conversation = _conversationOverride ?? Get.arguments as ConversationModel;
+    _conversation = Rx<ConversationModel>(
+        _conversationOverride ?? Get.arguments as ConversationModel);
 
     // Initialize presence from local data first (may be stale),
     // then query the server for the real-time status.
@@ -157,6 +162,7 @@ class ChatDetailController extends GetxController {
     _typingSub?.cancel();
     _messageDeletedSub?.cancel();
     _presenceSub?.cancel();
+    _conversationUpdatedSub?.cancel();
     _typingDebounce?.cancel();
     if (_isCurrentlyTyping) {
       _socketService.stopTyping(conversation.id);
@@ -365,6 +371,107 @@ class ChatDetailController extends GetxController {
     replyingTo.value = null;
   }
 
+  /// Shows a bottom sheet with the list of users who have read a message.
+  /// Only used for group chats — fetches readers from the server API.
+  Future<void> showMessageReaders(String messageId) async {
+    try {
+      final response = await _messageRepository.getMessageReaders(
+        conversationId: conversation.id,
+        messageId: messageId,
+      );
+      if (response.isSuccessful && response.data != null) {
+        final rawData = response.data;
+        final List readers = rawData is Map
+            ? (rawData['data'] as List? ?? [])
+            : (rawData as List);
+        _showReadersSheet(readers);
+      }
+    } catch (e) {
+      LogsHelper.debugLog(tag: _tag, 'Error fetching readers: $e');
+    }
+  }
+
+  void _showReadersSheet(List readers) {
+    final context = Get.context;
+    if (context == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final colors = ChatColors.getInstance(ctx);
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.surfaceColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: colors.dividerColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '${Keys.Read_by.tr} (${readers.length})',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (readers.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      Keys.No_one_has_read.tr,
+                      style: TextStyle(color: colors.textSecondary),
+                    ),
+                  )
+                else
+                  ...readers.map((r) {
+                    final name =
+                        (r['fullName'] ?? r['full_name'] ?? '') as String;
+                    return ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 16,
+                        backgroundColor:
+                            colors.primaryColor.withValues(alpha: 0.1),
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: TextStyle(color: colors.primaryColor),
+                        ),
+                      ),
+                      title: Text(name,
+                          style: TextStyle(color: colors.textPrimary)),
+                    );
+                  }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   /// Scrolls to a specific message by ID (used for reply-tap navigation).
   /// Uses `ItemScrollController.scrollTo` for precise index-based scrolling —
   /// no GlobalKeys, no offset estimation, works with variable-height items.
@@ -505,6 +612,30 @@ class ChatDetailController extends GetxController {
         });
       } else {
         typingUsers.remove(userName);
+      }
+    });
+
+    // Server emits 'conversation:updated' when conversation metadata changes
+    // (e.g., group name, avatar). Update our local conversation object.
+    _conversationUpdatedSub =
+        _socketService.onConversationUpdated.listen((data) {
+      final convId = data['conversationId'] as String? ?? data['id'] as String?;
+      if (convId != conversation.id) return;
+
+      // If the event contains full conversation data, update our copy
+      if (data.containsKey('type') && data.containsKey('id')) {
+        try {
+          final updated = ConversationModel.fromJson(data);
+          _conversation.value = updated.copyWith(
+            lastMessage: conversation.lastMessage,
+            lastMessageAt: conversation.lastMessageAt,
+            unreadCount: conversation.unreadCount,
+          );
+        } catch (_) {}
+      } else if (data.containsKey('name')) {
+        // Lightweight update with just name
+        _conversation.value =
+            conversation.copyWith(name: data['name'] as String?);
       }
     });
   }

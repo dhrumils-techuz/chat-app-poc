@@ -53,10 +53,11 @@ class GroupMemberModel {
     );
   }
 
-  bool get isAdmin => role == GroupRole.admin;
+  bool get isAdmin => role == GroupRole.admin || role == GroupRole.owner;
 }
 
 enum GroupRole {
+  owner('owner'),
   admin('admin'),
   member('member');
 

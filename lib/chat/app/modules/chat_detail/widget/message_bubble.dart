@@ -5,8 +5,10 @@ import 'package:get/get.dart';
 import '../../../../core/values/app_strings.dart';
 import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
+import '../../../../core/utils/dialog_helper.dart';
 import '../../../../core/values/app_sizes.dart';
 import '../../../data/model/message_model.dart';
+import '../../../widgets/avatar_widget.dart';
 import 'media_preview_widget.dart';
 import 'message_status_indicator.dart';
 
@@ -19,6 +21,7 @@ class MessageBubble extends StatelessWidget {
     this.onReply,
     this.onDelete,
     this.onTapReply,
+    this.onViewReaders,
     this.isHighlighted = false,
   });
 
@@ -28,6 +31,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onReply;
   final void Function(bool forEveryone)? onDelete;
   final void Function(String messageId)? onTapReply;
+  final VoidCallback? onViewReaders;
   final bool isHighlighted;
 
   @override
@@ -38,57 +42,84 @@ class MessageBubble extends StatelessWidget {
     }
 
     final colors = ChatColors.getInstance(context);
+    final showGroupAvatar = isGroup && !isMyMessage;
 
-    return Align(
-      alignment: isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: () => _showContextMenu(context),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 500),
-          constraints: const BoxConstraints(
-            maxWidth: AppSizes.bubbleMaxWidth,
+    final bubble = GestureDetector(
+      onLongPress: () => _showContextMenu(context),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 500),
+        constraints: const BoxConstraints(
+          maxWidth: AppSizes.bubbleMaxWidth,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: isHighlighted
+              ? colors.primaryColor.withOpacity(0.15)
+              : (isMyMessage
+                  ? AppColor.sentBubble
+                  : AppColor.receivedBubble),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(isMyMessage ? AppSizes.bubbleRadius : 4),
+            topRight: Radius.circular(isMyMessage ? 4 : AppSizes.bubbleRadius),
+            bottomLeft: const Radius.circular(AppSizes.bubbleRadius),
+            bottomRight: const Radius.circular(AppSizes.bubbleRadius),
           ),
-          margin: EdgeInsets.only(
-            left: isMyMessage ? 60 : 8,
-            right: isMyMessage ? 8 : 60,
-            top: 2,
-            bottom: 2,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: isHighlighted
-                ? colors.primaryColor.withOpacity(0.15)
-                : (isMyMessage
-                    ? AppColor.sentBubble
-                    : AppColor.receivedBubble),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(isMyMessage ? AppSizes.bubbleRadius : 4),
-              topRight: Radius.circular(isMyMessage ? 4 : AppSizes.bubbleRadius),
-              bottomLeft: const Radius.circular(AppSizes.bubbleRadius),
-              bottomRight: const Radius.circular(AppSizes.bubbleRadius),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Sender name (group + received only)
+            if (showGroupAvatar) _buildSenderName(context),
+
+            // Reply preview
+            if (message.hasReply) _buildReplyPreview(context),
+
+            // Content
+            _buildContent(context),
+
+            // Timestamp + status row
+            _buildTimestampRow(context),
+          ],
+        ),
+      ),
+    );
+
+    // In group chats, show a small avatar next to received messages
+    if (showGroupAvatar) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 4, right: 60, top: 2, bottom: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Sender name (group + received only)
-              if (isGroup && !isMyMessage) _buildSenderName(context),
-
-              // Reply preview
-              if (message.hasReply) _buildReplyPreview(context),
-
-              // Content
-              _buildContent(context),
-
-              // Timestamp + status row
-              _buildTimestampRow(context),
+              AvatarWidget(
+                name: message.senderName ?? '',
+                size: 28,
+              ),
+              const SizedBox(width: 6),
+              Flexible(child: bubble),
             ],
           ),
         ),
+      );
+    }
+
+    return Align(
+      alignment: isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: isMyMessage ? 60 : 8,
+          right: isMyMessage ? 8 : 60,
+          top: 2,
+          bottom: 2,
+        ),
+        child: bubble,
       ),
     );
   }
@@ -299,15 +330,18 @@ class MessageBubble extends StatelessWidget {
     final offset = renderBox.localToGlobal(Offset.zero);
     final screenSize = MediaQuery.of(context).size;
 
-    // Position the menu below (or above) the bubble, aligned to the bubble's side
+    // Position the menu near the bubble — below it, aligned to bubble edge
+    final menuWidth = 200.0;
+    final left = isMyMessage
+        ? (offset.dx + bubbleSize.width - menuWidth).clamp(0.0, screenSize.width - menuWidth)
+        : offset.dx.clamp(0.0, screenSize.width - menuWidth);
+
     showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
-        isMyMessage
-            ? offset.dx + bubbleSize.width - 180 // right-align for sent
-            : offset.dx, // left-align for received
-        offset.dy + bubbleSize.height, // below the bubble
-        screenSize.width - offset.dx - bubbleSize.width,
+        left,
+        offset.dy + bubbleSize.height,
+        screenSize.width - left - menuWidth,
         0,
       ),
       color: colors.surfaceColor,
@@ -333,6 +367,18 @@ class MessageBubble extends StatelessWidget {
                 Icon(Icons.copy, size: 20, color: colors.textPrimary),
                 const SizedBox(width: 12),
                 Text(Keys.Copy.tr,
+                    style: TextStyle(color: colors.textPrimary)),
+              ],
+            ),
+          ),
+        if (isMyMessage && isGroup && onViewReaders != null)
+          PopupMenuItem(
+            value: 'read_by',
+            child: Row(
+              children: [
+                Icon(Icons.done_all, size: 20, color: colors.primaryColor),
+                const SizedBox(width: 12),
+                Text(Keys.Read_by.tr,
                     style: TextStyle(color: colors.textPrimary)),
               ],
             ),
@@ -385,10 +431,25 @@ class MessageBubble extends StatelessWidget {
           }
           break;
         case 'delete_me':
-          onDelete?.call(false);
+          DialogHelper.showConfirmationDialog(
+            Keys.Delete_for_me.tr,
+            Keys.Delete_message_confirm.tr,
+            btnPositiveText: Keys.Delete_for_me.tr,
+            btnNegativeText: Keys.Cancel.tr,
+            onPositiveResponse: () => onDelete?.call(false),
+          );
           break;
         case 'delete_all':
-          onDelete?.call(true);
+          DialogHelper.showConfirmationDialog(
+            Keys.Delete_for_everyone.tr,
+            Keys.Delete_for_everyone_confirm.tr,
+            btnPositiveText: Keys.Delete_for_everyone.tr,
+            btnNegativeText: Keys.Cancel.tr,
+            onPositiveResponse: () => onDelete?.call(true),
+          );
+          break;
+        case 'read_by':
+          onViewReaders?.call();
           break;
       }
     });

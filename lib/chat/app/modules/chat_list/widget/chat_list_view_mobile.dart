@@ -54,6 +54,8 @@ class ChatListViewMobile extends GetView<ChatListController> {
   PreferredSizeWidget _buildAppBar(ChatColors colors) {
     return AppBar(
       backgroundColor: colors.surfaceColor,
+      foregroundColor: colors.textPrimary,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0.5,
       title: Text(
@@ -95,7 +97,8 @@ class ChatListViewMobile extends GetView<ChatListController> {
                 value: 'new_chat',
                 child: Row(
                   children: [
-                    Icon(Icons.chat_outlined, size: 20, color: menuColors.textPrimary),
+                    Icon(Icons.chat_outlined,
+                        size: 20, color: menuColors.textPrimary),
                     const SizedBox(width: 12),
                     Text(Keys.New_Chat.tr,
                         style: TextStyle(color: menuColors.textPrimary)),
@@ -106,7 +109,8 @@ class ChatListViewMobile extends GetView<ChatListController> {
                 value: 'new_group',
                 child: Row(
                   children: [
-                    Icon(Icons.group_add_outlined, size: 20, color: menuColors.textPrimary),
+                    Icon(Icons.group_add_outlined,
+                        size: 20, color: menuColors.textPrimary),
                     const SizedBox(width: 12),
                     Text(Keys.New_Group.tr,
                         style: TextStyle(color: menuColors.textPrimary)),
@@ -117,7 +121,8 @@ class ChatListViewMobile extends GetView<ChatListController> {
                 value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.settings_outlined, size: 20, color: menuColors.textPrimary),
+                    Icon(Icons.settings_outlined,
+                        size: 20, color: menuColors.textPrimary),
                     const SizedBox(width: 12),
                     Text(Keys.Settings.tr,
                         style: TextStyle(color: menuColors.textPrimary)),
@@ -128,7 +133,8 @@ class ChatListViewMobile extends GetView<ChatListController> {
                 value: 'profile',
                 child: Row(
                   children: [
-                    Icon(Icons.person_outline, size: 20, color: menuColors.textPrimary),
+                    Icon(Icons.person_outline,
+                        size: 20, color: menuColors.textPrimary),
                     const SizedBox(width: 12),
                     Text(Keys.Profile.tr,
                         style: TextStyle(color: menuColors.textPrimary)),

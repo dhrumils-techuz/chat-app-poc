@@ -12,6 +12,7 @@ router.post('/:conversationId/delivered', (req, res, next) => messageController.
 router.post('/:conversationId', (req, res, next) => messageController.send(req, res, next));
 router.get('/:conversationId', (req, res, next) => messageController.getMessages(req, res, next));
 router.get('/:conversationId/:messageId', (req, res, next) => messageController.getMessage(req, res, next));
+router.get('/:conversationId/:messageId/readers', (req, res, next) => messageController.getMessageReaders(req, res, next));
 router.delete('/:conversationId/:messageId', (req, res, next) => messageController.deleteMessage(req, res, next));
 
 export default router;

@@ -6,6 +6,7 @@ import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
 import '../../../widgets/avatar_widget.dart';
+import '../../../widgets/gradient_button.dart';
 import 'group_info_controller.dart';
 import 'widget/add_member_dialog.dart';
 import 'widget/member_list_tile.dart';
@@ -21,10 +22,19 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
       backgroundColor: colors.backgroundColor,
       appBar: AppBar(
         backgroundColor: colors.surfaceColor,
+        foregroundColor: colors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colors.textPrimary),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Get.back();
+            }
+          },
         ),
         title: Text(
           Keys.Group_Info.tr,
@@ -111,71 +121,35 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
 
           const SizedBox(height: AppSizes.dimenToPx16),
 
-          // Group name (editable if admin)
-          Obx(() {
-            if (controller.isEditingName.value) {
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: controller.groupNameController,
-                      textAlign: TextAlign.center,
-                      style: ChatTextStyles.heading.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.dimenToPx8,
-                          vertical: AppSizes.dimenToPx8,
-                        ),
-                        border: UnderlineInputBorder(
-                          borderSide: BorderSide(color: colors.primaryColor),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: colors.primaryColor,
-                            width: 2,
-                          ),
-                        ),
-                      ),
+          // Group name (tap to edit via bottom sheet if admin)
+          Obx(() => GestureDetector(
+            onTap: controller.isAdmin
+                ? () => _showEditNameSheet(context, colors)
+                : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    controller.conversation.value.displayNameFor(
+                        controller.currentUserId),
+                    style: ChatTextStyles.heading.copyWith(
+                      color: colors.textPrimary,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  IconButton(
-                    icon: Icon(Icons.check, color: colors.primaryColor),
-                    onPressed: controller.toggleEditName,
+                ),
+                if (controller.isAdmin) ...[
+                  const SizedBox(width: AppSizes.dimenToPx8),
+                  Icon(
+                    Icons.edit,
+                    size: AppSizes.dimenToPx16,
+                    color: colors.iconColor,
                   ),
                 ],
-              );
-            }
-
-            return GestureDetector(
-              onTap: controller.isAdmin ? controller.toggleEditName : null,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      controller.conversation.value.displayName,
-                      style: ChatTextStyles.heading.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  if (controller.isAdmin) ...[
-                    const SizedBox(width: AppSizes.dimenToPx8),
-                    Icon(
-                      Icons.edit,
-                      size: AppSizes.dimenToPx16,
-                      color: colors.iconColor,
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }),
+              ],
+            ),
+          )),
 
           const SizedBox(height: AppSizes.dimenToPx4),
 
@@ -309,6 +283,115 @@ class GroupInfoScreen extends GetView<GroupInfoController> {
         existingMemberIds: controller.memberUserIds,
         onMemberSelected: controller.addMember,
       ),
+    );
+  }
+
+  void _showEditNameSheet(BuildContext context, ChatColors colors) {
+    // Reset controller text to current name
+    controller.groupNameController.text =
+        controller.conversation.value.displayNameFor(controller.currentUserId);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true, // allows sheet to resize with keyboard
+      builder: (ctx) {
+        final sheetColors = ChatColors.getInstance(ctx);
+        return SafeArea(
+          child: Padding(
+            // Push above keyboard
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: sheetColors.surfaceColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: sheetColors.dividerColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+
+                  // Title
+                  Text(
+                    Keys.Edit_Group_Name.tr,
+                    style: ChatTextStyles.heading.copyWith(
+                      color: sheetColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Text field
+                  TextField(
+                    controller: controller.groupNameController,
+                    autofocus: true,
+                    maxLength: 50,
+                    style: ChatTextStyles.body.copyWith(
+                      color: sheetColors.textPrimary,
+                    ),
+                    cursorColor: sheetColors.primaryColor,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: sheetColors.inputBackgroundColor,
+                      hintText: Keys.Group_Name.tr,
+                      hintStyle: ChatTextStyles.body.copyWith(
+                        color: sheetColors.textLight,
+                      ),
+                      counterStyle: ChatTextStyles.caption.copyWith(
+                        color: sheetColors.textSecondary,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(
+                          color: sheetColors.primaryColor,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Save button (full-width gradient)
+                  SizedBox(
+                    width: double.infinity,
+                    child: GradientButton(
+                      text: Keys.Save.tr,
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        controller.updateGroupName();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

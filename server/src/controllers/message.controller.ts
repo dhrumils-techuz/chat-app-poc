@@ -92,6 +92,21 @@ export class MessageController {
     }
   }
 
+  async getMessageReaders(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { conversationId, messageId } = req.params;
+      if (!conversationId || !messageId) {
+        res.status(400).json({ error: 'conversationId and messageId required', code: ErrorCode.BAD_REQUEST });
+        return;
+      }
+
+      const readers = await messageService.getMessageReaders(messageId, conversationId);
+      res.status(200).json({ success: true, data: readers });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async deleteMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const auth = req.auth!;

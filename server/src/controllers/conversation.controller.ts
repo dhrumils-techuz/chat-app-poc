@@ -120,6 +120,17 @@ export class ConversationController {
         success: true,
         data: conversation,
       });
+
+      // Notify all participants about the update (e.g., group name change)
+      try {
+        const io = getIO();
+        io.to(`conversation:${id}`).emit('conversation:updated', {
+          conversationId: id,
+          ...conversation,
+        });
+      } catch (_) {
+        // Non-critical
+      }
     } catch (error) {
       next(error);
     }
@@ -143,6 +154,31 @@ export class ConversationController {
         success: true,
         message: ConversationMsg.PARTICIPANT_ADDED,
       });
+
+      // Notify the newly added member via socket so their chat list updates.
+      try {
+        const io = getIO();
+        const conversation = await conversationService.getConversationById(
+          id, auth.tenantId, input.userId
+        );
+
+        const presenceData = await redis.get(CACHE_KEYS.userPresence(input.userId));
+        if (presenceData) {
+          const parsed = JSON.parse(presenceData);
+          if (parsed.socketId) {
+            const targetSocket = io.sockets.sockets.get(parsed.socketId);
+            if (targetSocket) {
+              targetSocket.join(`conversation:${id}`);
+              targetSocket.emit('conversation:new', conversation);
+            }
+          }
+        }
+
+        // Also notify existing members in the room about the update
+        io.to(`conversation:${id}`).emit('conversation:updated', { conversationId: id });
+      } catch (_) {
+        // Non-critical
+      }
     } catch (error) {
       next(error);
     }

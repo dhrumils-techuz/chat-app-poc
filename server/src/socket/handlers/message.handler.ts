@@ -141,8 +141,9 @@ export function handleMessageEvents(socket: Socket, io: Server, auth: JwtPayload
           forEveryone: true,
         });
       } else {
-        // "Delete for me" — no server-side deletion or broadcast needed.
-        // The client already removes it from local state.
+        // "Delete for me" — mark as deleted for this user only.
+        // The message will be filtered out when this user fetches messages.
+        await messageService.deleteMessageForUser(messageId, userId);
       }
     } catch (error) {
       logger.error('Error handling message:delete', {

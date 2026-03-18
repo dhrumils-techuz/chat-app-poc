@@ -20,11 +20,19 @@ class ProfileScreen extends GetView<ProfileController> {
       backgroundColor: colors.backgroundColor,
       appBar: AppBar(
         backgroundColor: colors.surfaceColor,
+        foregroundColor: colors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0.5,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colors.textPrimary),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Get.back();
+            }
+          },
         ),
         title: Text(
           Keys.Profile.tr,

@@ -110,6 +110,11 @@ class SocketService extends GetxService {
       _conversationUpdatedController.add(data as Map<String, dynamic>);
     });
 
+    // Server emits 'conversation:updated' when a conversation is modified
+    _socketClient.on(SocketEvents.conversationUpdated, (data) {
+      _conversationUpdatedController.add(data as Map<String, dynamic>);
+    });
+
     // Server emits 'conversation:unread:update' back to the reader after
     // marking messages as read, with { conversationId, unreadCount }
     _socketClient.on(SocketEvents.conversationUnreadUpdate, (data) {

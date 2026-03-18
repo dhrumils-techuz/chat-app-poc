@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../../core/utils/dialog_helper.dart';
+import '../../../core/values/app_strings.dart';
 import '../../data/auth/jwt_auth_service.dart';
 import '../../data/repository/auth_repository.dart';
 import '../../data/repository/token_repository.dart';
@@ -19,7 +21,17 @@ class SettingsController extends GetxController {
 
   final isLoggingOut = false.obs;
 
-  Future<void> logout() async {
+  void logout() {
+    DialogHelper.showConfirmationDialog(
+      Keys.Logout.tr,
+      Keys.Logout_confirm.tr,
+      btnPositiveText: Keys.Logout.tr,
+      btnNegativeText: Keys.Cancel.tr,
+      onPositiveResponse: _performLogout,
+    );
+  }
+
+  Future<void> _performLogout() async {
     try {
       isLoggingOut.value = true;
 

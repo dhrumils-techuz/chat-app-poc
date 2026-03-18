@@ -84,4 +84,17 @@ class DioMessageService implements MessageRemoteService {
       useDefaultErrorHandler: false,
     );
   }
+
+  @override
+  Future<ApiResponseModel> getMessageReaders({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    return await _dioClient.apiClient.safeApiCall(
+      request: () => _dioClient.apiClient.get(
+        ApiEndpoints.messageReaders(conversationId, messageId),
+      ),
+      useDefaultErrorHandler: false,
+    );
+  }
 }

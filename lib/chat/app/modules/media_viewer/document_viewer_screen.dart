@@ -23,6 +23,9 @@ class DocumentViewerScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.backgroundColor,
       appBar: AppBar(
+        backgroundColor: colors.surfaceColor,
+        foregroundColor: colors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           name,
           style: ChatTextStyles.appBarTitle.copyWith(
@@ -30,9 +33,7 @@ class DocumentViewerScreen extends StatelessWidget {
           ),
           overflow: TextOverflow.ellipsis,
         ),
-        backgroundColor: colors.surfaceColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: Center(
         child: Padding(

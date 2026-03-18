@@ -341,22 +341,33 @@ class ChatListController extends GetxController {
   }
 
   void _handleConversationUpdated(Map<String, dynamic> data) {
-    // If the event contains a full conversation object (e.g. conversation:new),
-    // add it directly if not already present, then join its room.
+    // If the event contains a full conversation object (has 'id' and 'type'),
+    // either add it (new) or update it (existing).
     if (data.containsKey('id') && data.containsKey('type')) {
       try {
         final conv = ConversationModel.fromJson(data);
-        final exists = conversations.any((c) => c.id == conv.id);
-        if (!exists) {
+        final index = conversations.indexWhere((c) => c.id == conv.id);
+        if (index != -1) {
+          // Update existing conversation (e.g., name change)
+          conversations[index] = conv.copyWith(
+            lastMessage: conversations[index].lastMessage,
+            lastMessageAt: conversations[index].lastMessageAt,
+            unreadCount: conversations[index].unreadCount,
+          );
+        } else {
+          // New conversation — add and join room
           conversations.add(conv);
-          _sortConversations();
           _socketService.joinConversation(conv.id);
         }
+        _sortConversations();
         return;
       } catch (_) {
         // Fallback to full reload
       }
     }
+
+    // If only conversationId is present (lightweight update notification),
+    // reload from server.
     loadConversations();
   }
 

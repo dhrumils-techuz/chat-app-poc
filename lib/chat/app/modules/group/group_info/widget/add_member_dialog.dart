@@ -86,12 +86,17 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
     final colors = ChatColors.getInstance(context);
 
     return Dialog(
+      backgroundColor: colors.surfaceColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.dimenToPx16),
       ),
       child: Container(
         width: double.maxFinite,
         constraints: const BoxConstraints(maxHeight: 480),
+        decoration: BoxDecoration(
+          color: colors.surfaceColor,
+          borderRadius: BorderRadius.circular(AppSizes.dimenToPx16),
+        ),
         padding: const EdgeInsets.all(AppSizes.dimenToPx16),
         child: Column(
           mainAxisSize: MainAxisSize.min,

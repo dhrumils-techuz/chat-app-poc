@@ -119,15 +119,21 @@ class MessageService {
       throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
     }
 
-    // LEFT JOIN reply parent message to include replyToContent and replyToSenderName
+    // LEFT JOIN reply parent message to include replyToContent and replyToSenderName.
+    // Filter out messages that the requesting user has "deleted for me"
+    // (message_status.status = 'deleted' for this user).
     const baseQuery = `SELECT m.*, u.full_name as sender_name, u.avatar_url as sender_avatar_url,
        rm.content as reply_to_content, ru.full_name as reply_to_sender_name
        FROM messages m
        JOIN users u ON u.id = m.sender_id
        LEFT JOIN messages rm ON rm.id = m.reply_to_id
        LEFT JOIN users ru ON ru.id = rm.sender_id
-       WHERE m.conversation_id = $1 AND m.is_deleted = false`;
-    const baseParams = [conversationId];
+       WHERE m.conversation_id = $1 AND m.is_deleted = false
+         AND NOT EXISTS (
+           SELECT 1 FROM message_status ms
+           WHERE ms.message_id = m.id AND ms.user_id = $2 AND ms.status = 'deleted'
+         )`;
+    const baseParams = [conversationId, userId];
 
     const { query: paginatedQuery, params: paginatedParams } = buildCursorQuery({
       baseQuery,
@@ -278,6 +284,35 @@ class MessageService {
         [upToMessageId, conversationId, userId]
       );
     }
+  }
+
+  /**
+   * Marks a message as deleted for a specific user only.
+   * Uses the message_status table with status='deleted'.
+   * The getMessages query filters these out for the requesting user.
+   */
+  async deleteMessageForUser(messageId: string, userId: string): Promise<void> {
+    await query(
+      `INSERT INTO message_status (message_id, user_id, status)
+       VALUES ($1, $2, 'deleted')
+       ON CONFLICT (message_id, user_id) DO UPDATE SET status = 'deleted', timestamp = NOW()`,
+      [messageId, userId]
+    );
+  }
+
+  /**
+   * Returns the list of users who have read a specific message.
+   */
+  async getMessageReaders(messageId: string, conversationId: string): Promise<{ userId: string; fullName: string; readAt: string }[]> {
+    const result = await query<{ userId: string; fullName: string; readAt: string }>(
+      `SELECT ms.user_id AS "userId", u.full_name AS "fullName", ms.timestamp AS "readAt"
+       FROM message_status ms
+       JOIN users u ON u.id = ms.user_id
+       WHERE ms.message_id = $1 AND ms.status = 'read'
+       ORDER BY ms.timestamp ASC`,
+      [messageId]
+    );
+    return result.rows;
   }
 
   async deleteMessage(

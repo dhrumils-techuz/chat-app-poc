@@ -112,6 +112,7 @@ class Keys {
   static const String Make_Admin = 'Make_Admin';
   static const String Leave_Group = 'Leave_Group';
   static const String Group_Name = 'Group_Name';
+  static const String Edit_Group_Name = 'Edit_Group_Name';
   static const String Members = 'Members';
   static const String N_members = 'N_members';
   static const String Media_Links_Docs = 'Media_Links_Docs';
@@ -160,6 +161,13 @@ class Keys {
   static const String Failed_to_load_folders = 'Failed_to_load_folders';
   static const String Failed_to_create_folder = 'Failed_to_create_folder';
   static const String Failed_to_delete_folder = 'Failed_to_delete_folder';
+
+  // Message readers
+  static const String Read_by = 'Read_by';
+  static const String No_one_has_read = 'No_one_has_read';
+  static const String Logout_confirm = 'Logout_confirm';
+  static const String Delete_message_confirm = 'Delete_message_confirm';
+  static const String Delete_for_everyone_confirm = 'Delete_for_everyone_confirm';
 
   // Empty states
   static const String No_results_found = 'No_results_found';
@@ -302,6 +310,7 @@ class ChatStringEnUS {
     Keys.Make_Admin: 'Make Admin',
     Keys.Leave_Group: 'Leave Group',
     Keys.Group_Name: 'Group Name',
+    Keys.Edit_Group_Name: 'Edit Group Name',
     Keys.Members: 'Members',
     Keys.N_members: '@count members',
     Keys.Media_Links_Docs: 'Media, Links, and Docs',
@@ -351,6 +360,13 @@ class ChatStringEnUS {
     Keys.Failed_to_load_folders: 'Failed to load folders',
     Keys.Failed_to_create_folder: 'Failed to create folder',
     Keys.Failed_to_delete_folder: 'Failed to delete folder',
+
+    // Message readers
+    Keys.Read_by: 'Read by',
+    Keys.No_one_has_read: 'No one has read this message yet',
+    Keys.Logout_confirm: 'Are you sure you want to logout?',
+    Keys.Delete_message_confirm: 'Are you sure you want to delete this message for yourself?',
+    Keys.Delete_for_everyone_confirm: 'Are you sure you want to delete this message for everyone?',
 
     // Empty states
     Keys.No_results_found: 'No results found',

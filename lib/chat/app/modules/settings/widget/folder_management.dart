@@ -18,15 +18,16 @@ class FolderManagement extends GetView<FolderManagementController> {
     return Scaffold(
       backgroundColor: colors.backgroundColor,
       appBar: AppBar(
+        backgroundColor: colors.surfaceColor,
+        foregroundColor: colors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           Keys.Manage_Folders.tr,
           style: ChatTextStyles.appBarTitle.copyWith(
             color: colors.textPrimary,
           ),
         ),
-        backgroundColor: colors.surfaceColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {

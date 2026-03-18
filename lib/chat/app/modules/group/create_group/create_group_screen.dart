@@ -20,10 +20,18 @@ class CreateGroupScreen extends GetView<CreateGroupController> {
       backgroundColor: colors.surfaceColor,
       appBar: AppBar(
         backgroundColor: colors.surfaceColor,
+        foregroundColor: colors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colors.textPrimary),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Get.back();
+            }
+          },
         ),
         title: Text(
           Keys.New_Group.tr,
