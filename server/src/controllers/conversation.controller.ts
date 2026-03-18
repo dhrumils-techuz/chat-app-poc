@@ -174,8 +174,15 @@ export class ConversationController {
           }
         }
 
-        // Also notify existing members in the room about the update
-        io.to(`conversation:${id}`).emit('conversation:updated', { conversationId: id });
+        // Also notify existing members in the room with full conversation data
+        // so their chat list and group info update in-place without a full refresh
+        const updatedConv = await conversationService.getConversationById(
+          id, auth.tenantId, auth.userId
+        );
+        io.to(`conversation:${id}`).emit('conversation:updated', {
+          conversationId: id,
+          ...updatedConv,
+        });
       } catch (_) {
         // Non-critical
       }
@@ -299,6 +306,42 @@ export class ConversationController {
         success: true,
         message: ConversationMsg.PARTICIPANT_REMOVED,
       });
+
+      // Notify remaining members and the removed user via socket
+      try {
+        const io = getIO();
+
+        // Fetch updated conversation for remaining members
+        const conversation = await conversationService.getConversationById(
+          conversationId, auth.tenantId, auth.userId
+        );
+
+        // Notify remaining members in the room with full conversation data
+        io.to(`conversation:${conversationId}`).emit('conversation:updated', {
+          conversationId,
+          ...conversation,
+        });
+
+        // Remove the kicked/left user from the socket room and notify them
+        const presenceData = await redis.get(CACHE_KEYS.userPresence(participantUserId));
+        if (presenceData) {
+          const parsed = JSON.parse(presenceData);
+          if (parsed.socketId) {
+            const targetSocket = io.sockets.sockets.get(parsed.socketId);
+            if (targetSocket) {
+              // Leave the conversation room
+              targetSocket.leave(`conversation:${conversationId}`);
+              // Notify the removed user so their UI updates
+              targetSocket.emit('conversation:updated', {
+                conversationId,
+                removed: true,
+              });
+            }
+          }
+        }
+      } catch (_) {
+        // Non-critical — the removal was successful
+      }
     } catch (error) {
       next(error);
     }

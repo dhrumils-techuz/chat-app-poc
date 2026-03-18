@@ -341,6 +341,15 @@ class ChatListController extends GetxController {
   }
 
   void _handleConversationUpdated(Map<String, dynamic> data) {
+    // If this user was removed from the conversation, drop it from the list
+    if (data['removed'] == true) {
+      final convId = data['conversationId'] as String?;
+      if (convId != null) {
+        conversations.removeWhere((c) => c.id == convId);
+      }
+      return;
+    }
+
     // If the event contains a full conversation object (has 'id' and 'type'),
     // either add it (new) or update it (existing).
     if (data.containsKey('id') && data.containsKey('type')) {

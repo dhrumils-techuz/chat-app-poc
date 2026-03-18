@@ -89,6 +89,7 @@ class ChatAppPages {
       binding: BindingsBuilder(() {
         Get.lazyPut(() => CreateGroupController(
               chatRepository: Get.find<ChatRepository>(),
+              authService: Get.find<JwtAuthService>(),
             ));
       }),
     ),
@@ -101,6 +102,7 @@ class ChatAppPages {
         Get.lazyPut(() => GroupInfoController(
               chatRepository: Get.find<ChatRepository>(),
               authService: Get.find<JwtAuthService>(),
+              socketService: Get.find<SocketService>(),
             ));
       }),
     ),

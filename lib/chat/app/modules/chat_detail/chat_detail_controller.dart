@@ -738,6 +738,12 @@ class ChatDetailController extends GetxController {
       final convId = data['conversationId'] as String? ?? data['id'] as String?;
       if (convId != conversation.id) return;
 
+      // If this user was removed from the group, navigate back
+      if (data['removed'] == true) {
+        Get.back();
+        return;
+      }
+
       // If the event contains full conversation data, update our copy
       if (data.containsKey('type') && data.containsKey('id')) {
         try {

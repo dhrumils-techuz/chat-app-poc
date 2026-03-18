@@ -11,6 +11,7 @@ import '../../../data/model/conversation_model.dart';
 import '../../../data/model/group_member_model.dart';
 import '../../../data/model/user_model.dart';
 import '../../../data/repository/chat_repository.dart';
+import '../../../data/service/socket/socket_service.dart';
 import '../../../routes/app_pages.dart';
 
 class GroupInfoController extends GetxController {
@@ -18,12 +19,17 @@ class GroupInfoController extends GetxController {
 
   final ChatRepository _chatRepository;
   final JwtAuthService _authService;
+  final SocketService _socketService;
 
   GroupInfoController({
     required ChatRepository chatRepository,
     required JwtAuthService authService,
+    required SocketService socketService,
   })  : _chatRepository = chatRepository,
-        _authService = authService;
+        _authService = authService,
+        _socketService = socketService;
+
+  StreamSubscription<Map<String, dynamic>>? _conversationUpdatedSub;
 
   // Observable state
   late final Rx<ConversationModel> conversation;
@@ -47,15 +53,57 @@ class GroupInfoController extends GetxController {
     final args = Get.arguments;
     if (args is ConversationModel) {
       conversation = Rx<ConversationModel>(args);
-      groupNameController.text = args.displayName;
+      groupNameController.text = args.displayNameFor(currentUserId);
       _loadMembers();
     }
+    _conversationUpdatedSub =
+        _socketService.onConversationUpdated.listen(_handleConversationUpdated);
   }
 
   @override
   void onClose() {
+    _conversationUpdatedSub?.cancel();
     groupNameController.dispose();
     super.onClose();
+  }
+
+  void _handleConversationUpdated(Map<String, dynamic> data) {
+    final convId =
+        data['conversationId'] as String? ?? data['id'] as String?;
+    if (convId != conversation.value.id) return;
+
+    // If this user was removed from the group
+    if (data['removed'] == true) {
+      Get.until(
+        (route) => route.settings.name == ChatAppRoutes.CHAT_LIST,
+      );
+      return;
+    }
+
+    // If full conversation data is present, update in-place
+    if (data.containsKey('id') && data.containsKey('type')) {
+      try {
+        final updated = ConversationModel.fromJson(data);
+        conversation.value = updated;
+        groupNameController.text = updated.displayNameFor(currentUserId);
+
+        // Rebuild members from the response
+        if (data['participants'] != null) {
+          final participantList = data['participants'] as List;
+          members.value = participantList
+              .map((p) =>
+                  GroupMemberModel.fromJson(p as Map<String, dynamic>))
+              .toList();
+          _sortMembers();
+        } else {
+          _extractMembers(updated);
+        }
+      } catch (_) {
+        loadGroupInfo();
+      }
+    } else {
+      loadGroupInfo();
+    }
   }
 
   // ── Data Loading ──────────────────────────────────────────────────────
@@ -171,14 +219,9 @@ class GroupInfoController extends GetxController {
         userId: user.id,
       );
       if (response.isSuccessful) {
-        final newMember = GroupMemberModel(
-          userId: user.id,
-          name: user.name,
-          avatarUrl: user.avatarUrl,
-          role: GroupRole.member,
-          joinedAt: DateTime.now(),
-        );
-        members.add(newMember);
+        // Don't add optimistically — the server broadcasts
+        // 'conversation:updated' with the full member list, and
+        // _handleConversationUpdated will update the members list.
         DialogHelper.showSnackBar('Success', '${user.name} added to group');
       }
     } catch (e) {
@@ -201,7 +244,8 @@ class GroupInfoController extends GetxController {
             userId: member.userId,
           );
           if (response.isSuccessful) {
-            members.removeWhere((m) => m.userId == member.userId);
+            // Don't remove optimistically — the server broadcasts
+            // 'conversation:updated' which will refresh the member list.
             DialogHelper.showSnackBar(
                 'Success', '${member.name} removed from group');
           }

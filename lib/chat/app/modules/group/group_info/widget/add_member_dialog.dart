@@ -34,8 +34,16 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
 
   final _searchController = TextEditingController();
   final _searchResults = <UserModel>[];
+  late final Set<String> _excludedIds;
   bool _isLoading = false;
   Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mutable copy so we can add to it when a member is added
+    _excludedIds = Set<String>.from(widget.existingMemberIds);
+  }
 
   @override
   void dispose() {
@@ -68,7 +76,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
             : (rawData as List);
         final users = usersJson
             .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
-            .where((u) => !widget.existingMemberIds.contains(u.id))
+            .where((u) => !_excludedIds.contains(u.id))
             .toList();
         setState(() => _searchResults
           ..clear()
@@ -102,11 +110,24 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              Keys.Add_Member.tr,
-              style: ChatTextStyles.heading.copyWith(
-                color: colors.textPrimary,
-              ),
+            // Title row with close (X) button
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    Keys.Add_Member.tr,
+                    style: ChatTextStyles.heading.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: colors.iconColor, size: 22),
+                  onPressed: () => Navigator.of(context).pop(),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ),
             const SizedBox(height: AppSizes.dimenToPx16),
 
@@ -115,6 +136,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
               controller: _searchController,
               onChanged: _onSearchChanged,
               style: ChatTextStyles.body.copyWith(color: colors.textPrimary),
+              cursorColor: colors.primaryColor,
               decoration: InputDecoration(
                 hintText: Keys.Search_users.tr,
                 hintStyle: ChatTextStyles.small.copyWith(
@@ -183,28 +205,16 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                                     )
                                   : null,
                               onTap: () {
+                                // Close dialog first, then fire callback
+                                Navigator.of(context).pop();
                                 widget.onMemberSelected(user);
-                                Get.back();
+                                // Add to exclusion set so re-opening
+                                // the dialog won't show this user
+                                _excludedIds.add(user.id);
                               },
                             );
                           },
                         ),
-            ),
-
-            const SizedBox(height: AppSizes.dimenToPx8),
-
-            // Cancel button
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Get.back(),
-                child: Text(
-                  Keys.Cancel.tr,
-                  style: ChatTextStyles.buttonText.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ),
             ),
           ],
         ),

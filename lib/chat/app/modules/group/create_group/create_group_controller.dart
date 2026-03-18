@@ -7,6 +7,7 @@ import '../../../../core/data/api_response_model.dart';
 import '../../../../core/utils/dialog_helper.dart';
 import '../../../../core/utils/logs_helper.dart';
 import '../../../data/model/conversation_model.dart';
+import '../../../data/auth/jwt_auth_service.dart';
 import '../../../data/model/user_model.dart';
 import '../../../data/repository/chat_repository.dart';
 import '../../../routes/app_pages.dart';
@@ -16,9 +17,15 @@ class CreateGroupController extends GetxController {
   static const String _tag = 'CreateGroupController';
 
   final ChatRepository _chatRepository;
+  final JwtAuthService _authService;
 
-  CreateGroupController({required ChatRepository chatRepository})
-      : _chatRepository = chatRepository;
+  CreateGroupController({
+    required ChatRepository chatRepository,
+    required JwtAuthService authService,
+  })  : _chatRepository = chatRepository,
+        _authService = authService;
+
+  String get currentUserId => _authService.currentUserId ?? '';
 
   // Form controllers
   final groupNameController = TextEditingController();
@@ -81,6 +88,7 @@ class CreateGroupController extends GetxController {
             : (rawData as List);
         final users = userData
             .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+            .where((u) => u.id != currentUserId)
             .toList();
         searchResults.value = users;
       }

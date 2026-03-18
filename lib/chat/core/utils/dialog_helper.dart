@@ -56,7 +56,7 @@ class DialogHelper {
                   Expanded(
                     child: TextButton(
                       onPressed: () {
-                        Get.back();
+                        Navigator.of(ctx).pop();
                         onNegativeResponse?.call();
                       },
                       child: Text(
@@ -71,7 +71,7 @@ class DialogHelper {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Get.back();
+                        Navigator.of(ctx).pop();
                         onPositiveResponse?.call();
                       },
                       style: ElevatedButton.styleFrom(
@@ -161,7 +161,7 @@ class DialogHelper {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Get.back();
+                    Navigator.of(ctx).pop();
                     onTap?.call();
                   },
                   style: ElevatedButton.styleFrom(
