@@ -7,6 +7,7 @@ import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
 import '../../../data/model/conversation_model.dart';
+import '../../../data/types/message_status_type.dart';
 import '../../../data/types/message_type.dart';
 import '../../../widgets/avatar_widget.dart';
 import '../../../widgets/badge_count_widget.dart';
@@ -48,7 +49,7 @@ class ChatListItem extends StatelessWidget {
                     children: [
                       _buildTitleRow(colors),
                       const SizedBox(height: AppSizes.dimenToPx4),
-                      _buildSubtitle(controller, colors),
+                      Obx(() => _buildSubtitle(controller, colors)),
                     ],
                   ),
                 ),
@@ -120,6 +121,22 @@ class ChatListItem extends StatelessWidget {
   }
 
   Widget _buildSubtitle(ChatListController controller, ChatColors colors) {
+    // Show typing indicator if someone is typing in this conversation
+    final typingUser = controller.typingIndicators[conversation.id];
+    if (typingUser != null) {
+      return Text(
+        conversation.isGroup
+            ? '$typingUser ${Keys.Is_typing.tr}'
+            : Keys.Typing.tr,
+        style: ChatTextStyles.conversationPreview.copyWith(
+          color: colors.primaryColor,
+          fontStyle: FontStyle.italic,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
     final lastMessage = conversation.lastMessage;
 
     if (lastMessage == null) {
@@ -160,6 +177,36 @@ class ChatListItem extends StatelessWidget {
 
     // Build preview text
     final List<InlineSpan> spans = [];
+
+    // Show read receipt icon for messages sent by current user
+    if (lastMessage.senderId == controller.currentUserId) {
+      IconData statusIcon;
+      Color statusColor;
+      switch (lastMessage.status) {
+        case MessageStatusType.sending:
+          statusIcon = Icons.access_time;
+          statusColor = colors.textTimestamp;
+        case MessageStatusType.sent:
+          statusIcon = Icons.check;
+          statusColor = colors.textTimestamp;
+        case MessageStatusType.delivered:
+          statusIcon = Icons.done_all;
+          statusColor = colors.textTimestamp;
+        case MessageStatusType.read:
+          statusIcon = Icons.done_all;
+          statusColor = colors.primaryColor;
+        case MessageStatusType.failed:
+          statusIcon = Icons.error_outline;
+          statusColor = colors.errorColor;
+      }
+      spans.add(WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: Icon(statusIcon, size: 14, color: statusColor),
+        ),
+      ));
+    }
 
     // Show sender name in group chats
     if (conversation.isGroup && lastMessage.senderName != null) {

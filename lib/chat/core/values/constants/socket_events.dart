@@ -42,6 +42,9 @@ class SocketEvents {
   // Presence
   static const String presenceUpdate = 'presence:update';
 
+  // Conversation updates (server → client)
+  static const String conversationUnreadUpdate = 'conversation:unread:update';
+
   // Error
   static const String error = 'error';
 }

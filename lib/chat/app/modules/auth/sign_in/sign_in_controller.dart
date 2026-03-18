@@ -82,11 +82,15 @@ class SignInController extends GetxController {
       );
 
       if (response.isSuccessful && response.data != null) {
+        // Guard: if response is not a Map (e.g., HTML from captive portal),
+        // treat as failure.
+        if (response.data is! Map<String, dynamic>) {
+          _handleLoginFailure('Unable to connect to server. Please check your network connection.');
+          return;
+        }
         // response.data is the full response body: { success, data: { tokens, user } }
         // Extract the 'data' field if it exists, otherwise use the whole map.
-        final rawData = response.data is Map<String, dynamic>
-            ? (response.data as Map<String, dynamic>)
-            : <String, dynamic>{};
+        final rawData = response.data as Map<String, dynamic>;
         final loginMap = rawData.containsKey('data')
             ? rawData['data'] as Map<String, dynamic>
             : rawData;

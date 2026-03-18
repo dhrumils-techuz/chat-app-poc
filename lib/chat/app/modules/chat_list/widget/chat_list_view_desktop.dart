@@ -263,9 +263,15 @@ class _EmbeddedChatDetailState extends State<_EmbeddedChatDetail> {
   }
 
   void _createController() {
-    // Remove any previously registered controller (from a prior selection)
+    // Remove any previously registered controller (from a prior selection).
+    // Use force: true to skip the onClose lifecycle of the previous controller
+    // since we already handle cleanup in dispose(). This prevents race
+    // conditions when the old controller's onClose runs during the new
+    // widget's initState.
     if (Get.isRegistered<ChatDetailController>()) {
-      Get.delete<ChatDetailController>();
+      try {
+        Get.delete<ChatDetailController>(force: true);
+      } catch (_) {}
     }
 
     _ownController = ChatDetailController(

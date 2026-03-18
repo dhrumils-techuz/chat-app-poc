@@ -62,6 +62,13 @@ export function handleReadReceiptEvents(socket: Socket, io: Server, auth: JwtPay
         userId,
         timestamp: now,
       });
+
+      // Emit back to the READER's own socket so their chat list clears the
+      // unread badge. The room broadcast above excludes the sender socket.
+      socket.emit('conversation:unread:update', {
+        conversationId,
+        unreadCount: 0,
+      });
     } catch (error) {
       logger.error('Error handling message:read', {
         error: error instanceof Error ? error.message : 'Unknown',

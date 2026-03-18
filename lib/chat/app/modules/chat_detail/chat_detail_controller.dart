@@ -7,6 +7,7 @@ import '../../../core/data/api_response_model.dart';
 import '../../../core/utils/logs_helper.dart';
 import '../../data/auth/jwt_auth_service.dart';
 import '../../data/model/conversation_model.dart';
+import '../chat_list/chat_list_controller.dart';
 import '../../data/model/media_attachment_model.dart';
 import '../../data/model/message_model.dart';
 import '../../data/model/user_model.dart';
@@ -93,14 +94,32 @@ class ChatDetailController extends GetxController {
       otherUserPresence.value = other.presence;
     }
     _socketService.joinConversation(conversation.id);
+    // Tell the chat list this conversation is currently being viewed,
+    // so it won't increment unread count for incoming messages.
+    if (Get.isRegistered<ChatListController>()) {
+      Get.find<ChatListController>().activeConversationId.value = conversation.id;
+    }
     loadMessages(); // _markAllAsRead is called after messages load
     _setupSocketListeners();
     scrollController.addListener(_onScroll);
   }
 
+  /// Whether this controller has been closed (disposed).
+  /// Used by the view layer to avoid accessing disposed controllers.
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
   @override
   void onClose() {
+    _isDisposed = true;
     _socketService.leaveConversation(conversation.id);
+    // Clear the active conversation so the chat list resumes counting unreads
+    if (Get.isRegistered<ChatListController>()) {
+      final listCtrl = Get.find<ChatListController>();
+      if (listCtrl.activeConversationId.value == conversation.id) {
+        listCtrl.activeConversationId.value = null;
+      }
+    }
     _newMessageSub?.cancel();
     _messageSentSub?.cancel();
     _messageDeliveredSub?.cancel();
@@ -112,12 +131,17 @@ class ChatDetailController extends GetxController {
     if (_isCurrentlyTyping) {
       _socketService.stopTyping(conversation.id);
     }
-    // Defer disposal of UI controllers to the next frame so that the widget
-    // tree has time to unmount first. This prevents "used after being disposed"
-    // errors when switching conversations in tablet/desktop split-view mode.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      textController.dispose();
-      scrollController.dispose();
+    // Defer disposal of UI controllers with a delay to let the focus system
+    // finish processing. Using Future.delayed instead of addPostFrameCallback
+    // because FocusManager.applyFocusChangesIfNeeded runs in post-frame
+    // callbacks too and may reference the TextEditingController.
+    Future.delayed(const Duration(milliseconds: 200), () {
+      try {
+        textController.dispose();
+      } catch (_) {}
+      try {
+        scrollController.dispose();
+      } catch (_) {}
     });
     super.onClose();
   }
@@ -548,7 +572,10 @@ class ChatDetailController extends GetxController {
       final latestMessageId = messages.first.id;
       // Mark all messages as delivered first (in case some were missed while offline)
       _socketService.markAsDelivered(conversation.id, latestMessageId);
-      // Then mark all as read since the user is viewing this conversation
+      // Then mark all as read since the user is viewing this conversation.
+      // The server will reset unread_count=0 in the DB and emit
+      // 'conversation:unread:update' back to this socket, which the
+      // ChatListController listens to — so no manual clearing needed here.
       _socketService.markAsRead(conversation.id, latestMessageId);
     }
   }

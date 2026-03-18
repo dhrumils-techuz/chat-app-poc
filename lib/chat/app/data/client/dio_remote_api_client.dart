@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart' show Get, GetNavigation;
@@ -73,7 +75,8 @@ class DioRemoteApiClient extends GetxService {
               if (newToken != null) {
                 error.requestOptions.headers['Authorization'] =
                     'Bearer $newToken';
-                final retryResponse = await apiClient.fetch(error.requestOptions);
+                final retryResponse =
+                    await apiClient.fetch(error.requestOptions);
                 return handler.resolve(retryResponse);
               }
               // newToken is null → refresh failed → session expired
@@ -187,9 +190,8 @@ class DioRemoteApiClient extends GetxService {
         final newRefreshToken = data['refreshToken'] as String;
         // expiresIn may be int (seconds) or string ("15m")
         final rawExpiresIn = data['expiresIn'];
-        final expiresIn = rawExpiresIn is int
-            ? rawExpiresIn
-            : _parseExpiresIn(rawExpiresIn);
+        final expiresIn =
+            rawExpiresIn is int ? rawExpiresIn : _parseExpiresIn(rawExpiresIn);
 
         await _tokenRepository.saveAccessToken(newAccessToken);
         await _tokenRepository.saveRefreshToken(newRefreshToken);

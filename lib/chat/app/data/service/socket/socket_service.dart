@@ -30,6 +30,7 @@ class SocketService extends GetxService {
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
   final _presenceController = StreamController<Map<String, dynamic>>.broadcast();
   final _conversationUpdatedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _unreadUpdateController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<MessageModel> get onNewMessage => _newMessageController.stream;
   Stream<Map<String, dynamic>> get onMessageSent => _messageSentController.stream;
@@ -39,6 +40,7 @@ class SocketService extends GetxService {
   Stream<Map<String, dynamic>> get onTyping => _typingController.stream;
   Stream<Map<String, dynamic>> get onPresenceUpdate => _presenceController.stream;
   Stream<Map<String, dynamic>> get onConversationUpdated => _conversationUpdatedController.stream;
+  Stream<Map<String, dynamic>> get onUnreadUpdate => _unreadUpdateController.stream;
 
   bool _isInitialized = false;
 
@@ -100,6 +102,13 @@ class SocketService extends GetxService {
     // Server emits 'presence:update' with { userId, status, lastSeenAt }
     _socketClient.on(SocketEvents.presenceUpdate, (data) {
       _presenceController.add(data as Map<String, dynamic>);
+    });
+
+    // ── Unread count updates ─────────────────────────────────────────
+    // Server emits 'conversation:unread:update' back to the reader after
+    // marking messages as read, with { conversationId, unreadCount }
+    _socketClient.on(SocketEvents.conversationUnreadUpdate, (data) {
+      _unreadUpdateController.add(data as Map<String, dynamic>);
     });
   }
 
@@ -212,6 +221,7 @@ class SocketService extends GetxService {
     _typingController.close();
     _presenceController.close();
     _conversationUpdatedController.close();
+    _unreadUpdateController.close();
     disconnect();
     super.onClose();
   }

@@ -69,7 +69,8 @@ class ConversationModel {
       createdBy: (json['createdBy'] ?? json['created_by']) as String?,
       createdAt: createdAt != null ? DateTime.parse(createdAt as String) : null,
       updatedAt: updatedAt != null ? DateTime.parse(updatedAt as String) : null,
-      lastMessageAt: lastMsgAt != null ? DateTime.parse(lastMsgAt as String) : null,
+      lastMessageAt:
+          lastMsgAt != null ? DateTime.parse(lastMsgAt as String) : null,
     );
   }
 

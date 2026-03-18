@@ -13,11 +13,22 @@ import 'message_bubble.dart';
 import 'message_input_bar.dart';
 import 'typing_indicator_widget.dart';
 
-class ChatDetailViewDesktop extends GetView<ChatDetailController> {
+class ChatDetailViewDesktop extends StatelessWidget {
   const ChatDetailViewDesktop({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Guard: during controller transitions (switching chats on desktop),
+    // the controller may not be registered yet. Show a loading state.
+    if (!Get.isRegistered<ChatDetailController>()) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final controller = Get.find<ChatDetailController>();
+    if (controller.isDisposed) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final colors = ChatColors.getInstance(context);
 
     return Container(
@@ -25,16 +36,20 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
       child: Column(
         children: [
           // ── Header Bar ──────────────────────────────────────────────
-          _buildHeaderBar(context, colors),
+          _buildHeaderBar(context, colors, controller),
 
           // ── Body: Messages + Input ─────────────────────────────────
           Expanded(
             child: Column(
               children: [
-                Expanded(child: _buildMessageList(context, colors)),
+                Expanded(
+                    child: _buildMessageList(context, colors, controller)),
 
                 // Typing indicator
                 Obx(() {
+                  if (!Get.isRegistered<ChatDetailController>()) {
+                    return const SizedBox.shrink();
+                  }
                   final users = controller.typingUsers.toList();
                   return TypingIndicatorWidget(
                     typingUsers: users,
@@ -53,7 +68,8 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
 
   // ── Header Bar ──────────────────────────────────────────────────────────
 
-  Widget _buildHeaderBar(BuildContext context, ChatColors colors) {
+  Widget _buildHeaderBar(
+      BuildContext context, ChatColors colors, ChatDetailController controller) {
     final conversation = controller.conversation;
     final otherUser = controller.otherParticipant;
 
@@ -233,7 +249,8 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
 
   // ── Message List ────────────────────────────────────────────────────────
 
-  Widget _buildMessageList(BuildContext context, ChatColors colors) {
+  Widget _buildMessageList(
+      BuildContext context, ChatColors colors, ChatDetailController controller) {
     return Obx(() {
       if (controller.isLoading.value) {
         return Center(

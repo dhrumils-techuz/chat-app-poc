@@ -44,11 +44,24 @@ class ChatListController extends GetxController {
   final searchQuery = ''.obs;
   final selectedConversationId = RxnString();
 
+  /// The conversation currently being viewed in chat detail (any platform).
+  /// Set by ChatDetailController on entry, cleared on exit.
+  /// Used to suppress unread count increments for the active chat.
+  final activeConversationId = RxnString();
+
+  /// Per-conversation typing state: conversationId → userName currently typing.
+  final typingIndicators = <String, String>{}.obs;
+  final Map<String, Timer> _typingTimers = {};
+
   // Stream subscriptions
   StreamSubscription<MessageModel>? _newMessageSub;
   StreamSubscription<Map<String, dynamic>>? _messageSentSub;
   StreamSubscription<Map<String, dynamic>>? _presenceSub;
   StreamSubscription<Map<String, dynamic>>? _conversationUpdatedSub;
+  StreamSubscription<Map<String, dynamic>>? _typingSub;
+  StreamSubscription<Map<String, dynamic>>? _messageReadSub;
+  StreamSubscription<Map<String, dynamic>>? _messageDeliveredSub;
+  StreamSubscription<Map<String, dynamic>>? _unreadUpdateSub;
 
   String get currentUserId => _authService.currentUserId ?? '';
 
@@ -73,6 +86,12 @@ class ChatListController extends GetxController {
     _messageSentSub?.cancel();
     _presenceSub?.cancel();
     _conversationUpdatedSub?.cancel();
+    _typingSub?.cancel();
+    _messageReadSub?.cancel();
+    _messageDeliveredSub?.cancel();
+    _unreadUpdateSub?.cancel();
+    _typingTimers.forEach((_, timer) => timer.cancel());
+    _typingTimers.clear();
     super.onClose();
   }
 
@@ -169,6 +188,13 @@ class ChatListController extends GetxController {
         _socketService.onPresenceUpdate.listen(_handlePresenceUpdate);
     _conversationUpdatedSub =
         _socketService.onConversationUpdated.listen(_handleConversationUpdated);
+    _typingSub = _socketService.onTyping.listen(_handleTypingIndicator);
+    _messageReadSub =
+        _socketService.onMessageRead.listen(_handleMessageReadAck);
+    _messageDeliveredSub =
+        _socketService.onMessageDelivered.listen(_handleMessageDeliveredAck);
+    _unreadUpdateSub =
+        _socketService.onUnreadUpdate.listen(_handleUnreadUpdate);
   }
 
   /// Joins socket rooms for all loaded conversations so we receive
@@ -186,13 +212,16 @@ class ChatListController extends GetxController {
         conversations.indexWhere((c) => c.id == message.conversationId);
     if (index != -1) {
       final conversation = conversations[index];
-      final isSelected =
-          selectedConversationId.value == conversation.id;
+      // Don't increment unread if the user is currently viewing this chat
+      // (desktop split-view uses selectedConversationId, mobile uses activeConversationId)
+      final isViewing =
+          selectedConversationId.value == conversation.id ||
+          activeConversationId.value == conversation.id;
       conversations[index] = conversation.copyWith(
         lastMessage: message,
         lastMessageAt: message.createdAt,
         unreadCount:
-            isSelected ? 0 : conversation.unreadCount + 1,
+            isViewing ? 0 : conversation.unreadCount + 1,
       );
       _sortConversations();
     } else {
@@ -271,6 +300,87 @@ class ChatListController extends GetxController {
   void _handleConversationUpdated(Map<String, dynamic> data) {
     // Reload to get the latest state
     loadConversations();
+  }
+
+  void _handleTypingIndicator(Map<String, dynamic> data) {
+    final conversationId = data['conversationId'] as String?;
+    final userName = data['userName'] as String? ?? 'Someone';
+    final isTyping = data['isTyping'] as bool? ?? true;
+    final userId = data['userId'] as String?;
+    if (conversationId == null) return;
+
+    // Ignore own typing events
+    if (userId == currentUserId) return;
+
+    // Cancel existing auto-remove timer
+    _typingTimers[conversationId]?.cancel();
+    _typingTimers.remove(conversationId);
+
+    if (isTyping) {
+      typingIndicators[conversationId] = userName;
+      // Auto-remove after 5s (matches server Redis TTL)
+      _typingTimers[conversationId] = Timer(const Duration(seconds: 5), () {
+        typingIndicators.remove(conversationId);
+        _typingTimers.remove(conversationId);
+      });
+    } else {
+      typingIndicators.remove(conversationId);
+    }
+  }
+
+  void _handleMessageReadAck(Map<String, dynamic> data) {
+    final conversationId = data['conversationId'] as String?;
+    if (conversationId == null) return;
+
+    final index = conversations.indexWhere((c) => c.id == conversationId);
+    if (index == -1) return;
+
+    final conversation = conversations[index];
+    final lastMsg = conversation.lastMessage;
+    if (lastMsg == null) return;
+
+    // Update status only if the last message was sent by the current user
+    if (lastMsg.senderId == currentUserId &&
+        lastMsg.status != MessageStatusType.read) {
+      conversations[index] = conversation.copyWith(
+        lastMessage: lastMsg.copyWith(status: MessageStatusType.read),
+      );
+    }
+  }
+
+  void _handleMessageDeliveredAck(Map<String, dynamic> data) {
+    final conversationId = data['conversationId'] as String?;
+    if (conversationId == null) return;
+
+    final index = conversations.indexWhere((c) => c.id == conversationId);
+    if (index == -1) return;
+
+    final conversation = conversations[index];
+    final lastMsg = conversation.lastMessage;
+    if (lastMsg == null) return;
+
+    // Only upgrade to delivered if currently at sent status
+    if (lastMsg.senderId == currentUserId &&
+        lastMsg.status == MessageStatusType.sent) {
+      conversations[index] = conversation.copyWith(
+        lastMessage: lastMsg.copyWith(status: MessageStatusType.delivered),
+      );
+    }
+  }
+
+  /// Handles server-driven unread count updates.
+  /// The server emits 'conversation:unread:update' after marking messages
+  /// as read, with { conversationId, unreadCount }.
+  void _handleUnreadUpdate(Map<String, dynamic> data) {
+    final conversationId = data['conversationId'] as String?;
+    final unreadCount = data['unreadCount'] as int? ?? 0;
+    if (conversationId == null) return;
+
+    final index = conversations.indexWhere((c) => c.id == conversationId);
+    if (index != -1) {
+      conversations[index] =
+          conversations[index].copyWith(unreadCount: unreadCount);
+    }
   }
 
   // ── Actions ───────────────────────────────────────────────────────────
