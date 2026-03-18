@@ -197,6 +197,24 @@ class SocketService extends GetxService {
     });
   }
 
+  /// Queries the current presence of specific user IDs from the server.
+  /// Returns a map of userId → status string ('online'/'offline').
+  void queryPresence(List<String> userIds, Function(Map<String, String>) callback) {
+    _socketClient.emitWithAck('presence:query', {'userIds': userIds}, (response) {
+      if (response is Map) {
+        final result = <String, String>{};
+        response.forEach((key, value) {
+          if (value is Map) {
+            result[key.toString()] = (value['status'] as String?) ?? 'offline';
+          }
+        });
+        callback(result);
+      } else {
+        callback({});
+      }
+    });
+  }
+
   /// Marks a message as delivered via socket.
   /// Server expects 'message:delivered' with { messageId, conversationId }.
   void markAsDelivered(String conversationId, String messageId) {

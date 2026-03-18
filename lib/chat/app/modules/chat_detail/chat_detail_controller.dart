@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../core/data/api_response_model.dart';
 import '../../../core/utils/logs_helper.dart';
@@ -52,13 +53,15 @@ class ChatDetailController extends GetxController {
   final typingUsers = <String>[].obs;
   final hasMoreMessages = true.obs;
   final highlightedMessageId = RxnString();
+  final showScrollToBottom = false.obs;
 
   // ── Controllers ────────────────────────────────────────────────────────
   final textController = TextEditingController();
-  final scrollController = ScrollController();
 
-  /// GlobalKey map: messageId → GlobalKey, used for precise reply-tap scrolling.
-  final Map<String, GlobalKey> messageKeys = {};
+  /// Item-level scroll controller from scrollable_positioned_list.
+  /// Allows scrolling/jumping to any item by index — no GlobalKey needed.
+  final itemScrollController = ItemScrollController();
+  final itemPositionsListener = ItemPositionsListener.create();
 
   /// Reactive presence status for the other participant in 1:1 conversations.
   final otherUserPresence = UserPresence.offline.obs;
@@ -88,10 +91,36 @@ class ChatDetailController extends GetxController {
   void onInit() {
     super.onInit();
     conversation = _conversationOverride ?? Get.arguments as ConversationModel;
-    // Initialize presence from participant data
+
+    // Initialize presence from local data first (may be stale),
+    // then query the server for the real-time status.
     final other = otherParticipant;
     if (other != null) {
-      otherUserPresence.value = other.presence;
+      // Check ChatListController's live data first
+      if (Get.isRegistered<ChatListController>()) {
+        final listCtrl = Get.find<ChatListController>();
+        final liveConv = listCtrl.conversations.firstWhereOrNull(
+          (c) => c.id == conversation.id,
+        );
+        if (liveConv?.participants != null) {
+          final liveOther = liveConv!.participants!
+              .where((p) => p.id != currentUserId)
+              .toList();
+          if (liveOther.isNotEmpty) {
+            otherUserPresence.value = liveOther.first.presence;
+          }
+        }
+      }
+
+      // Query the server for the actual real-time presence from Redis.
+      // This ensures we get the correct status even if the presence:update
+      // event was broadcast before we started listening.
+      _socketService.queryPresence([other.id], (result) {
+        final status = result[other.id];
+        if (status != null) {
+          otherUserPresence.value = UserPresence.fromValue(status);
+        }
+      });
     }
     _socketService.joinConversation(conversation.id);
     // Tell the chat list this conversation is currently being viewed,
@@ -101,7 +130,8 @@ class ChatDetailController extends GetxController {
     }
     loadMessages(); // _markAllAsRead is called after messages load
     _setupSocketListeners();
-    scrollController.addListener(_onScroll);
+    // Listen to visible item positions for load-more and scroll-to-bottom.
+    itemPositionsListener.itemPositions.addListener(_onItemPositionsChanged);
   }
 
   /// Whether this controller has been closed (disposed).
@@ -131,6 +161,7 @@ class ChatDetailController extends GetxController {
     if (_isCurrentlyTyping) {
       _socketService.stopTyping(conversation.id);
     }
+    itemPositionsListener.itemPositions.removeListener(_onItemPositionsChanged);
     // Defer disposal of UI controllers with a delay to let the focus system
     // finish processing. Using Future.delayed instead of addPostFrameCallback
     // because FocusManager.applyFocusChangesIfNeeded runs in post-frame
@@ -138,9 +169,6 @@ class ChatDetailController extends GetxController {
     Future.delayed(const Duration(milliseconds: 200), () {
       try {
         textController.dispose();
-      } catch (_) {}
-      try {
-        scrollController.dispose();
       } catch (_) {}
     });
     super.onClose();
@@ -337,40 +365,23 @@ class ChatDetailController extends GetxController {
     replyingTo.value = null;
   }
 
-  /// Returns (or creates) a GlobalKey for the given message ID.
-  /// Used by the view layer to tag each message widget for precise scrolling.
-  GlobalKey getKeyForMessage(String messageId) {
-    return messageKeys.putIfAbsent(messageId, () => GlobalKey());
-  }
-
   /// Scrolls to a specific message by ID (used for reply-tap navigation).
-  /// Uses GlobalKey-based `Scrollable.ensureVisible` for precise positioning.
-  /// Returns true if the message was found and scrolled to.
+  /// Uses `ItemScrollController.scrollTo` for precise index-based scrolling —
+  /// no GlobalKeys, no offset estimation, works with variable-height items.
   bool scrollToMessage(String messageId) {
     final index = messages.indexWhere((m) => m.id == messageId);
     if (index == -1) return false;
 
-    final key = messageKeys[messageId];
-    if (key?.currentContext != null) {
-      Scrollable.ensureVisible(
-        key!.currentContext!,
+    if (itemScrollController.isAttached) {
+      itemScrollController.scrollTo(
+        index: index,
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
-        alignment: 0.5, // Center the message in the viewport
+        alignment: 0.3, // 30% from the top of the viewport
       );
-    } else {
-      // Fallback: if the key isn't rendered yet, use estimated offset
-      if (scrollController.hasClients) {
-        final estimatedOffset = index * 72.0;
-        scrollController.animateTo(
-          estimatedOffset,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        );
-      }
     }
 
-    // Briefly highlight the message
+    // Highlight the target message
     highlightedMessageId.value = messageId;
     Future.delayed(const Duration(seconds: 2), () {
       if (highlightedMessageId.value == messageId) {
@@ -580,25 +591,46 @@ class ChatDetailController extends GetxController {
     }
   }
 
+  /// Scrolls to the newest message (index 0 in the reversed list).
   void _scrollToBottom() {
-    if (scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (scrollController.hasClients) {
-          scrollController.animateTo(
-            0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    }
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (itemScrollController.isAttached) {
+        itemScrollController.scrollTo(
+          index: 0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
-  void _onScroll() {
-    // Reversed list: reaching the "top" means scrolling to maxScrollExtent
-    if (scrollController.position.pixels >=
-        scrollController.position.maxScrollExtent - 200) {
+  /// Called when visible item positions change.
+  /// Handles load-more pagination and scroll-to-bottom FAB visibility.
+  void _onItemPositionsChanged() {
+    final positions = itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+
+    // Load more when the last visible item is near the end of the list
+    final maxIndex = positions.map((p) => p.index).reduce(
+        (a, b) => a > b ? a : b);
+    if (maxIndex >= messages.length - 5 && hasMoreMessages.value) {
       loadMoreMessages();
+    }
+
+    // Show scroll-to-bottom FAB when item 0 is NOT visible
+    final minIndex = positions.map((p) => p.index).reduce(
+        (a, b) => a < b ? a : b);
+    showScrollToBottom.value = minIndex > 3;
+  }
+
+  /// Scrolls to the bottom of the chat (newest messages). Public for the FAB.
+  void scrollToBottom() {
+    if (itemScrollController.isAttached) {
+      itemScrollController.scrollTo(
+        index: 0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 

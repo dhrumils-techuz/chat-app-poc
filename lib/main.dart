@@ -147,7 +147,12 @@ void main() async {
   // ── Run app ──────────────────────────────────────────────────────────
 
   runApp(
-    GetMaterialApp(
+    GestureDetector(
+      onTap: () {
+        // Dismiss keyboard when tapping outside a text field
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: GetMaterialApp(
       title: Keys.AppName.tr,
       translations: ChatMessages(),
       locale: const Locale('en', 'US'),
@@ -174,6 +179,6 @@ void main() async {
       getPages: ChatAppPages.routes,
       defaultTransition: Transition.cupertino,
       debugShowCheckedModeBanner: false,
-    ),
+    )),
   );
 }

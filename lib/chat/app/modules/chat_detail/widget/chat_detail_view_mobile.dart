@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../core/values/app_strings.dart';
 import '../../../../core/extension/datetime_extensions.dart';
@@ -25,7 +26,29 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
       appBar: _buildAppBar(context, colors),
       body: Column(
         children: [
-          Expanded(child: _buildMessageList(context, colors)),
+          Expanded(
+            child: Stack(
+              children: [
+                _buildMessageList(context, colors),
+                // Scroll-to-bottom FAB
+                Positioned(
+                  right: 16,
+                  bottom: 8,
+                  child: Obx(() => controller.showScrollToBottom.value
+                      ? FloatingActionButton.small(
+                          onPressed: controller.scrollToBottom,
+                          backgroundColor: colors.surfaceColor,
+                          elevation: 3,
+                          child: Icon(
+                            Icons.keyboard_arrow_down,
+                            color: colors.primaryColor,
+                          ),
+                        )
+                      : const SizedBox.shrink()),
+                ),
+              ],
+            ),
+          ),
           Obx(() {
             if (controller.typingUsers.isNotEmpty) {
               return TypingIndicatorWidget(
@@ -60,10 +83,7 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
                     ? controller.conversation.avatarUrl
                     : controller.otherParticipant?.avatarUrl ??
                         controller.conversation.avatarUrl,
-                name: controller.isGroup
-                    ? controller.conversation.displayName
-                    : controller.otherParticipant?.name ??
-                        controller.conversation.displayName,
+                name: controller.conversation.displayNameFor(controller.currentUserId),
                 size: AppSizes.avatarSmall,
               ),
               if (!controller.isGroup && controller.otherParticipant != null)
@@ -85,7 +105,7 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  controller.conversation.displayName,
+                  controller.conversation.displayNameFor(controller.currentUserId),
                   style: ChatTextStyles.heading.copyWith(
                     color: colors.textPrimary,
                   ),
@@ -207,15 +227,18 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
         );
       }
 
-      return ListView.builder(
-        controller: controller.scrollController,
+      final itemCount = controller.messages.length +
+          (controller.isLoadingMore.value ? 1 : 0);
+
+      return ScrollablePositionedList.builder(
+        itemScrollController: controller.itemScrollController,
+        itemPositionsListener: controller.itemPositionsListener,
         reverse: true,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.dimenToPx8,
           vertical: AppSizes.dimenToPx8,
         ),
-        itemCount: controller.messages.length +
-            (controller.isLoadingMore.value ? 1 : 0),
+        itemCount: itemCount,
         itemBuilder: (context, index) {
           // Loading indicator at the top (end of reversed list)
           if (index == controller.messages.length) {
@@ -244,20 +267,17 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
             children: [
               if (showDateSeparator)
                 _buildDateSeparator(context, message.createdAt, colors),
-              Obx(() => Container(
-                key: controller.getKeyForMessage(message.id),
-                child: MessageBubble(
-                  message: message,
-                  isMyMessage: controller.isMyMessage(message),
-                  isGroup: controller.isGroup,
-                  isHighlighted:
-                      controller.highlightedMessageId.value == message.id,
-                  onReply: () => controller.setReplyTo(message),
-                  onDelete: (forEveryone) =>
-                      controller.deleteMessage(message.id, forEveryone: forEveryone),
-                  onTapReply: (parentId) =>
-                      controller.scrollToMessage(parentId),
-                ),
+              Obx(() => MessageBubble(
+                message: message,
+                isMyMessage: controller.isMyMessage(message),
+                isGroup: controller.isGroup,
+                isHighlighted:
+                    controller.highlightedMessageId.value == message.id,
+                onReply: () => controller.setReplyTo(message),
+                onDelete: (forEveryone) =>
+                    controller.deleteMessage(message.id, forEveryone: forEveryone),
+                onTapReply: (parentId) =>
+                    controller.scrollToMessage(parentId),
               )),
             ],
           );

@@ -295,15 +295,20 @@ class MessageBubble extends StatelessWidget {
 
     final colors = ChatColors.getInstance(context);
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final bubbleSize = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
+    final screenSize = MediaQuery.of(context).size;
 
+    // Position the menu below (or above) the bubble, aligned to the bubble's side
     showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy,
-        offset.dx + renderBox.size.width,
-        offset.dy + renderBox.size.height,
+        isMyMessage
+            ? offset.dx + bubbleSize.width - 180 // right-align for sent
+            : offset.dx, // left-align for received
+        offset.dy + bubbleSize.height, // below the bubble
+        screenSize.width - offset.dx - bubbleSize.width,
+        0,
       ),
       color: colors.surfaceColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

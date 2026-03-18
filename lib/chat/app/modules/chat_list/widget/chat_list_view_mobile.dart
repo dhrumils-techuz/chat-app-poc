@@ -63,26 +63,6 @@ class ChatListViewMobile extends GetView<ChatListController> {
         ),
       ),
       actions: [
-        Container(
-          width: AppSizes.dimenToPx40,
-          height: AppSizes.dimenToPx40,
-          margin: const EdgeInsets.only(right: AppSizes.dimenToPx4),
-          decoration: BoxDecoration(
-            color: AppColor.primary10,
-            borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
-          ),
-          child: IconButton(
-            icon: Icon(
-              Icons.search,
-              color: colors.primaryColor,
-              size: AppSizes.dimenToPx20,
-            ),
-            onPressed: () {
-              // Focus the search bar
-            },
-            padding: EdgeInsets.zero,
-          ),
-        ),
         PopupMenuButton<String>(
           icon: Icon(
             Icons.more_vert,
@@ -174,34 +154,40 @@ class ChatListViewMobile extends GetView<ChatListController> {
 
       final items = controller.filteredConversations;
 
-      if (items.isEmpty) {
-        return EmptyStateWidget(
-          icon: Icons.chat_bubble_outline_rounded,
-          title: controller.searchQuery.value.isNotEmpty
-              ? Keys.No_results_found.tr
-              : Keys.No_conversations.tr,
-          subtitle: controller.searchQuery.value.isNotEmpty
-              ? Keys.Try_different_search.tr
-              : Keys.Start_new_chat.tr,
-          actionText: controller.searchQuery.value.isEmpty
-              ? Keys.Start_chat.tr
-              : null,
-          onAction: controller.searchQuery.value.isEmpty
-              ? () => Get.toNamed(ChatAppRoutes.CONTACTS)
-              : null,
-        );
-      }
-
       return RefreshIndicator(
         onRefresh: controller.refreshConversations,
         color: colors.primaryColor,
-        child: ListView.builder(
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return ChatListItem(conversation: items[index]);
-          },
-        ),
+        child: items.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(Get.context!).size.height * 0.5,
+                    child: EmptyStateWidget(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: controller.searchQuery.value.isNotEmpty
+                          ? Keys.No_results_found.tr
+                          : Keys.No_conversations.tr,
+                      subtitle: controller.searchQuery.value.isNotEmpty
+                          ? Keys.Try_different_search.tr
+                          : Keys.Start_new_chat.tr,
+                      actionText: controller.searchQuery.value.isEmpty
+                          ? Keys.Start_chat.tr
+                          : null,
+                      onAction: controller.searchQuery.value.isEmpty
+                          ? () => Get.toNamed(ChatAppRoutes.CONTACTS)
+                          : null,
+                    ),
+                  ),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  return ChatListItem(conversation: items[index]);
+                },
+              ),
       );
     });
   }

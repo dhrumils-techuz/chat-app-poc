@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../core/theme/color.dart';
 import '../../core/utils/screen_util.dart';
+import '../../core/values/app_strings.dart';
 
 /// A responsive layout widget that switches between mobile and split-view
 /// (tablet/desktop) layouts based on screen width.
@@ -60,27 +62,32 @@ class AdaptiveLayout extends StatelessWidget {
           color: colors.dividerColor,
         ),
         Expanded(
-          child: detailPanel ??
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 64,
-                      color: colors.textLight,
+          child: SafeArea(
+            child: detailPanel ??
+                Container(
+                  color: colors.backgroundColor,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 64,
+                          color: colors.textLight,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          Keys.Select_conversation.tr,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Select a conversation',
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+          ),
         ),
       ],
     );

@@ -47,7 +47,7 @@ class ChatListItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTitleRow(colors),
+                      _buildTitleRow(controller, colors),
                       const SizedBox(height: AppSizes.dimenToPx4),
                       Obx(() => _buildSubtitle(controller, colors)),
                     ],
@@ -92,7 +92,7 @@ class ChatListItem extends StatelessWidget {
         children: [
           AvatarWidget(
             imageUrl: conversation.avatarUrl,
-            name: conversation.displayName,
+            name: conversation.displayNameFor(controller.currentUserId),
             size: AppSizes.avatarLarge,
           ),
           if (isOnline)
@@ -109,9 +109,9 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildTitleRow(ChatColors colors) {
+  Widget _buildTitleRow(ChatListController controller, ChatColors colors) {
     return Text(
-      conversation.displayName,
+      conversation.displayNameFor(controller.currentUserId),
       style: ChatTextStyles.conversationTitle.copyWith(
         color: colors.textPrimary,
       ),

@@ -122,11 +122,54 @@ class ChatListController extends GetxController {
 
       // 3. Join all conversation rooms so we receive real-time updates
       _joinAllConversationRooms();
+
+      // 4. Query presence for all 1:1 conversation participants
+      _queryParticipantPresence();
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Error loading conversations: $e');
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// Queries real-time presence from the server for all other participants
+  /// in 1:1 conversations. The API doesn't return live presence (it's in Redis),
+  /// so we ask the socket server directly.
+  void _queryParticipantPresence() {
+    final userIds = <String>{};
+    for (final conv in conversations) {
+      if (conv.isGroup || conv.participants == null) continue;
+      for (final p in conv.participants!) {
+        if (p.id != currentUserId) userIds.add(p.id);
+      }
+    }
+    if (userIds.isEmpty) return;
+
+    _socketService.queryPresence(userIds.toList(), (result) {
+      for (int i = 0; i < conversations.length; i++) {
+        final conv = conversations[i];
+        if (conv.isGroup || conv.participants == null) continue;
+
+        bool changed = false;
+        final updatedParticipants = List<UserModel>.from(conv.participants!);
+        for (int j = 0; j < updatedParticipants.length; j++) {
+          final p = updatedParticipants[j];
+          final status = result[p.id];
+          if (status != null) {
+            final newPresence = status == 'online'
+                ? UserPresence.online
+                : UserPresence.offline;
+            if (p.presence != newPresence) {
+              updatedParticipants[j] = p.copyWith(presence: newPresence);
+              changed = true;
+            }
+          }
+        }
+        if (changed) {
+          conversations[i] = conv.copyWith(participants: updatedParticipants);
+        }
+      }
+    });
   }
 
   Future<void> loadFolders() async {
@@ -172,7 +215,7 @@ class ChatListController extends GetxController {
     final query = searchQuery.value.trim().toLowerCase();
     if (query.isNotEmpty) {
       result = result
-          .where((c) => c.displayName.toLowerCase().contains(query))
+          .where((c) => c.displayNameFor(currentUserId).toLowerCase().contains(query))
           .toList();
     }
 

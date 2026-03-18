@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../core/values/app_strings.dart';
 import '../../../../core/extension/datetime_extensions.dart';
@@ -31,37 +32,60 @@ class ChatDetailViewDesktop extends StatelessWidget {
 
     final colors = ChatColors.getInstance(context);
 
-    return Container(
-      color: colors.backgroundColor,
-      child: Column(
-        children: [
-          // ── Header Bar ──────────────────────────────────────────────
-          _buildHeaderBar(context, colors, controller),
+    return SafeArea(
+      child: Container(
+        color: colors.backgroundColor,
+        child: Column(
+          children: [
+            // ── Header Bar ──────────────────────────────────────────────
+            _buildHeaderBar(context, colors, controller),
 
-          // ── Body: Messages + Input ─────────────────────────────────
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(
-                    child: _buildMessageList(context, colors, controller)),
+            // ── Body: Messages + Input ─────────────────────────────────
+            Expanded(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        _buildMessageList(context, colors, controller),
+                        // Scroll-to-bottom FAB
+                        Positioned(
+                          right: 16,
+                          bottom: 8,
+                          child: Obx(() => controller.showScrollToBottom.value
+                              ? FloatingActionButton.small(
+                                  onPressed: controller.scrollToBottom,
+                                  backgroundColor: colors.surfaceColor,
+                                  elevation: 3,
+                                  child: Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: colors.primaryColor,
+                                  ),
+                                )
+                              : const SizedBox.shrink()),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                // Typing indicator
-                Obx(() {
-                  if (!Get.isRegistered<ChatDetailController>()) {
-                    return const SizedBox.shrink();
-                  }
-                  final users = controller.typingUsers.toList();
-                  return TypingIndicatorWidget(
-                    typingUsers: users,
-                  );
-                }),
+                  // Typing indicator
+                  Obx(() {
+                    if (!Get.isRegistered<ChatDetailController>()) {
+                      return const SizedBox.shrink();
+                    }
+                    final users = controller.typingUsers.toList();
+                    return TypingIndicatorWidget(
+                      typingUsers: users,
+                    );
+                  }),
 
-                // Message input bar
-                const MessageInputBar(),
-              ],
+                  // Message input bar
+                  const MessageInputBar(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -73,7 +97,7 @@ class ChatDetailViewDesktop extends StatelessWidget {
     final conversation = controller.conversation;
     final otherUser = controller.otherParticipant;
 
-    final displayName = conversation.displayName;
+    final displayName = conversation.displayNameFor(controller.currentUserId);
     final avatarUrl = controller.isGroup
         ? conversation.avatarUrl
         : otherUser?.avatarUrl ?? conversation.avatarUrl;
@@ -272,15 +296,18 @@ class ChatDetailViewDesktop extends StatelessWidget {
         );
       }
 
-      return ListView.builder(
-        controller: controller.scrollController,
+      final itemCount = controller.messages.length +
+          (controller.isLoadingMore.value ? 1 : 0);
+
+      return ScrollablePositionedList.builder(
+        itemScrollController: controller.itemScrollController,
+        itemPositionsListener: controller.itemPositionsListener,
         reverse: true,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.dimenToPx8,
           vertical: AppSizes.dimenToPx8,
         ),
-        itemCount: controller.messages.length +
-            (controller.isLoadingMore.value ? 1 : 0),
+        itemCount: itemCount,
         itemBuilder: (context, index) {
           // Loading indicator at the top (end of reversed list)
           if (index == controller.messages.length) {
@@ -305,7 +332,6 @@ class ChatDetailViewDesktop extends StatelessWidget {
           final isMyMessage = controller.isMyMessage(message);
 
           // Date separator logic (reversed list: next index is older)
-          // Use local time for day comparison
           Widget? dateSeparator;
           if (index == controller.messages.length - 1) {
             dateSeparator = _buildDateSeparator(context, message.createdAt, colors);
@@ -322,20 +348,17 @@ class ChatDetailViewDesktop extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (dateSeparator != null) dateSeparator,
-              Obx(() => Container(
-                key: controller.getKeyForMessage(message.id),
-                child: MessageBubble(
-                  message: message,
-                  isMyMessage: isMyMessage,
-                  isGroup: controller.isGroup,
-                  isHighlighted:
-                      controller.highlightedMessageId.value == message.id,
-                  onReply: () => controller.setReplyTo(message),
-                  onDelete: (forEveryone) =>
-                      controller.deleteMessage(message.id, forEveryone: forEveryone),
-                  onTapReply: (parentId) =>
-                      controller.scrollToMessage(parentId),
-                ),
+              Obx(() => MessageBubble(
+                message: message,
+                isMyMessage: isMyMessage,
+                isGroup: controller.isGroup,
+                isHighlighted:
+                    controller.highlightedMessageId.value == message.id,
+                onReply: () => controller.setReplyTo(message),
+                onDelete: (forEveryone) =>
+                    controller.deleteMessage(message.id, forEveryone: forEveryone),
+                onTapReply: (parentId) =>
+                    controller.scrollToMessage(parentId),
               )),
             ],
           );

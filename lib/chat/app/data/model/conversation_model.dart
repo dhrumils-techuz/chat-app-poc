@@ -140,4 +140,18 @@ class ConversationModel {
     }
     return '';
   }
+
+  /// Returns the display name excluding the current user.
+  /// For 1:1 chats, shows only the other person's name.
+  /// For group chats, returns the group name or all member names.
+  String displayNameFor(String currentUserId) {
+    if (isGroup && name != null && name!.isNotEmpty) return name!;
+    if (participants != null && participants!.isNotEmpty) {
+      final others = participants!.where((p) => p.id != currentUserId).toList();
+      if (others.isNotEmpty) {
+        return others.map((p) => p.name).join(', ');
+      }
+    }
+    return displayName;
+  }
 }

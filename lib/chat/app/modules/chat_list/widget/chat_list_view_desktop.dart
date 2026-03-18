@@ -54,24 +54,6 @@ class ChatListViewDesktop extends GetView<ChatListController> {
           ),
         ),
         actions: [
-          Container(
-            width: AppSizes.dimenToPx40,
-            height: AppSizes.dimenToPx40,
-            margin: const EdgeInsets.only(right: AppSizes.dimenToPx4),
-            decoration: BoxDecoration(
-              color: AppColor.primary10,
-              borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
-            ),
-            child: IconButton(
-              icon: Icon(
-                Icons.search,
-                color: colors.primaryColor,
-                size: AppSizes.dimenToPx20,
-              ),
-              onPressed: () {},
-              padding: EdgeInsets.zero,
-            ),
-          ),
           PopupMenuButton<String>(
             icon: Icon(
               Icons.more_vert,
@@ -184,37 +166,44 @@ class ChatListViewDesktop extends GetView<ChatListController> {
 
       final items = controller.filteredConversations;
 
-      if (items.isEmpty) {
-        return EmptyStateWidget(
-          icon: Icons.chat_bubble_outline_rounded,
-          title: controller.searchQuery.value.isNotEmpty
-              ? Keys.No_results_found.tr
-              : Keys.No_conversations.tr,
-          subtitle: controller.searchQuery.value.isNotEmpty
-              ? Keys.Try_different_search.tr
-              : Keys.Start_new_chat.tr,
-        );
-      }
-
       return RefreshIndicator(
         onRefresh: controller.refreshConversations,
         color: colors.primaryColor,
-        child: ListView.builder(
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return Obx(() {
-              final isSelected = controller.selectedConversationId.value ==
-                  items[index].id;
-              return Container(
-                color: isSelected
-                    ? colors.primaryColor.withValues(alpha: 0.08)
-                    : null,
-                child: ChatListItem(conversation: items[index]),
-              );
-            });
-          },
-        ),
+        child: items.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: 300,
+                    child: EmptyStateWidget(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: controller.searchQuery.value.isNotEmpty
+                          ? Keys.No_results_found.tr
+                          : Keys.No_conversations.tr,
+                      subtitle: controller.searchQuery.value.isNotEmpty
+                          ? Keys.Try_different_search.tr
+                          : Keys.Start_new_chat.tr,
+                    ),
+                  ),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  return Obx(() {
+                    final isSelected =
+                        controller.selectedConversationId.value ==
+                            items[index].id;
+                    return Container(
+                      color: isSelected
+                          ? colors.primaryColor.withValues(alpha: 0.08)
+                          : null,
+                      child: ChatListItem(conversation: items[index]),
+                    );
+                  });
+                },
+              ),
       );
     });
   }

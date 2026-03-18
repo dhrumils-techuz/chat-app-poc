@@ -64,6 +64,43 @@ export function handlePresenceEvents(socket: Socket, io: Server, auth: JwtPayloa
     }
   });
 
+  // Query current presence for a list of user IDs.
+  // Returns { userId: status } map via callback.
+  socket.on('presence:query', async (data, callback) => {
+    try {
+      const { userIds } = data;
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        if (typeof callback === 'function') callback({});
+        return;
+      }
+
+      const result: Record<string, { status: string; lastSeenAt: string | null }> = {};
+      for (const uid of userIds) {
+        const presenceData = await redis.get(CACHE_KEYS.userPresence(uid));
+        if (presenceData) {
+          try {
+            const parsed = JSON.parse(presenceData);
+            result[uid] = {
+              status: parsed.status || 'offline',
+              lastSeenAt: parsed.lastSeenAt || null,
+            };
+          } catch {
+            result[uid] = { status: 'offline', lastSeenAt: null };
+          }
+        } else {
+          result[uid] = { status: 'offline', lastSeenAt: null };
+        }
+      }
+
+      if (typeof callback === 'function') callback(result);
+    } catch (error) {
+      logger.error('Error handling presence:query', {
+        error: error instanceof Error ? error.message : 'Unknown',
+      });
+      if (typeof callback === 'function') callback({});
+    }
+  });
+
   socket.on(SOCKET_EVENTS.JOIN_CONVERSATIONS, async (data) => {
     try {
       const { conversationIds } = data;
