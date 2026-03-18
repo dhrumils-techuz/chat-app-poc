@@ -94,6 +94,9 @@ class ChatListViewMobile extends GetView<ChatListController> {
           ),
           onSelected: (value) {
             switch (value) {
+              case 'new_chat':
+                Get.toNamed(ChatAppRoutes.CONTACTS);
+                break;
               case 'new_group':
                 Get.toNamed(ChatAppRoutes.NEW_GROUP);
                 break;
@@ -108,6 +111,17 @@ class ChatListViewMobile extends GetView<ChatListController> {
           itemBuilder: (context) {
             final menuColors = ChatColors.getInstance(context);
             return [
+              PopupMenuItem(
+                value: 'new_chat',
+                child: Row(
+                  children: [
+                    Icon(Icons.chat_outlined, size: 20, color: menuColors.textPrimary),
+                    const SizedBox(width: 12),
+                    Text(Keys.New_Chat.tr,
+                        style: TextStyle(color: menuColors.textPrimary)),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: 'new_group',
                 child: Row(

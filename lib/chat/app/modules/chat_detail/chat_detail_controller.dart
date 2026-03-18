@@ -109,11 +109,16 @@ class ChatDetailController extends GetxController {
     _messageDeletedSub?.cancel();
     _presenceSub?.cancel();
     _typingDebounce?.cancel();
-    textController.dispose();
-    scrollController.dispose();
     if (_isCurrentlyTyping) {
       _socketService.stopTyping(conversation.id);
     }
+    // Defer disposal of UI controllers to the next frame so that the widget
+    // tree has time to unmount first. This prevents "used after being disposed"
+    // errors when switching conversations in tablet/desktop split-view mode.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      textController.dispose();
+      scrollController.dispose();
+    });
     super.onClose();
   }
 

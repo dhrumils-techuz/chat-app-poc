@@ -103,6 +103,13 @@ export const ConversationMsg = {
   MISSING_REQUIRED_PARAMS: 'Missing required parameters',
   CONVERSATION_ID_REQUIRED: 'Conversation ID required',
   CONVERSATION_AND_MESSAGE_ID_REQUIRED: 'Conversation ID and Message ID required',
+  DELETED: 'Conversation deleted',
+  MUTED: 'Conversation muted',
+  UNMUTED: 'Conversation unmuted',
+  PINNED: 'Conversation pinned',
+  UNPINNED: 'Conversation unpinned',
+  ARCHIVED: 'Conversation archived',
+  UNARCHIVED: 'Conversation unarchived',
 } as const;
 
 // ──────────────────────────────────────────────

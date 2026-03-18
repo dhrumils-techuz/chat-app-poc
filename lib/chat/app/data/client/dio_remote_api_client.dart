@@ -122,8 +122,9 @@ class DioRemoteApiClient extends GetxService {
 
   /// Ensures the access token is valid (refreshes if expired).
   /// Used by SocketClient before connecting with the token.
-  Future<void> ensureValidToken() async {
-    await _getValidAccessToken();
+  /// Returns the valid token, or null if refresh failed.
+  Future<String?> ensureValidToken() async {
+    return await _getValidAccessToken();
   }
 
   bool _isAuthEndpoint(String path) {
@@ -209,13 +210,16 @@ class DioRemoteApiClient extends GetxService {
       LogsHelper.debugLog(tag: 'DioClient', 'Token refresh error: $e');
       _refreshCompleter!.complete(null);
 
-      // If the refresh token request got a 401/403, the session is truly expired.
-      // Redirect to login.
+      // If the refresh token request failed for ANY reason and we have no
+      // valid access token, the session is effectively expired.
+      // For 401/403 it's definitely expired; for other errors (network, etc.)
+      // we still can't authenticate, so redirect to login.
       if (e is DioException &&
           e.response?.statusCode != null &&
           (e.response!.statusCode == 401 || e.response!.statusCode == 403)) {
         _handleSessionExpired();
       }
+      // For non-HTTP errors (network, SSL), don't redirect — could be temporary
       return null;
     } finally {
       _refreshCompleter = null;

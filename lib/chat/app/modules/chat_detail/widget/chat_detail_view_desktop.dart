@@ -178,11 +178,52 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
               // Video call placeholder
             },
           ),
-          _HeaderIconButton(
-            icon: Icons.more_vert,
-            color: colors.iconColor,
-            onTap: () {
-              // More options placeholder
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: colors.iconColor),
+            color: colors.surfaceColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
+            ),
+            onSelected: (value) {
+              // Handle menu actions
+            },
+            itemBuilder: (ctx) {
+              final menuColors = ChatColors.getInstance(ctx);
+              return [
+                PopupMenuItem(
+                  value: 'search',
+                  child: Row(
+                    children: [
+                      Icon(Icons.search, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.Search.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'media',
+                  child: Row(
+                    children: [
+                      Icon(Icons.photo_library_outlined, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.Media.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'mute',
+                  child: Row(
+                    children: [
+                      Icon(Icons.notifications_off_outlined, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.Mute.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
+              ];
             },
           ),
         ],
@@ -221,8 +262,28 @@ class ChatDetailViewDesktop extends GetView<ChatDetailController> {
           horizontal: AppSizes.dimenToPx8,
           vertical: AppSizes.dimenToPx8,
         ),
-        itemCount: controller.messages.length,
+        itemCount: controller.messages.length +
+            (controller.isLoadingMore.value ? 1 : 0),
         itemBuilder: (context, index) {
+          // Loading indicator at the top (end of reversed list)
+          if (index == controller.messages.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSizes.dimenToPx16,
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: AppSizes.dimenToPx24,
+                  height: AppSizes.dimenToPx24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.primaryColor,
+                  ),
+                ),
+              ),
+            );
+          }
+
           final message = controller.messages[index];
           final isMyMessage = controller.isMyMessage(message);
 

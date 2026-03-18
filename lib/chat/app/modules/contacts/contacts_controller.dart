@@ -65,7 +65,7 @@ class ContactsController extends GetxController {
                 ? (rawData.containsKey('data') ? rawData['data'] : rawData)
                 : rawData;
         final conversation = ConversationModel.fromJson(convJson);
-        Get.offNamed(ChatAppRoutes.CHAT_DETAIL, arguments: conversation);
+        Get.toNamed(ChatAppRoutes.CHAT_DETAIL, arguments: conversation);
       }
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Error starting conversation: $e');

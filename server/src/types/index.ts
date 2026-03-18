@@ -27,6 +27,7 @@ export type AuditAction =
   | 'CONVERSATION_UPDATE'
   | 'PARTICIPANT_ADD'
   | 'PARTICIPANT_REMOVE'
+  | 'CONVERSATION_DELETE'
   | 'FOLDER_CREATE'
   | 'FOLDER_UPDATE'
   | 'FOLDER_DELETE'
@@ -103,6 +104,8 @@ export interface ConversationParticipant {
   joined_at: Date;
   left_at: Date | null;
   is_muted: boolean;
+  is_pinned: boolean;
+  is_archived: boolean;
   last_read_message_id: string | null;
   unread_count: number;
 }

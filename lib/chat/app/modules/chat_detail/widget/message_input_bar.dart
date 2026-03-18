@@ -164,6 +164,12 @@ class _MessageTextFieldState extends State<_MessageTextField> {
 
   @override
   void dispose() {
+    // Unfocus BEFORE disposing to prevent the focus-change callback from
+    // trying to update the selection on an already-disposed TextEditingController.
+    // This happens in tablet/desktop mode when switching conversations:
+    // ChatDetailController.onClose() disposes textController, but the FocusNode
+    // is still alive and fires a focus-lost notification that touches the controller.
+    _focusNode.unfocus();
     _focusNode.dispose();
     super.dispose();
   }

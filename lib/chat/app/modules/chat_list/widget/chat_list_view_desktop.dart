@@ -92,6 +92,9 @@ class ChatListViewDesktop extends GetView<ChatListController> {
                 case 'settings':
                   Get.toNamed(ChatAppRoutes.SETTINGS);
                   break;
+                case 'profile':
+                  Get.toNamed(ChatAppRoutes.PROFILE);
+                  break;
               }
             },
             itemBuilder: (context) {
@@ -126,6 +129,17 @@ class ChatListViewDesktop extends GetView<ChatListController> {
                       Icon(Icons.settings_outlined, size: 20, color: menuColors.textPrimary),
                       const SizedBox(width: 12),
                       Text(Keys.Settings.tr,
+                          style: TextStyle(color: menuColors.textPrimary)),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'profile',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 20, color: menuColors.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(Keys.Profile.tr,
                           style: TextStyle(color: menuColors.textPrimary)),
                     ],
                   ),
@@ -238,6 +252,10 @@ class _EmbeddedChatDetail extends StatefulWidget {
 }
 
 class _EmbeddedChatDetailState extends State<_EmbeddedChatDetail> {
+  /// The controller instance this widget owns.
+  /// Used to avoid deleting a newer controller created by a sibling widget.
+  ChatDetailController? _ownController;
+
   @override
   void initState() {
     super.initState();
@@ -250,21 +268,32 @@ class _EmbeddedChatDetailState extends State<_EmbeddedChatDetail> {
       Get.delete<ChatDetailController>();
     }
 
-    Get.put(
-      ChatDetailController(
-        messageRepository: Get.find<MessageRepository>(),
-        socketService: Get.find<SocketService>(),
-        authService: Get.find<JwtAuthService>(),
-        conversation: widget.conversation,
-      ),
+    _ownController = ChatDetailController(
+      messageRepository: Get.find<MessageRepository>(),
+      socketService: Get.find<SocketService>(),
+      authService: Get.find<JwtAuthService>(),
+      conversation: widget.conversation,
     );
+    Get.put(_ownController!);
   }
 
   @override
   void dispose() {
+    // Only delete if the registered controller is still the one WE created.
+    // When switching conversations via ValueKey, Flutter creates the new
+    // widget's initState() BEFORE disposing the old one. The new initState()
+    // already registered a fresh controller — we must NOT delete it here.
     if (Get.isRegistered<ChatDetailController>()) {
-      Get.delete<ChatDetailController>();
+      try {
+        final current = Get.find<ChatDetailController>();
+        if (identical(current, _ownController)) {
+          Get.delete<ChatDetailController>();
+        }
+      } catch (_) {
+        // Controller already gone — nothing to clean up
+      }
     }
+    _ownController = null;
     super.dispose();
   }
 

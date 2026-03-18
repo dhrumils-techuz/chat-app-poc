@@ -11,6 +11,10 @@ router.post('/', (req, res, next) => conversationController.create(req, res, nex
 router.get('/', (req, res, next) => conversationController.getAll(req, res, next));
 router.get('/:id', (req, res, next) => conversationController.getById(req, res, next));
 router.put('/:id', (req, res, next) => conversationController.update(req, res, next));
+router.delete('/:id', (req, res, next) => conversationController.deleteConversation(req, res, next));
+router.put('/:id/mute', (req, res, next) => conversationController.muteConversation(req, res, next));
+router.put('/:id/pin', (req, res, next) => conversationController.pinConversation(req, res, next));
+router.put('/:id/archive', (req, res, next) => conversationController.archiveConversation(req, res, next));
 router.post('/:id/participants', (req, res, next) => conversationController.addParticipant(req, res, next));
 router.delete('/:id/participants/:userId', (req, res, next) => conversationController.removeParticipant(req, res, next));
 

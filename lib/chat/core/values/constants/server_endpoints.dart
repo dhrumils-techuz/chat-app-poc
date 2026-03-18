@@ -13,10 +13,11 @@ class ApiEndpoints {
   static String get resetPassword => '$_authPrefix/reset-password';
 
   // User
+  // Server routes: GET /me, GET /search, GET /:id, PUT /:id
   static String get _userPrefix => '$baseURL/api/users';
   static String get currentUser => '$_userPrefix/me';
-  static String get updateProfile => '$_userPrefix/profile';
-  static String get updateAvatar => '$_userPrefix/avatar';
+  static String updateProfile(String userId) => '$_userPrefix/$userId';
+  static String updateAvatar(String userId) => '$_userPrefix/$userId';
   static String get searchUsers => '$_userPrefix/search';
   static String userById(String id) => '$_userPrefix/$id';
 
@@ -50,11 +51,17 @@ class ApiEndpoints {
       '$_messagePrefix/$conversationId/delivered';
 
   // Media / Upload
+  // Server uses presigned URL flow: request URL → upload to cloud → confirm
   static String get _mediaPrefix => '$baseURL/api/media';
-  static String get uploadMedia => '$_mediaPrefix/upload';
-  static String get uploadAvatar => '$_mediaPrefix/avatar';
-  static String get getPresignedUrl => '$_mediaPrefix/presigned-url';
+  static String get requestUploadUrl => '$_mediaPrefix/upload-url';
+  static String get confirmUpload => '$_mediaPrefix/confirm-upload';
+  static String get uploadMedia => '$_mediaPrefix/upload-url';
+  static String get uploadAvatar => '$_mediaPrefix/upload-url';
+  static String get getPresignedUrl => '$_mediaPrefix/upload-url';
+  static String mediaDownloadUrl(String id) => '$_mediaPrefix/$id/download-url';
   static String mediaById(String id) => '$_mediaPrefix/$id';
+  static String conversationMedia(String conversationId) =>
+      '$_mediaPrefix/conversation/$conversationId';
 
   // Folders
   static String get _folderPrefix => '$baseURL/api/folders';

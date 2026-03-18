@@ -72,19 +72,16 @@ class SocketClient extends GetxService {
       LogsHelper.debugLog(
           tag: _tag, 'Access token expired, refreshing before socket connect');
       try {
-        // Use Dio client to trigger token refresh (it handles the
-        // refresh token exchange and saves the new tokens)
         final dioClient = Get.find<DioRemoteApiClient>();
-        // A lightweight request to trigger the interceptor's refresh flow
-        // We just need the refreshed token, so we read it from the repository
-        // after triggering any pending refresh via the Dio client's mechanism.
-        await dioClient.ensureValidToken();
-        accessToken = await _tokenRepository.getAccessToken();
-        if (accessToken == null) {
+        final refreshedToken = await dioClient.ensureValidToken();
+        if (refreshedToken == null || _tokenRepository.isAccessTokenExpired()) {
           LogsHelper.debugLog(
               tag: _tag, 'Token refresh failed, cannot connect socket');
+          // DioRemoteApiClient._handleSessionExpired() will redirect to login
+          // if the refresh token itself is expired/revoked.
           return;
         }
+        accessToken = refreshedToken;
       } catch (e) {
         LogsHelper.debugLog(
             tag: _tag, 'Token refresh error before socket connect: $e');
@@ -136,6 +133,7 @@ class SocketClient extends GetxService {
       _isConnected.value = true;
       _isAuthenticated.value = true;
       _reconnectAttempts = 0;
+      _tokenReconnectAttempts = 0;
       _flushEventQueue();
 
       // Emit presence:online so the server knows we're online.
@@ -300,9 +298,34 @@ class SocketClient extends GetxService {
     emit(SocketEvents.stopTyping, {'conversationId': conversationId});
   }
 
+  /// Track token reconnect attempts to prevent infinite loops.
+  int _tokenReconnectAttempts = 0;
+  static const int _maxTokenReconnectAttempts = 2;
+
   /// Reconnects the socket with a fresh token.
   /// Useful after token refresh or re-authentication.
+  /// Limited to [_maxTokenReconnectAttempts] to prevent infinite loops
+  /// when the refresh token itself is expired.
   Future<void> reconnectWithNewToken() async {
+    _tokenReconnectAttempts++;
+    if (_tokenReconnectAttempts > _maxTokenReconnectAttempts) {
+      LogsHelper.debugLog(
+          tag: _tag,
+          'Max token reconnect attempts reached ($_maxTokenReconnectAttempts). '
+          'Session may be expired.');
+      _tokenReconnectAttempts = 0;
+      // Trigger session expiry redirect via DioRemoteApiClient
+      try {
+        final dioClient = Get.find<DioRemoteApiClient>();
+        final token = await dioClient.ensureValidToken();
+        if (token == null) {
+          // _handleSessionExpired() in DioRemoteApiClient already redirects
+          LogsHelper.debugLog(
+              tag: _tag, 'Session expired — redirect to login handled by DioClient');
+        }
+      } catch (_) {}
+      return;
+    }
     disconnect();
     await connect();
   }

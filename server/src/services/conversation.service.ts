@@ -408,6 +408,66 @@ class ConversationService {
     });
   }
 
+  async deleteConversation(
+    conversationId: string,
+    tenantId: string,
+    userId: string
+  ): Promise<void> {
+    // Verify user is participant
+    const participantCheck = await query<ConversationParticipant>(
+      `SELECT * FROM conversation_participants
+       WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL`,
+      [conversationId, userId]
+    );
+
+    if (participantCheck.rows.length === 0) {
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
+    }
+
+    // Soft delete: mark user as left
+    await query(
+      `UPDATE conversation_participants SET left_at = NOW()
+       WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL`,
+      [conversationId, userId]
+    );
+
+    await auditService.log({
+      tenantId,
+      userId,
+      action: 'CONVERSATION_DELETE',
+      resourceType: 'conversation',
+      resourceId: conversationId,
+      ipAddress: null,
+      userAgent: null,
+      requestId: null,
+    });
+  }
+
+  async updateParticipantSetting(
+    conversationId: string,
+    tenantId: string,
+    userId: string,
+    setting: 'is_muted' | 'is_pinned' | 'is_archived',
+    value: boolean
+  ): Promise<void> {
+    // Verify user is participant
+    const participantCheck = await query<ConversationParticipant>(
+      `SELECT * FROM conversation_participants
+       WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL`,
+      [conversationId, userId]
+    );
+
+    if (participantCheck.rows.length === 0) {
+      throw AppError.forbidden(ConversationMsg.NOT_A_PARTICIPANT);
+    }
+
+    await query(
+      `UPDATE conversation_participants SET ${setting} = $1
+       WHERE conversation_id = $2 AND user_id = $3 AND left_at IS NULL`,
+      [value, conversationId, userId]
+    );
+  }
+
   async isParticipant(conversationId: string, userId: string): Promise<boolean> {
     const result = await query(
       'SELECT id FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL',

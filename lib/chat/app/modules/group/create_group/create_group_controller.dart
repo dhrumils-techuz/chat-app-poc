@@ -128,7 +128,7 @@ class CreateGroupController extends GetxController {
             ? rawData['data'] as Map<String, dynamic>
             : rawData as Map<String, dynamic>;
         final conversation = ConversationModel.fromJson(convData);
-        Get.offNamed(
+        Get.toNamed(
           ChatAppRoutes.CHAT_DETAIL,
           arguments: conversation,
         );

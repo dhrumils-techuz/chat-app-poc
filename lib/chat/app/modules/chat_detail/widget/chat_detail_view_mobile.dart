@@ -7,6 +7,7 @@ import '../../../../core/theme/color.dart';
 import '../../../../core/theme/text_style.dart';
 import '../../../../core/values/app_sizes.dart';
 import '../../../widgets/avatar_widget.dart';
+import '../../../widgets/online_indicator.dart';
 import '../chat_detail_controller.dart';
 import 'message_bubble.dart';
 import 'message_input_bar.dart';
@@ -52,10 +53,30 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
       titleSpacing: 0,
       title: Row(
         children: [
-          AvatarWidget(
-            imageUrl: controller.conversation.avatarUrl,
-            name: controller.conversation.displayName,
-            size: AppSizes.avatarSmall,
+          Stack(
+            children: [
+              AvatarWidget(
+                imageUrl: controller.isGroup
+                    ? controller.conversation.avatarUrl
+                    : controller.otherParticipant?.avatarUrl ??
+                        controller.conversation.avatarUrl,
+                name: controller.isGroup
+                    ? controller.conversation.displayName
+                    : controller.otherParticipant?.name ??
+                        controller.conversation.displayName,
+                size: AppSizes.avatarSmall,
+              ),
+              if (!controller.isGroup && controller.otherParticipant != null)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Obx(() => OnlineIndicator(
+                    isOnline: controller.otherUserPresence.value.isOnline,
+                    size: AppSizes.onlineIndicatorSize - 2,
+                    borderColor: colors.surfaceColor,
+                  )),
+                ),
+            ],
           ),
           const SizedBox(width: AppSizes.dimenToPx10),
           Expanded(
@@ -294,15 +315,18 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
     if (local.isToday) return Keys.Today.tr;
     if (local.isYesterday) return Keys.Yesterday.tr;
 
-    final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
-    ];
-
     if (local.isThisYear) {
-      return '${months[local.month - 1]} ${local.day}';
+      return '${_monthName(local.month)} ${local.day}';
     }
-    return '${months[local.month - 1]} ${local.day}, ${local.year}';
+    return '${_monthName(local.month)} ${local.day}, ${local.year}';
+  }
+
+  String _monthName(int month) {
+    final months = [
+      Keys.Jan.tr, Keys.Feb.tr, Keys.Mar.tr, Keys.Apr.tr, Keys.May.tr, Keys.Jun.tr,
+      Keys.Jul.tr, Keys.Aug.tr, Keys.Sep.tr, Keys.Oct.tr, Keys.Nov.tr, Keys.Dec.tr,
+    ];
+    return months[month - 1];
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
