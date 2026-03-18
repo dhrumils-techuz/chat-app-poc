@@ -1,4 +1,4 @@
-package com.skyralytics.reporting
+package com.poc.chatapp
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,13 +1,10 @@
 import '../../../core/data/api_response_model.dart';
-import '../../../core/utils/logs_helper.dart';
 import '../local/database/dao/message_dao.dart';
 import '../local/database/dao/pending_message_dao.dart';
 import '../model/message_model.dart';
 import '../service/message/message_remote_service.dart';
 
 class MessageRepository {
-  static const String _tag = 'MessageRepository';
-
   final MessageRemoteService _messageService;
   final MessageDao _messageDao;
   final PendingMessageDao _pendingMessageDao;

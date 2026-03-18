@@ -8,7 +8,7 @@
 PRODUCT_NAME = chat_app_poc
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.skyralytics.reporting.bluebirdP2Project
+PRODUCT_BUNDLE_IDENTIFIER = com.poc.chatapp.bluebirdP2Project
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.skyralytics.reporting. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 com.poc.chatapp. All rights reserved.

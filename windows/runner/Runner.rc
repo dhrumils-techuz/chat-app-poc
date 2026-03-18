@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.skyralytics.reporting" "\0"
+            VALUE "CompanyName", "com.poc.chatapp" "\0"
             VALUE "FileDescription", "chat_app_poc" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "chat_app_poc" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.skyralytics.reporting. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 com.poc.chatapp. All rights reserved." "\0"
             VALUE "OriginalFilename", "chat_app_poc.exe" "\0"
             VALUE "ProductName", "chat_app_poc" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

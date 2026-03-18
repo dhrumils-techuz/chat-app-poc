@@ -1,14 +1,11 @@
 import '../../../core/data/api_response_model.dart';
 import '../../../core/data/paginated_response.dart';
-import '../../../core/utils/logs_helper.dart';
 import '../local/database/dao/conversation_dao.dart';
 import '../local/database/dao/user_dao.dart';
 import '../model/conversation_model.dart';
 import '../service/chat/chat_remote_service.dart';
 
 class ChatRepository {
-  static const String _tag = 'ChatRepository';
-
   final ChatRemoteService _chatService;
   final ConversationDao _conversationDao;
   final UserDao _userDao;
