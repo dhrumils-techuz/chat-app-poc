@@ -7,6 +7,7 @@ import '../../../data/auth/jwt_auth_service.dart';
 import '../../../data/model/login_response_model.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../data/repository/token_repository.dart';
+import '../../../data/service/notification/notification_service.dart';
 import '../../../routes/app_pages.dart';
 
 class SignInController extends GetxController {
@@ -104,6 +105,10 @@ class SignInController extends GetxController {
         failedAttempts.value = 0;
         _lockoutUntil = null;
 
+        // Initialize notifications and save FCM token to server.
+        // Fire-and-forget — don't block navigation.
+        _initNotifications();
+
         Get.offAllNamed(ChatAppRoutes.CHAT_LIST);
       } else {
         _handleLoginFailure(response.message ?? response.error);
@@ -152,6 +157,18 @@ class SignInController extends GetxController {
         // Overlay not yet available — error already shown via errorMessage
       }
     });
+  }
+
+  /// Initializes push notifications after successful login.
+  void _initNotifications() {
+    try {
+      final notificationService = Get.find<NotificationService>();
+      notificationService.init().then((_) {
+        notificationService.saveTokenToServer();
+      });
+    } catch (e) {
+      debugPrint('Notification init skipped: $e');
+    }
   }
 
   @override

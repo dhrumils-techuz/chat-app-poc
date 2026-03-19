@@ -173,6 +173,10 @@ class Keys {
   static const String Delete_message_confirm = 'Delete_message_confirm';
   static const String Delete_for_everyone_confirm = 'Delete_for_everyone_confirm';
 
+  // Notification banner
+  static const String Dismiss = 'Dismiss';
+  static const String View_Chat = 'View_Chat';
+
   // Search
   static const String Search_messages = 'Search_messages';
   static const String Search_in_chat = 'Search_in_chat';
@@ -378,6 +382,10 @@ class ChatStringEnUS {
     Keys.Logout_confirm: 'Are you sure you want to logout?',
     Keys.Delete_message_confirm: 'Are you sure you want to delete this message for yourself?',
     Keys.Delete_for_everyone_confirm: 'Are you sure you want to delete this message for everyone?',
+
+    // Notification banner
+    Keys.Dismiss: 'Dismiss',
+    Keys.View_Chat: 'View Chat',
 
     // Search
     Keys.Search_messages: 'Search messages',

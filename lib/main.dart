@@ -142,6 +142,12 @@ void main() async {
   // join rooms or send events, avoiding "socket not connected yet" queuing.
   if (authService.isLoggedIn) {
     socketService.init(); // Fire-and-forget — connects asynchronously
+
+    // Initialize push notifications and save/refresh FCM token
+    final notificationService = Get.find<NotificationService>();
+    notificationService.init().then((_) {
+      notificationService.saveTokenToServer();
+    });
   }
 
   // ── Run app ──────────────────────────────────────────────────────────

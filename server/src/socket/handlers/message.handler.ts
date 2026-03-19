@@ -105,14 +105,38 @@ export function handleMessageEvents(socket: Socket, io: Server, auth: JwtPayload
           notificationBody = 'New message';
       }
 
+      // Fetch conversation details for the push notification
+      let conversationName: string | null = null;
+      let conversationType = 'direct';
+      try {
+        const convResult = await query<{ name: string | null; type: string }>(
+          'SELECT name, type FROM conversations WHERE id = $1',
+          [conversationId]
+        );
+        if (convResult.rows.length > 0) {
+          conversationName = convResult.rows[0].name;
+          conversationType = convResult.rows[0].type;
+        }
+      } catch (_) {
+        // Non-critical
+      }
+
+      // For group chats, show "Sender in GroupName" as the title
+      const notificationTitle = conversationType === 'group' && conversationName
+        ? `${senderName} in ${conversationName}`
+        : senderName;
+
       notificationService
         .sendToConversationParticipants(conversationId, userId, {
-          title: senderName,
+          title: notificationTitle,
           body: notificationBody,
           data: {
             conversationId,
             messageId: message.id,
             type: 'new_message',
+            senderName,
+            conversationName: conversationName || '',
+            conversationType,
           },
         })
         .catch((err) => logger.error('Failed to send push notifications', { error: err.message }));

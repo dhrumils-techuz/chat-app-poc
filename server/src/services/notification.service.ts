@@ -41,8 +41,11 @@ class NotificationService {
         android: {
           priority: 'high',
           notification: {
-            channelId: 'medical_chat',
+            channelId: 'chat_messages',
             priority: 'high',
+            defaultSound: true,
+            defaultVibrateTimings: true,
+            color: '#10C17D',
           },
         },
         apns: {

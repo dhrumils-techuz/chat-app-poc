@@ -7,6 +7,7 @@ import mediaRoutes from './media.routes';
 import folderRoutes from './folder.routes';
 import adminRoutes from './admin.routes';
 import healthRoutes from './health.routes';
+import deviceRoutes from './device.routes';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/conversations', conversationRoutes);
 router.use('/messages', messageRoutes);
 router.use('/media', mediaRoutes);
 router.use('/folders', folderRoutes);
+router.use('/devices', deviceRoutes);
 router.use('/admin', adminRoutes);
 router.use('/health', healthRoutes);
 
