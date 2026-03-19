@@ -72,11 +72,10 @@ class GroupInfoController extends GetxController {
         data['conversationId'] as String? ?? data['id'] as String?;
     if (convId != conversation.value.id) return;
 
-    // If this user was removed from the group
+    // If this user was removed from the group, pop back to chat detail
+    // (which shows the "removed" banner with existing messages visible).
     if (data['removed'] == true) {
-      Get.until(
-        (route) => route.settings.name == ChatAppRoutes.CHAT_LIST,
-      );
+      Get.back();
       return;
     }
 

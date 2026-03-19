@@ -82,6 +82,9 @@ class ChatDetailViewDesktop extends StatelessWidget {
                       if (!Get.isRegistered<ChatDetailController>()) {
                         return const SizedBox.shrink();
                       }
+                      if (controller.isRemovedFromGroup.value) {
+                        return const SizedBox.shrink();
+                      }
                       final users = controller.typingUsers.toList();
                       return TypingIndicatorWidget(typingUsers: users);
                     }),
@@ -127,7 +130,7 @@ class ChatDetailViewDesktop extends StatelessWidget {
         children: [
           // Avatar + Name — tappable for group info
           GestureDetector(
-            onTap: controller.isGroup
+            onTap: (controller.isGroup && !controller.isRemovedFromGroup.value)
                 ? () => Get.toNamed(ChatAppRoutes.GROUP_INFO,
                     arguments: controller.conversation)
                 : null,
@@ -161,7 +164,7 @@ class ChatDetailViewDesktop extends StatelessWidget {
           // Name + status — tappable for group info
           Expanded(
             child: GestureDetector(
-              onTap: controller.isGroup
+              onTap: (controller.isGroup && !controller.isRemovedFromGroup.value)
                   ? () => Get.toNamed(ChatAppRoutes.GROUP_INFO,
                       arguments: controller.conversation)
                   : null,
@@ -258,7 +261,7 @@ class ChatDetailViewDesktop extends StatelessWidget {
             itemBuilder: (ctx) {
               final menuColors = ChatColors.getInstance(ctx);
               return [
-                if (controller.isGroup)
+                if (controller.isGroup && !controller.isRemovedFromGroup.value)
                   PopupMenuItem(
                     value: 'group_info',
                     child: Row(

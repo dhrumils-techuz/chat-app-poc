@@ -19,6 +19,55 @@ class MessageInputBar extends GetView<ChatDetailController> {
     final colors = ChatColors.getInstance(context);
     final isMobile = ScreenUtil.isMobileWidth(ScreenUtil.width(context));
 
+    return Obx(() {
+      // Show "removed from group" banner instead of input bar
+      if (controller.isRemovedFromGroup.value) {
+        return Material(
+          color: colors.surfaceColor,
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.surfaceColor,
+              boxShadow: [
+                BoxShadow(
+                  color: colors.shadowColor,
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.block, size: 16, color: colors.textLight),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        Keys.You_are_no_longer_part_of_this_group.tr,
+                        style: ChatTextStyles.caption.copyWith(
+                          color: colors.textLight,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      return _buildInputBar(context, colors, isMobile);
+    });
+  }
+
+  Widget _buildInputBar(
+      BuildContext context, ChatColors colors, bool isMobile) {
     return Material(
       color: colors.surfaceColor,
       elevation: 0,

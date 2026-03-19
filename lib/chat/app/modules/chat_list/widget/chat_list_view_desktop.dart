@@ -24,7 +24,9 @@ class ChatListViewDesktop extends GetView<ChatListController> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ChatColors.getInstance(context);
     return Scaffold(
+      backgroundColor: colors.backgroundColor,
       body: Obx(() {
         final hasSelection = controller.selectedConversationId.value != null;
 

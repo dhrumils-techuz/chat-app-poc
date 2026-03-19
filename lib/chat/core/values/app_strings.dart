@@ -165,6 +165,10 @@ class Keys {
   // Message readers
   static const String Read_by = 'Read_by';
   static const String No_one_has_read = 'No_one_has_read';
+
+  // Group removal
+  static const String You_are_no_longer_part_of_this_group =
+      'You_are_no_longer_part_of_this_group';
   static const String Logout_confirm = 'Logout_confirm';
   static const String Delete_message_confirm = 'Delete_message_confirm';
   static const String Delete_for_everyone_confirm = 'Delete_for_everyone_confirm';
@@ -369,6 +373,8 @@ class ChatStringEnUS {
     // Message readers
     Keys.Read_by: 'Read by',
     Keys.No_one_has_read: 'No one has read this message yet',
+    Keys.You_are_no_longer_part_of_this_group:
+        'You are no longer part of this group. You can only view messages',
     Keys.Logout_confirm: 'Are you sure you want to logout?',
     Keys.Delete_message_confirm: 'Are you sure you want to delete this message for yourself?',
     Keys.Delete_for_everyone_confirm: 'Are you sure you want to delete this message for everyone?',

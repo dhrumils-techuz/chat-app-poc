@@ -67,6 +67,11 @@ class ChatDetailController extends GetxController {
   /// Whether we jumped to an old message and the list is not at the latest.
   final isViewingOldMessages = false.obs;
 
+  /// Whether the current user has been removed from this group.
+  /// When true, the input bar is replaced with a "removed" banner and
+  /// message sending is blocked. Cleared when the user is re-added.
+  final isRemovedFromGroup = false.obs;
+
   // ── Controllers ────────────────────────────────────────────────────────
   final textController = TextEditingController();
 
@@ -258,6 +263,7 @@ class ChatDetailController extends GetxController {
   // ── Sending Messages ──────────────────────────────────────────────────
 
   void sendTextMessage() {
+    if (isRemovedFromGroup.value) return;
     final text = textController.text.trim();
     if (text.isEmpty) return;
 
@@ -307,6 +313,7 @@ class ChatDetailController extends GetxController {
   }
 
   void sendMediaMessage(MediaAttachmentModel attachment) {
+    if (isRemovedFromGroup.value) return;
     final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
     final message = MessageModel(
       id: tempId,
@@ -732,16 +739,35 @@ class ChatDetailController extends GetxController {
     });
 
     // Server emits 'conversation:updated' when conversation metadata changes
-    // (e.g., group name, avatar). Update our local conversation object.
+    // (e.g., group name, avatar, member add/remove).
+    // Also receives 'conversation:new' (routed through same stream) when
+    // the user is re-added to a group they were removed from.
     _conversationUpdatedSub =
         _socketService.onConversationUpdated.listen((data) {
       final convId = data['conversationId'] as String? ?? data['id'] as String?;
       if (convId != conversation.id) return;
 
-      // If this user was removed from the group, navigate back
+      // ── Removal: show banner instead of navigating away ──
       if (data['removed'] == true) {
-        Get.back();
+        isRemovedFromGroup.value = true;
+        // Stop typing indicator if active
+        if (_isCurrentlyTyping) {
+          _isCurrentlyTyping = false;
+          _socketService.stopTyping(conversation.id);
+          _typingDebounce?.cancel();
+        }
+        typingUsers.clear();
         return;
+      }
+
+      // ── Re-add: restore access if previously removed ──
+      // When re-added, the server emits 'conversation:new' directly to
+      // our socket (with full conversation data). Clear the removed flag
+      // and rejoin the socket room.
+      if (isRemovedFromGroup.value &&
+          data.containsKey('type') && data.containsKey('id')) {
+        isRemovedFromGroup.value = false;
+        _socketService.joinConversation(conversation.id);
       }
 
       // If the event contains full conversation data, update our copy

@@ -341,12 +341,10 @@ class ChatListController extends GetxController {
   }
 
   void _handleConversationUpdated(Map<String, dynamic> data) {
-    // If this user was removed from the conversation, drop it from the list
+    // If this user was removed from a conversation, keep it in the list
+    // so they can still view old messages. The ChatDetailController handles
+    // blocking the input bar and showing the "removed" banner.
     if (data['removed'] == true) {
-      final convId = data['conversationId'] as String?;
-      if (convId != null) {
-        conversations.removeWhere((c) => c.id == convId);
-      }
       return;
     }
 

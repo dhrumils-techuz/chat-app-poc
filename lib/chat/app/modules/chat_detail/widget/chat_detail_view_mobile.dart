@@ -59,6 +59,9 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
               ),
             ),
             Obx(() {
+              if (controller.isRemovedFromGroup.value) {
+                return const SizedBox.shrink();
+              }
               if (controller.typingUsers.isNotEmpty) {
                 return TypingIndicatorWidget(
                   typingUsers: controller.typingUsers,
@@ -94,7 +97,7 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
       ),
       titleSpacing: 0,
       title: Obx(() => GestureDetector(
-        onTap: controller.isGroup
+        onTap: (controller.isGroup && !controller.isRemovedFromGroup.value)
             ? () => Get.toNamed(ChatAppRoutes.GROUP_INFO,
                 arguments: controller.conversation)
             : null,
@@ -207,7 +210,7 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
           itemBuilder: (context) {
             final menuColors = ChatColors.getInstance(context);
             return [
-              if (controller.isGroup)
+              if (controller.isGroup && !controller.isRemovedFromGroup.value)
                 PopupMenuItem(
                   value: 'group_info',
                   child: Row(
