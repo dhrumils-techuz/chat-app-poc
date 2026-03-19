@@ -56,6 +56,7 @@ class ChatColors extends ThemeExtension<ChatColors> {
   final Color onlineIndicatorColor;
   final Color iconColor;
   final Color iconActiveColor;
+  final Color readReceiptColor;
 
   const ChatColors({
     required this.primaryColor,
@@ -77,6 +78,7 @@ class ChatColors extends ThemeExtension<ChatColors> {
     required this.onlineIndicatorColor,
     required this.iconColor,
     required this.iconActiveColor,
+    required this.readReceiptColor,
   });
 
   const ChatColors.light({
@@ -99,6 +101,7 @@ class ChatColors extends ThemeExtension<ChatColors> {
     this.onlineIndicatorColor = AppColor.onlineGreen,
     this.iconColor = AppColor.grey5,
     this.iconActiveColor = AppColor.primary,
+    this.readReceiptColor = const Color(0xFF4FC3F7), // Light blue
   });
 
   const ChatColors.dark({
@@ -121,6 +124,7 @@ class ChatColors extends ThemeExtension<ChatColors> {
     this.onlineIndicatorColor = AppColor.onlineGreen,
     this.iconColor = const Color(0xFFB0B3B8),
     this.iconActiveColor = AppColor.primary,
+    this.readReceiptColor = const Color(0xFF4FC3F7), // Light blue
   });
 
   @override
@@ -144,6 +148,7 @@ class ChatColors extends ThemeExtension<ChatColors> {
     Color? onlineIndicatorColor,
     Color? iconColor,
     Color? iconActiveColor,
+    Color? readReceiptColor,
   }) {
     return ChatColors(
       primaryColor: primaryColor ?? this.primaryColor,
@@ -165,6 +170,7 @@ class ChatColors extends ThemeExtension<ChatColors> {
       onlineIndicatorColor: onlineIndicatorColor ?? this.onlineIndicatorColor,
       iconColor: iconColor ?? this.iconColor,
       iconActiveColor: iconActiveColor ?? this.iconActiveColor,
+      readReceiptColor: readReceiptColor ?? this.readReceiptColor,
     );
   }
 
@@ -186,8 +192,7 @@ class ChatColors extends ThemeExtension<ChatColors> {
       dividerColor: Color.lerp(dividerColor, other.dividerColor, t)!,
       backgroundColor: Color.lerp(backgroundColor, other.backgroundColor, t)!,
       surfaceColor: Color.lerp(surfaceColor, other.surfaceColor, t)!,
-      sentBubbleColor:
-          Color.lerp(sentBubbleColor, other.sentBubbleColor, t)!,
+      sentBubbleColor: Color.lerp(sentBubbleColor, other.sentBubbleColor, t)!,
       receivedBubbleColor:
           Color.lerp(receivedBubbleColor, other.receivedBubbleColor, t)!,
       errorColor: Color.lerp(errorColor, other.errorColor, t)!,
@@ -199,8 +204,9 @@ class ChatColors extends ThemeExtension<ChatColors> {
       onlineIndicatorColor:
           Color.lerp(onlineIndicatorColor, other.onlineIndicatorColor, t)!,
       iconColor: Color.lerp(iconColor, other.iconColor, t)!,
-      iconActiveColor:
-          Color.lerp(iconActiveColor, other.iconActiveColor, t)!,
+      iconActiveColor: Color.lerp(iconActiveColor, other.iconActiveColor, t)!,
+      readReceiptColor:
+          Color.lerp(readReceiptColor, other.readReceiptColor, t)!,
     );
   }
 }

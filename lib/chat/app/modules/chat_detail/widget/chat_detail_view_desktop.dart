@@ -36,8 +36,7 @@ class ChatDetailViewDesktop extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: colors.backgroundColor,
-      body: SafeArea(
-        child: Obx(() {
+      body: Obx(() {
           // Show search overlay when active
           if (controller.isSearching.value) {
             return Column(
@@ -95,7 +94,6 @@ class ChatDetailViewDesktop extends StatelessWidget {
             ],
           );
         }),
-      ),
     );
   }
 

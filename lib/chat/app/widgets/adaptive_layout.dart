@@ -51,7 +51,8 @@ class AdaptiveLayout extends StatelessWidget {
   Widget _buildSplitView(BuildContext context, ChatColors colors) {
     final panelWidth = listPanelWidth ?? 350;
 
-    return Row(
+    return SafeArea(
+      child: Row(
       children: [
         SizedBox(
           width: panelWidth,
@@ -62,35 +63,33 @@ class AdaptiveLayout extends StatelessWidget {
           color: colors.dividerColor,
         ),
         Expanded(
-          child: SafeArea(
-            child: detailPanel ??
-                Container(
-                  color: colors.backgroundColor,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 64,
-                          color: colors.textLight,
+          child: detailPanel ??
+              Container(
+                color: colors.backgroundColor,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 64,
+                        color: colors.textLight,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        Keys.Select_conversation.tr,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 16,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          Keys.Select_conversation.tr,
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-          ),
+              ),
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildMobileView(BuildContext context) {

@@ -194,7 +194,7 @@ class ChatListItem extends StatelessWidget {
           statusColor = colors.textTimestamp;
         case MessageStatusType.read:
           statusIcon = Icons.done_all;
-          statusColor = colors.primaryColor;
+          statusColor = colors.readReceiptColor;
         case MessageStatusType.failed:
           statusIcon = Icons.error_outline;
           statusColor = colors.errorColor;

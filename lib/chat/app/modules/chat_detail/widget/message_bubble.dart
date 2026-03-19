@@ -377,7 +377,7 @@ class MessageBubble extends StatelessWidget {
             value: 'read_by',
             child: Row(
               children: [
-                Icon(Icons.done_all, size: 20, color: colors.primaryColor),
+                Icon(Icons.done_all, size: 20, color: colors.readReceiptColor),
                 const SizedBox(width: 12),
                 Text(Keys.Read_by.tr,
                     style: TextStyle(color: colors.textPrimary)),

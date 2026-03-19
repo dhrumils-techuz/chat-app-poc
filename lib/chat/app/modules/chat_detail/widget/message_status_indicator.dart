@@ -40,7 +40,7 @@ class MessageStatusIndicator extends StatelessWidget {
         return Icon(
           Icons.done_all,
           size: size,
-          color: colors.primaryColor,
+          color: colors.readReceiptColor,
         );
       case MessageStatusType.failed:
         return Icon(
