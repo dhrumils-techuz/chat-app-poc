@@ -133,27 +133,27 @@ class EmailPasswordForm extends StatelessWidget {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
-        borderSide: const BorderSide(
-          color: AppColor.primary,
+        borderSide: BorderSide(
+          color: colors.primaryColor,
           width: 1.5,
         ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
-        borderSide: const BorderSide(
-          color: AppColor.error,
+        borderSide: BorderSide(
+          color: colors.errorColor,
           width: 1,
         ),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.dimenToPx12),
-        borderSide: const BorderSide(
-          color: AppColor.error,
+        borderSide: BorderSide(
+          color: colors.errorColor,
           width: 1.5,
         ),
       ),
       errorStyle: ChatTextStyles.caption.copyWith(
-        color: AppColor.error,
+        color: colors.errorColor,
       ),
       errorMaxLines: 3,
     );

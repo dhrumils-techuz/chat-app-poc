@@ -59,8 +59,8 @@ class MessageBubble extends StatelessWidget {
           color: isHighlighted
               ? colors.primaryColor.withOpacity(0.15)
               : (isMyMessage
-                  ? AppColor.sentBubble
-                  : AppColor.receivedBubble),
+                  ? colors.sentBubbleColor
+                  : colors.receivedBubbleColor),
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(isMyMessage ? AppSizes.bubbleRadius : 4),
             topRight: Radius.circular(isMyMessage ? 4 : AppSizes.bubbleRadius),
@@ -151,12 +151,13 @@ class MessageBubble extends StatelessWidget {
   // ── Sender Name ────────────────────────────────────────────────────────
 
   Widget _buildSenderName(BuildContext context) {
+    final colors = ChatColors.getInstance(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Text(
         message.senderName ?? Keys.Unknown.tr,
         style: ChatTextStyles.captionSemiBold.copyWith(
-          color: AppColor.primary,
+          color: colors.primaryColor,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,

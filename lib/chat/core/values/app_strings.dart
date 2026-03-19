@@ -182,6 +182,13 @@ class Keys {
   static const String Search_in_chat = 'Search_in_chat';
   static const String No_messages_found = 'No_messages_found';
 
+  // Theme
+  static const String Theme = 'Theme';
+  static const String Choose_Theme = 'Choose_Theme';
+  static const String Light = 'Light';
+  static const String Dark = 'Dark';
+  static const String System_Default = 'System_Default';
+
   // Empty states
   static const String No_results_found = 'No_results_found';
   static const String Something_went_wrong = 'Something_went_wrong';
@@ -391,6 +398,13 @@ class ChatStringEnUS {
     Keys.Search_messages: 'Search messages',
     Keys.Search_in_chat: 'Search in chat...',
     Keys.No_messages_found: 'No messages found',
+
+    // Theme
+    Keys.Theme: 'Theme',
+    Keys.Choose_Theme: 'Choose Theme',
+    Keys.Light: 'Light',
+    Keys.Dark: 'Dark',
+    Keys.System_Default: 'System Default',
 
     // Empty states
     Keys.No_results_found: 'No results found',

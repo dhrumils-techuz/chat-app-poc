@@ -101,6 +101,28 @@ class ChatColors extends ThemeExtension<ChatColors> {
     this.iconActiveColor = AppColor.primary,
   });
 
+  const ChatColors.dark({
+    this.primaryColor = AppColor.primary,
+    this.primaryLightColor = AppColor.primaryLight,
+    this.onPrimaryColor = AppColor.white,
+    this.textPrimary = const Color(0xFFE4E6EB),
+    this.textSecondary = const Color(0xFFB0B3B8),
+    this.textTimestamp = const Color(0xFF8A8D91),
+    this.textLight = const Color(0xFF6D7074),
+    this.dividerColor = const Color(0xFF3A3B3C),
+    this.backgroundColor = const Color(0xFF18191A),
+    this.surfaceColor = const Color(0xFF242526),
+    this.sentBubbleColor = const Color(0xFF0D3B24),
+    this.receivedBubbleColor = const Color(0xFF303132),
+    this.errorColor = const Color(0xFFFF6B6B),
+    this.shadowColor = const Color(0x40000000),
+    this.inputBackgroundColor = const Color(0xFF303132),
+    this.unreadBadgeColor = AppColor.primary,
+    this.onlineIndicatorColor = AppColor.onlineGreen,
+    this.iconColor = const Color(0xFFB0B3B8),
+    this.iconActiveColor = AppColor.primary,
+  });
+
   @override
   ThemeExtension<ChatColors> copyWith({
     Color? primaryColor,

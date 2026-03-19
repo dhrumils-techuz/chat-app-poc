@@ -56,6 +56,7 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ChatColors.getInstance(context);
     final imageUrl = attachment.thumbnailUrl ?? attachment.url;
     final maxWidth = AppSizes.bubbleMaxWidth - (AppSizes.bubblePadding * 2);
 
@@ -91,7 +92,7 @@ class _ImagePreview extends StatelessWidget {
             return Container(
               width: displayWidth ?? maxWidth,
               height: displayHeight ?? 200,
-              color: AppColor.inputBackground,
+              color: colors.inputBackgroundColor,
               child: const Center(
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
@@ -101,7 +102,7 @@ class _ImagePreview extends StatelessWidget {
             return Container(
               width: displayWidth ?? maxWidth,
               height: displayHeight ?? 200,
-              color: AppColor.inputBackground,
+              color: colors.inputBackgroundColor,
               child: const Center(
                 child: Icon(Icons.broken_image_outlined, size: 40),
               ),

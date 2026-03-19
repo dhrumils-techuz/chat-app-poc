@@ -12,6 +12,7 @@ class PreferenceKeys {
   static const String isFirstLaunch = 'isFirstLaunch';
   static const String notificationsEnabled = 'notificationsEnabled';
   static const String selectedFolderId = 'selectedFolderId';
+  static const String themeMode = 'themeMode'; // 'light', 'dark', 'system'
 }
 
 class SharedPreferenceHelper {

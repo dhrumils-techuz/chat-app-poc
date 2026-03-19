@@ -26,7 +26,7 @@ import 'chat/app/data/service/notification/notification_service.dart';
 import 'chat/app/data/service/socket/socket_service.dart';
 import 'chat/app/data/service/sync/message_sync_service.dart';
 import 'chat/app/routes/app_pages.dart';
-import 'chat/core/theme/color.dart';
+import 'chat/core/theme/theme_controller.dart';
 import 'chat/core/utils/shared_preference_helper.dart';
 import 'chat/core/values/app_strings.dart';
 
@@ -150,6 +150,10 @@ void main() async {
     });
   }
 
+  // ── Theme controller (permanent) ────────────────────────────────────
+
+  final themeController = Get.put(ThemeController(), permanent: true);
+
   // ── Run app ──────────────────────────────────────────────────────────
 
   runApp(
@@ -159,32 +163,20 @@ void main() async {
         FocusManager.instance.primaryFocus?.unfocus();
       },
       child: GetMaterialApp(
-      title: Keys.AppName.tr,
-      translations: ChatMessages(),
-      locale: const Locale('en', 'US'),
-      fallbackLocale: const Locale('en', 'US'),
-      theme: ThemeData(
-        primarySwatch: MaterialColor(AppColor.primary.value, const {
-          50: Color(0xFFE8F8F0),
-          100: Color(0xFFC6EDDA),
-          200: Color(0xFFA0E1C1),
-          300: Color(0xFF7AD5A8),
-          400: Color(0xFF5ECB95),
-          500: AppColor.primary,
-          600: Color(0xFF0EB075),
-          700: Color(0xFF0C9B6A),
-          800: Color(0xFF0A875F),
-          900: Color(0xFF066547),
-        }),
-      ).copyWith(
-        extensions: [const ChatColors.light()],
+        title: Keys.AppName.tr,
+        translations: ChatMessages(),
+        locale: const Locale('en', 'US'),
+        fallbackLocale: const Locale('en', 'US'),
+        theme: ThemeController.lightTheme,
+        darkTheme: ThemeController.darkTheme,
+        themeMode: themeController.initialThemeMode,
+        initialRoute: authService.isLoggedIn
+            ? ChatAppRoutes.CHAT_LIST
+            : ChatAppRoutes.SIGN_IN,
+        getPages: ChatAppPages.routes,
+        defaultTransition: Transition.cupertino,
+        debugShowCheckedModeBanner: false,
       ),
-      initialRoute: authService.isLoggedIn
-          ? ChatAppRoutes.CHAT_LIST
-          : ChatAppRoutes.SIGN_IN,
-      getPages: ChatAppPages.routes,
-      defaultTransition: Transition.cupertino,
-      debugShowCheckedModeBanner: false,
-    )),
+    ),
   );
 }
