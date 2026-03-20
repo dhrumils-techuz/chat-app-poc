@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS message_status (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status VARCHAR(10) NOT NULL CHECK (status IN ('sent', 'delivered', 'read')),
+    status VARCHAR(10) NOT NULL CHECK (status IN ('sent', 'delivered', 'read', 'deleted')),
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(message_id, user_id)
 );

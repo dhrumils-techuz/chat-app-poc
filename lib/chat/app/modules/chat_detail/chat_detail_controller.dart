@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -55,6 +56,9 @@ class ChatDetailController extends GetxController {
   final replyingTo = Rxn<MessageModel>();
   final typingUsers = <String>[].obs;
   final hasMoreMessages = true.obs;
+  final hasNewerMessages = false.obs;
+  final isLoadingNewer = false.obs;
+  final isJumpingToMessage = false.obs;
   final highlightedMessageId = RxnString();
   final showScrollToBottom = false.obs;
 
@@ -145,7 +149,8 @@ class ChatDetailController extends GetxController {
     // Tell the chat list this conversation is currently being viewed,
     // so it won't increment unread count for incoming messages.
     if (Get.isRegistered<ChatListController>()) {
-      Get.find<ChatListController>().activeConversationId.value = conversation.id;
+      Get.find<ChatListController>().activeConversationId.value =
+          conversation.id;
     }
     loadMessages(); // _markAllAsRead is called after messages load
     _setupSocketListeners();
@@ -214,10 +219,17 @@ class ChatDetailController extends GetxController {
       }
 
       // 2. Fetch from remote
+      // When loading more after a jump, _nextCursor may be null.
+      // Compute cursor from the oldest loaded message's timestamp.
+      String? cursor = loadMore ? _nextCursor : null;
+      if (loadMore && cursor == null && messages.isNotEmpty) {
+        cursor = _encodeCursor(messages.last.createdAt);
+      }
+
       final ApiResponseModel response = await _messageRepository.getMessages(
         conversationId: conversation.id,
         limit: _pageSize,
-        cursor: loadMore ? _nextCursor : null,
+        cursor: cursor,
       );
 
       if (response.isSuccessful && response.data != null) {
@@ -258,6 +270,86 @@ class ChatDetailController extends GetxController {
 
     isLoadingMore.value = true;
     await loadMessages(loadMore: true);
+  }
+
+  /// Loads newer messages when scrolling toward the bottom (index 0) after a jump.
+  Future<void> loadNewerMessages() async {
+    if (isLoadingNewer.value || !hasNewerMessages.value) return;
+    if (messages.isEmpty) return;
+
+    isLoadingNewer.value = true;
+    try {
+      final newestMessage = messages.first; // index 0 = newest in reversed list
+      final cursor = _encodeCursor(newestMessage.createdAt);
+
+      final response = await _messageRepository.getMessages(
+        conversationId: conversation.id,
+        limit: _pageSize,
+        cursor: cursor,
+        direction: 'backward', // newer messages
+      );
+
+      if (response.isSuccessful && response.data != null) {
+        final rawData = response.data as Map<String, dynamic>;
+        final List messageList = rawData['data'] as List? ?? [];
+        final parsedMessages = messageList
+            .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        if (parsedMessages.isNotEmpty) {
+          // Sort newest-first (DESC) to match our reversed list order
+          parsedMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+          // Remove duplicates
+          final existingIds = messages.map((m) => m.id).toSet();
+          final newMessages =
+              parsedMessages.where((m) => !existingIds.contains(m.id)).toList();
+
+          if (newMessages.isNotEmpty) {
+            // Record visible message to maintain scroll position after insert
+            final positions = itemPositionsListener.itemPositions.value;
+            String? anchorMessageId;
+            if (positions.isNotEmpty) {
+              final minVisibleIndex =
+                  positions.map((p) => p.index).reduce((a, b) => a < b ? a : b);
+              if (minVisibleIndex < messages.length) {
+                anchorMessageId = messages[minVisibleIndex].id;
+              }
+            }
+
+            // Insert newer messages at the beginning (index 0 = newest)
+            messages.insertAll(0, newMessages);
+
+            // Restore scroll position so the view doesn't jump
+            if (anchorMessageId != null && itemScrollController.isAttached) {
+              final newIndex =
+                  messages.indexWhere((m) => m.id == anchorMessageId);
+              if (newIndex != -1) {
+                itemScrollController.jumpTo(index: newIndex);
+              }
+            }
+
+            // Cache the newly loaded messages
+            _messageRepository.cacheMessages(newMessages);
+          }
+        }
+
+        final hasMore = rawData['hasMore'] as bool? ?? false;
+        hasNewerMessages.value = hasMore;
+        if (!hasMore) {
+          isViewingOldMessages.value = false;
+        }
+      }
+    } catch (e) {
+      LogsHelper.debugLog(tag: _tag, 'Error loading newer messages: $e');
+    } finally {
+      isLoadingNewer.value = false;
+    }
+  }
+
+  /// Encodes a DateTime as a base64url cursor matching the server format.
+  String _encodeCursor(DateTime dt) {
+    return base64Url.encode(utf8.encode(dt.toUtc().toIso8601String()));
   }
 
   // ── Sending Messages ──────────────────────────────────────────────────
@@ -524,9 +616,8 @@ class ChatDetailController extends GetxController {
         final List results = rawData is Map
             ? (rawData['data'] as List? ?? [])
             : (rawData as List);
-        searchResults.value = results
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
+        searchResults.value =
+            results.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       }
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Error searching messages: $e');
@@ -555,39 +646,70 @@ class ChatDetailController extends GetxController {
 
   Future<bool> _jumpToMessage(String messageId) async {
     try {
+      isJumpingToMessage.value = true;
+
       final response = await _messageRepository.getMessagesAround(
         conversationId: conversation.id,
         messageId: messageId,
       );
 
-      if (!response.isSuccessful || response.data == null) return false;
+      if (!response.isSuccessful || response.data == null) {
+        isJumpingToMessage.value = false;
+        return false;
+      }
 
       final rawData = response.data as Map<String, dynamic>;
       final List messageList = rawData['data'] as List? ?? [];
       final targetIndex = rawData['targetIndex'] as int? ?? 0;
       final hasOlder = rawData['hasOlder'] as bool? ?? false;
+      final hasNewer = rawData['hasNewer'] as bool? ?? false;
 
       final parsedMessages = messageList
           .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      if (parsedMessages.isEmpty) return false;
+      if (parsedMessages.isEmpty) {
+        isJumpingToMessage.value = false;
+        return false;
+      }
 
       // Replace the message list with the "around" data
       messages.value = parsedMessages;
       hasMoreMessages.value = hasOlder;
-      isViewingOldMessages.value = true;
+      hasNewerMessages.value = hasNewer;
+      isViewingOldMessages.value = hasNewer;
 
-      // Reset cursor for continued backward pagination from the oldest message
-      _nextCursor = null; // Will be rebuilt on next loadMore
+      // Reset cursor — will be computed from edge messages on next load
+      _nextCursor = null;
 
-      // Wait for the list to build, then scroll + highlight
-      await Future.delayed(const Duration(milliseconds: 100));
-      _scrollToIndex(targetIndex);
-      _highlightMessage(messageId);
+      // Two-frame wait: the first addPostFrameCallback lets the current
+      // frame finish (Obx schedules its rebuild). The second fires after
+      // the Obx rebuild frame completes layout, so the ScrollablePositionedList
+      // now has the new data and jumpTo targets the correct index.
+      // Two-frame wait: Frame N ends → first callback fires (Obx hasn't
+      // rebuilt yet). Frame N+1: Obx rebuilds the list with new data.
+      // Frame N+1 ends → second callback fires → jumpTo runs on the
+      // correctly laid-out list. Setting isJumpingToMessage = false only
+      // affects the overlay Obx (separated in the view), so the list's
+      // scroll position is preserved.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (itemScrollController.isAttached) {
+            itemScrollController.jumpTo(
+              index: targetIndex,
+              alignment: 0.5,
+            );
+          }
+          Future.delayed(const Duration(milliseconds: 150), () {
+            isJumpingToMessage.value = false;
+            _highlightMessage(messageId);
+          });
+        });
+      });
 
       return true;
     } catch (e) {
+      isJumpingToMessage.value = false;
       LogsHelper.debugLog(tag: _tag, 'Error jumping to message: $e');
       return false;
     }
@@ -599,7 +721,7 @@ class ChatDetailController extends GetxController {
         index: index,
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
-        alignment: 0.3,
+        alignment: 0.5,
       );
     }
   }
@@ -617,6 +739,7 @@ class ChatDetailController extends GetxController {
   /// when viewing old messages after a jump).
   void returnToLatestMessages() {
     isViewingOldMessages.value = false;
+    hasNewerMessages.value = false;
     _nextCursor = null;
     hasMoreMessages.value = true;
     loadMessages();
@@ -656,9 +779,8 @@ class ChatDetailController extends GetxController {
         final confirmedMessage = messages[index].copyWith(
           id: messageId,
           status: MessageStatusType.sent,
-          createdAt: createdAtStr != null
-              ? DateTime.tryParse(createdAtStr)
-              : null,
+          createdAt:
+              createdAtStr != null ? DateTime.tryParse(createdAtStr) : null,
         );
         messages[index] = confirmedMessage;
 
@@ -669,8 +791,7 @@ class ChatDetailController extends GetxController {
     });
 
     // Server emits 'message:delivered:ack' with { messageId, conversationId, userId, timestamp }
-    _messageDeliveredSub =
-        _socketService.onMessageDelivered.listen((data) {
+    _messageDeliveredSub = _socketService.onMessageDelivered.listen((data) {
       final convId = data['conversationId'] as String?;
       if (convId != null && convId != conversation.id) return;
       final messageId = data['messageId'] as String?;
@@ -765,7 +886,8 @@ class ChatDetailController extends GetxController {
       // our socket (with full conversation data). Clear the removed flag
       // and rejoin the socket room.
       if (isRemovedFromGroup.value &&
-          data.containsKey('type') && data.containsKey('id')) {
+          data.containsKey('type') &&
+          data.containsKey('id')) {
         isRemovedFromGroup.value = false;
         _socketService.joinConversation(conversation.id);
       }
@@ -836,8 +958,7 @@ class ChatDetailController extends GetxController {
         messages[i] = msg.copyWith(status: status);
       }
     } else {
-      messages[targetIndex] =
-          messages[targetIndex].copyWith(status: status);
+      messages[targetIndex] = messages[targetIndex].copyWith(status: status);
     }
   }
 
@@ -889,16 +1010,27 @@ class ChatDetailController extends GetxController {
     final positions = itemPositionsListener.itemPositions.value;
     if (positions.isEmpty) return;
 
-    // Load more when the last visible item is near the end of the list
-    final maxIndex = positions.map((p) => p.index).reduce(
-        (a, b) => a > b ? a : b);
+    // Suppress pagination while a jump is in progress — after jumpTo the
+    // position listener fires immediately and can see newer items near
+    // index 0, which would incorrectly trigger loadNewerMessages.
+    if (isJumpingToMessage.value) return;
+
+    // Load older messages when the last visible item is near the end of the list
+    final maxIndex =
+        positions.map((p) => p.index).reduce((a, b) => a > b ? a : b);
     if (maxIndex >= messages.length - 5 && hasMoreMessages.value) {
       loadMoreMessages();
     }
 
+    final minIndex =
+        positions.map((p) => p.index).reduce((a, b) => a < b ? a : b);
+
+    // Load newer messages when near the beginning and viewing old messages
+    if (minIndex <= 3 && isViewingOldMessages.value && hasNewerMessages.value) {
+      loadNewerMessages();
+    }
+
     // Show scroll-to-bottom FAB when item 0 is NOT visible
-    final minIndex = positions.map((p) => p.index).reduce(
-        (a, b) => a < b ? a : b);
     showScrollToBottom.value = minIndex > 3;
   }
 

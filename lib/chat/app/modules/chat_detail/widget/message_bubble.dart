@@ -68,22 +68,27 @@ class MessageBubble extends StatelessWidget {
             bottomRight: const Radius.circular(AppSizes.bubbleRadius),
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Sender name (group + received only)
-            if (showGroupAvatar) _buildSenderName(context),
+        // IntrinsicWidth sizes the bubble to the widest child's intrinsic
+        // width (usually the message text). CrossAxisAlignment.stretch then
+        // makes narrower children (like the reply preview) fill that width.
+        child: IntrinsicWidth(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Sender name (group + received only)
+              if (showGroupAvatar) _buildSenderName(context),
 
-            // Reply preview
-            if (message.hasReply) _buildReplyPreview(context),
+              // Reply preview
+              if (message.hasReply) _buildReplyPreview(context),
 
-            // Content
-            _buildContent(context),
+              // Content
+              _buildContent(context),
 
-            // Timestamp + status row
-            _buildTimestampRow(context),
-          ],
+              // Timestamp + status row
+              _buildTimestampRow(context),
+            ],
+          ),
         ),
       ),
     );

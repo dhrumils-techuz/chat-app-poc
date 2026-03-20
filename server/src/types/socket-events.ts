@@ -71,9 +71,12 @@ export interface ServerToClientEvents {
     localId: string;
     messageId: string;
     conversationId: string;
+    senderId: string;
     senderName: string;
     type: string;
     content: string | null;
+    mediaId: string | null;
+    replyToId: string | null;
     replyToContent: string | null;
     replyToSenderName: string | null;
     createdAt: string;

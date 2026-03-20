@@ -316,50 +316,145 @@ class ChatDetailViewDesktop extends StatelessWidget {
 
   Widget _buildMessageList(
       BuildContext context, ChatColors colors, ChatDetailController controller) {
-    return Obx(() {
-      if (controller.isLoading.value) {
-        return Center(
-          child: CircularProgressIndicator(
-            color: colors.primaryColor,
-          ),
-        );
-      }
-
-      if (controller.messages.isEmpty) {
-        return Center(
-          child: Text(
-            Keys.Send_first_message.tr,
-            textAlign: TextAlign.center,
-            style: ChatTextStyles.body.copyWith(
-              color: colors.textLight,
-            ),
-          ),
-        );
-      }
-
-      final itemCount = controller.messages.length +
-          (controller.isLoadingMore.value ? 1 : 0);
-
-      return ScrollablePositionedList.builder(
-        itemScrollController: controller.itemScrollController,
-        itemPositionsListener: controller.itemPositionsListener,
-        reverse: true,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.dimenToPx8,
-          vertical: AppSizes.dimenToPx8,
-        ),
-        itemCount: itemCount,
-        itemBuilder: (context, index) {
-          // Loading indicator at the top (end of reversed list)
-          if (index == controller.messages.length) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppSizes.dimenToPx16,
+    // Stack is stable — never recreated. Each child has its own Obx so
+    // overlay/loader changes don't rebuild the ScrollablePositionedList.
+    return Stack(
+      children: [
+        // ── Main content: loading / empty / message list ──
+        Obx(() {
+          if (controller.isLoading.value) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: colors.primaryColor,
               ),
+            );
+          }
+
+          if (controller.messages.isEmpty) {
+            return Center(
+              child: Text(
+                Keys.Send_first_message.tr,
+                textAlign: TextAlign.center,
+                style: ChatTextStyles.body.copyWith(
+                  color: colors.textLight,
+                ),
+              ),
+            );
+          }
+
+          final itemCount = controller.messages.length +
+              (controller.isLoadingMore.value ? 1 : 0);
+
+          return ScrollablePositionedList.builder(
+            itemScrollController: controller.itemScrollController,
+            itemPositionsListener: controller.itemPositionsListener,
+            reverse: true,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.dimenToPx8,
+              vertical: AppSizes.dimenToPx8,
+            ),
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              // Loading indicator at the top (end of reversed list) — older messages
+              if (index == controller.messages.length) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.dimenToPx16,
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: AppSizes.dimenToPx24,
+                      height: AppSizes.dimenToPx24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.primaryColor,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final message = controller.messages[index];
+              final isMyMessage = controller.isMyMessage(message);
+
+              // Date separator logic (reversed list: next index is older)
+              Widget? dateSeparator;
+              if (index == controller.messages.length - 1) {
+                dateSeparator = _buildDateSeparator(context, message.createdAt, colors);
+              } else {
+                final previousMessage = controller.messages[index + 1];
+                if (!message.createdAt.toLocal().isSameDay(
+                    previousMessage.createdAt.toLocal())) {
+                  dateSeparator =
+                      _buildDateSeparator(context, message.createdAt, colors);
+                }
+              }
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (dateSeparator != null) dateSeparator,
+                  Obx(() => MessageBubble(
+                    message: message,
+                    isMyMessage: isMyMessage,
+                    isGroup: controller.isGroup,
+                    isHighlighted:
+                        controller.highlightedMessageId.value == message.id,
+                    onReply: () => controller.setReplyTo(message),
+                    onDelete: (forEveryone) =>
+                        controller.deleteMessage(message.id, forEveryone: forEveryone),
+                    onTapReply: (parentId) =>
+                        controller.scrollToMessage(parentId),
+                    onViewReaders: controller.isGroup
+                        ? () => controller.showMessageReaders(message.id)
+                        : null,
+                  )),
+                ],
+              );
+            },
+          );
+        }),
+        // ── Jump overlay — separate Obx, does NOT trigger list rebuild ──
+        Positioned.fill(
+          child: Obx(() {
+            if (!controller.isJumpingToMessage.value) {
+              return const SizedBox.shrink();
+            }
+            return Container(
+              color: colors.backgroundColor.withValues(alpha: 0.5),
               child: Center(
+                child: CircularProgressIndicator(
+                  color: colors.primaryColor,
+                ),
+              ),
+            );
+          }),
+        ),
+        // ── Newer messages loader — separate Obx ──
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 8,
+          child: Obx(() {
+            if (!controller.isLoadingNewer.value) {
+              return const SizedBox.shrink();
+            }
+            return Center(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.surfaceColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.textPrimary.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
                 child: SizedBox(
-                  width: AppSizes.dimenToPx24,
-                  height: AppSizes.dimenToPx24,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: colors.primaryColor,
@@ -367,48 +462,10 @@ class ChatDetailViewDesktop extends StatelessWidget {
                 ),
               ),
             );
-          }
-
-          final message = controller.messages[index];
-          final isMyMessage = controller.isMyMessage(message);
-
-          // Date separator logic (reversed list: next index is older)
-          Widget? dateSeparator;
-          if (index == controller.messages.length - 1) {
-            dateSeparator = _buildDateSeparator(context, message.createdAt, colors);
-          } else {
-            final previousMessage = controller.messages[index + 1];
-            if (!message.createdAt.toLocal().isSameDay(
-                previousMessage.createdAt.toLocal())) {
-              dateSeparator =
-                  _buildDateSeparator(context, message.createdAt, colors);
-            }
-          }
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (dateSeparator != null) dateSeparator,
-              Obx(() => MessageBubble(
-                message: message,
-                isMyMessage: isMyMessage,
-                isGroup: controller.isGroup,
-                isHighlighted:
-                    controller.highlightedMessageId.value == message.id,
-                onReply: () => controller.setReplyTo(message),
-                onDelete: (forEveryone) =>
-                    controller.deleteMessage(message.id, forEveryone: forEveryone),
-                onTapReply: (parentId) =>
-                    controller.scrollToMessage(parentId),
-                onViewReaders: controller.isGroup
-                    ? () => controller.showMessageReaders(message.id)
-                    : null,
-              )),
-            ],
-          );
-        },
-      );
-    });
+          }),
+        ),
+      ],
+    );
   }
 
   // ── Date Separator ──────────────────────────────────────────────────────

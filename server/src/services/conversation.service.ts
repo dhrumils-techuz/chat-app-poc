@@ -16,10 +16,12 @@ interface ConversationWithParticipants extends Conversation {
     id: string;
     content: string | null;
     type: string;
+    senderId: string;
     senderName: string;
     createdAt: Date;
   } | null;
   unreadCount?: number;
+  lastMessageAt?: Date | null;
 }
 
 class ConversationService {
@@ -152,10 +154,11 @@ class ConversationService {
       id: string;
       content: string | null;
       type: string;
+      senderId: string;
       senderName: string;
       createdAt: Date;
     }>(
-      `SELECT m.id, m.content, m.type, u.full_name as "senderName", m.created_at as "createdAt"
+      `SELECT m.id, m.content, m.type, m.sender_id as "senderId", u.full_name as "senderName", m.created_at as "createdAt"
        FROM messages m
        JOIN users u ON u.id = m.sender_id
        WHERE m.conversation_id = $1 AND m.is_deleted = false
@@ -219,10 +222,11 @@ class ConversationService {
         id: string;
         content: string | null;
         type: string;
+        senderId: string;
         senderName: string;
         createdAt: Date;
       }>(
-        `SELECT m.id, m.content, m.type, u.full_name as "senderName", m.created_at as "createdAt"
+        `SELECT m.id, m.content, m.type, m.sender_id as "senderId", u.full_name as "senderName", m.created_at as "createdAt"
          FROM messages m
          JOIN users u ON u.id = m.sender_id
          WHERE m.conversation_id = $1 AND m.is_deleted = false

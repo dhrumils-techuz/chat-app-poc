@@ -6,7 +6,7 @@ export type ConversationType = 'direct' | 'group';
 
 export type ParticipantRole = 'owner' | 'admin' | 'member';
 
-export type MessageStatusType = 'sent' | 'delivered' | 'read';
+export type MessageStatusType = 'sent' | 'delivered' | 'read' | 'deleted';
 
 export type PresenceStatus = 'online' | 'offline' | 'away';
 

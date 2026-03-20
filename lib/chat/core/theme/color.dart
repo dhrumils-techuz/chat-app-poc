@@ -23,7 +23,23 @@ class AppColor {
   static const Color transparent = Color(0x00000000);
   static const Color overlayBackground = Color(0xFF000000);
   static const Color overlayForeground = Color(0xFFFFFFFF);
-  static const Color overlaySubtle = Color(0x8AFFFFFF); // ~54% white
+  static const Color overlaySubtle = Color(0x8AFFFFFF);
+  static const Color readReceipt = Color(0xFF4FC3F7);
+
+  // ── Dark theme colors ────────────────────────────────────────────────
+  static const Color darkTextPrimary = Color(0xFFE4E6EB);
+  static const Color darkTextSecondary = Color(0xFFB0B3B8);
+  static const Color darkTextTimestamp = Color(0xFF8A8D91);
+  static const Color darkTextLight = Color(0xFF6D7074);
+  static const Color darkDivider = Color(0xFF3A3B3C);
+  static const Color darkBackground = Color(0xFF18191A);
+  static const Color darkSurface = Color(0xFF242526);
+  static const Color darkSentBubble = Color(0xFF0D3B24);
+  static const Color darkReceivedBubble = Color(0xFF303132);
+  static const Color darkError = Color(0xFFFF6B6B);
+  static const Color darkShadow = Color(0x40000000);
+  static const Color darkInputBackground = Color(0xFF303132);
+  static const Color darkIcon = Color(0xFFB0B3B8);
 
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment(-0.7, -0.7),
@@ -101,30 +117,30 @@ class ChatColors extends ThemeExtension<ChatColors> {
     this.onlineIndicatorColor = AppColor.onlineGreen,
     this.iconColor = AppColor.grey5,
     this.iconActiveColor = AppColor.primary,
-    this.readReceiptColor = const Color(0xFF4FC3F7), // Light blue
+    this.readReceiptColor = AppColor.readReceipt,
   });
 
   const ChatColors.dark({
     this.primaryColor = AppColor.primary,
     this.primaryLightColor = AppColor.primaryLight,
     this.onPrimaryColor = AppColor.white,
-    this.textPrimary = const Color(0xFFE4E6EB),
-    this.textSecondary = const Color(0xFFB0B3B8),
-    this.textTimestamp = const Color(0xFF8A8D91),
-    this.textLight = const Color(0xFF6D7074),
-    this.dividerColor = const Color(0xFF3A3B3C),
-    this.backgroundColor = const Color(0xFF18191A),
-    this.surfaceColor = const Color(0xFF242526),
-    this.sentBubbleColor = const Color(0xFF0D3B24),
-    this.receivedBubbleColor = const Color(0xFF303132),
-    this.errorColor = const Color(0xFFFF6B6B),
-    this.shadowColor = const Color(0x40000000),
-    this.inputBackgroundColor = const Color(0xFF303132),
+    this.textPrimary = AppColor.darkTextPrimary,
+    this.textSecondary = AppColor.darkTextSecondary,
+    this.textTimestamp = AppColor.darkTextTimestamp,
+    this.textLight = AppColor.darkTextLight,
+    this.dividerColor = AppColor.darkDivider,
+    this.backgroundColor = AppColor.darkBackground,
+    this.surfaceColor = AppColor.darkSurface,
+    this.sentBubbleColor = AppColor.darkSentBubble,
+    this.receivedBubbleColor = AppColor.darkReceivedBubble,
+    this.errorColor = AppColor.darkError,
+    this.shadowColor = AppColor.darkShadow,
+    this.inputBackgroundColor = AppColor.darkInputBackground,
     this.unreadBadgeColor = AppColor.primary,
     this.onlineIndicatorColor = AppColor.onlineGreen,
-    this.iconColor = const Color(0xFFB0B3B8),
+    this.iconColor = AppColor.darkIcon,
     this.iconActiveColor = AppColor.primary,
-    this.readReceiptColor = const Color(0xFF4FC3F7), // Light blue
+    this.readReceiptColor = AppColor.readReceipt,
   });
 
   @override

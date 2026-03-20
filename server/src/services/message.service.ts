@@ -301,6 +301,28 @@ class MessageService {
   }
 
   /**
+   * Checks whether ALL non-sender active participants have read a message.
+   * Used for group read receipts — blue ticks only show when everyone has read.
+   */
+  async haveAllParticipantsRead(messageId: string, conversationId: string): Promise<boolean> {
+    const result = await query<{ total_others: string; read_count: string }>(
+      `SELECT
+        (SELECT COUNT(*) FROM conversation_participants cp
+         WHERE cp.conversation_id = $1 AND cp.left_at IS NULL AND cp.user_id != m.sender_id
+        ) AS total_others,
+        (SELECT COUNT(*) FROM message_status ms
+         WHERE ms.message_id = $2 AND ms.status = 'read'
+        ) AS read_count
+       FROM messages m WHERE m.id = $2`,
+      [conversationId, messageId]
+    );
+    if (result.rows.length === 0) return false;
+    const totalOthers = parseInt(result.rows[0].total_others, 10);
+    const readCount = parseInt(result.rows[0].read_count, 10);
+    return totalOthers > 0 && readCount >= totalOthers;
+  }
+
+  /**
    * Returns the list of users who have read a specific message.
    */
   async getMessageReaders(messageId: string, conversationId: string): Promise<{ userId: string; fullName: string; readAt: string }[]> {

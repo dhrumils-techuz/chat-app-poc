@@ -406,6 +406,7 @@ class ChatListController extends GetxController {
 
   void _handleMessageReadAck(Map<String, dynamic> data) {
     final conversationId = data['conversationId'] as String?;
+    final ackMessageId = data['messageId'] as String?;
     if (conversationId == null) return;
 
     final index = conversations.indexWhere((c) => c.id == conversationId);
@@ -418,6 +419,14 @@ class ChatListController extends GetxController {
     // Update status only if the last message was sent by the current user
     if (lastMsg.senderId == currentUserId &&
         lastMsg.status != MessageStatusType.read) {
+      // For group chats, only upgrade if the ack is specifically for this
+      // message. The server only emits the ack when ALL members have read,
+      // so we must match the messageId to avoid false upgrades.
+      if (conversation.isGroup &&
+          ackMessageId != null &&
+          lastMsg.id != ackMessageId) {
+        return;
+      }
       conversations[index] = conversation.copyWith(
         lastMessage: lastMsg.copyWith(status: MessageStatusType.read),
       );
