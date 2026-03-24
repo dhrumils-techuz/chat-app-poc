@@ -128,6 +128,13 @@ class DioRemoteApiClient extends GetxService {
     return await _getValidAccessToken();
   }
 
+  /// Forces a token refresh regardless of local expiry state.
+  /// Used by SocketClient when the server rejects the token — the local
+  /// expiry check may say "valid" but the server disagrees.
+  Future<String?> forceRefreshToken() async {
+    return await _refreshAccessToken();
+  }
+
   bool _isAuthEndpoint(String path) {
     return path.contains('/auth/login') ||
         path.contains('/auth/register') ||

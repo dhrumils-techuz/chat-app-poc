@@ -35,6 +35,9 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
 
+  /// Guards against concurrent connect/reconnect calls.
+  bool _isConnecting = false;
+
   /// Listeners registered before the socket is created.
   /// They are applied to the socket in [connect] before calling socket.connect().
   final Map<String, List<Function(dynamic)>> _pendingListeners = {};
@@ -85,46 +88,54 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
   /// If the access token is expired, it will be refreshed via the Dio client's
   /// refresh mechanism before connecting.
   Future<void> connect() async {
-    // Don't reconnect if already connected
+    // Don't reconnect if already connected or another connect is in flight
     if (_socket != null && _isConnected.value) {
       LogsHelper.debugLog(tag: _tag, 'Socket already connected');
       return;
     }
-
-    // Ensure we have a valid (non-expired) token before connecting.
-    // If expired, trigger a refresh through DioRemoteApiClient.
-    String? accessToken = await _tokenRepository.getAccessToken();
-    if (accessToken == null) {
-      LogsHelper.debugLog(
-          tag: _tag, 'No access token available for socket connection');
+    if (_isConnecting) {
+      LogsHelper.debugLog(tag: _tag, 'Socket connect already in progress');
       return;
     }
-
-    if (_tokenRepository.isAccessTokenExpired()) {
-      LogsHelper.debugLog(
-          tag: _tag, 'Access token expired, refreshing before socket connect');
-      try {
-        final dioClient = Get.find<DioRemoteApiClient>();
-        final refreshedToken = await dioClient.ensureValidToken();
-        if (refreshedToken == null || _tokenRepository.isAccessTokenExpired()) {
-          LogsHelper.debugLog(
-              tag: _tag, 'Token refresh failed, cannot connect socket');
-          // DioRemoteApiClient._handleSessionExpired() will redirect to login
-          // if the refresh token itself is expired/revoked.
-          return;
-        }
-        accessToken = refreshedToken;
-      } catch (e) {
-        LogsHelper.debugLog(
-            tag: _tag, 'Token refresh error before socket connect: $e');
-        return;
-      }
-    }
+    _isConnecting = true;
 
     try {
+      // Ensure we have a valid (non-expired) token before connecting.
+      // If expired, trigger a refresh through DioRemoteApiClient.
+      String? accessToken = await _tokenRepository.getAccessToken();
+      if (accessToken == null) {
+        LogsHelper.debugLog(
+            tag: _tag, 'No access token available for socket connection');
+        return;
+      }
+
+      if (_tokenRepository.isAccessTokenExpired()) {
+        LogsHelper.debugLog(
+            tag: _tag,
+            'Access token expired, refreshing before socket connect');
+        try {
+          final dioClient = Get.find<DioRemoteApiClient>();
+          final refreshedToken = await dioClient.forceRefreshToken();
+          if (refreshedToken == null) {
+            LogsHelper.debugLog(
+                tag: _tag, 'Token refresh failed, cannot connect socket');
+            return;
+          }
+          accessToken = refreshedToken;
+        } catch (e) {
+          LogsHelper.debugLog(
+              tag: _tag, 'Token refresh error before socket connect: $e');
+          return;
+        }
+      }
+
       // Dispose previous socket if any
       _socket?.dispose();
 
+      // Built-in reconnection is DISABLED because it reuses the original
+      // auth token. We handle reconnection ourselves (via _scheduleReconnect,
+      // reconnectWithNewToken, and _handleAppResumed) so that every new
+      // connection gets a freshly validated token.
       _socket = IO.io(
         AppConfig.socketUrl,
         IO.OptionBuilder()
@@ -132,9 +143,7 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
             .setAuth({'token': accessToken})
             .setExtraHeaders({'ngrok-skip-browser-warning': 'true'})
             .disableAutoConnect()
-            .enableReconnection()
-            .setReconnectionAttempts(AppConstants.maxReconnectAttempts)
-            .setReconnectionDelay(AppConstants.reconnectDelaySeconds * 1000)
+            .disableReconnection()
             .build(),
       );
 
@@ -152,6 +161,8 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
     } catch (e) {
       LogsHelper.debugLog(tag: _tag, 'Socket connection error: $e');
       _scheduleReconnect();
+    } finally {
+      _isConnecting = false;
     }
   }
 
@@ -185,10 +196,18 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
       }
     });
 
-    socket.onDisconnect((_) {
-      LogsHelper.debugLog(tag: _tag, 'Socket disconnected');
+    socket.onDisconnect((reason) {
+      LogsHelper.debugLog(tag: _tag, 'Socket disconnected (reason: $reason)');
       _isConnected.value = false;
       _isAuthenticated.value = false;
+
+      // Auto-reconnect unless WE called disconnect() (reason: 'io client disconnect')
+      final reasonStr = reason?.toString() ?? '';
+      if (reasonStr != 'io client disconnect') {
+        LogsHelper.debugLog(
+            tag: _tag, 'Unexpected disconnect — scheduling reconnect');
+        _scheduleReconnect();
+      }
     });
 
     socket.onConnectError((error) {
@@ -196,7 +215,7 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
       _isConnected.value = false;
       _isAuthenticated.value = false;
 
-      // If error is "Token expired", reconnect with a fresh token
+      // If error is "Token expired", reconnect with a force-refreshed token
       final errorStr = error.toString();
       if (errorStr.contains('Token expired') ||
           errorStr.contains('jwt expired') ||
@@ -211,25 +230,6 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
 
     socket.onError((data) {
       LogsHelper.debugLog(tag: _tag, 'Socket error: $data');
-    });
-
-    socket.onReconnect((_) {
-      LogsHelper.debugLog(tag: _tag, 'Socket reconnected');
-      _isConnected.value = true;
-      _isAuthenticated.value = true;
-      _reconnectAttempts = 0;
-    });
-
-    socket.onReconnectAttempt((attempt) {
-      LogsHelper.debugLog(tag: _tag, 'Socket reconnect attempt: $attempt');
-    });
-
-    socket.onReconnectError((error) {
-      LogsHelper.debugLog(tag: _tag, 'Socket reconnect error: $error');
-    });
-
-    socket.onReconnectFailed((_) {
-      LogsHelper.debugLog(tag: _tag, 'Socket reconnect failed');
     });
   }
 
@@ -351,7 +351,8 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
   static const int _maxTokenReconnectAttempts = 2;
 
   /// Reconnects the socket with a fresh token.
-  /// Useful after token refresh or re-authentication.
+  /// Forces a token refresh via DioRemoteApiClient — the server rejected
+  /// the current token, so the local expiry check cannot be trusted.
   /// Limited to [_maxTokenReconnectAttempts] to prevent infinite loops
   /// when the refresh token itself is expired.
   Future<void> reconnectWithNewToken() async {
@@ -367,13 +368,32 @@ class SocketClient extends GetxService with WidgetsBindingObserver {
         final dioClient = Get.find<DioRemoteApiClient>();
         final token = await dioClient.ensureValidToken();
         if (token == null) {
-          // _handleSessionExpired() in DioRemoteApiClient already redirects
           LogsHelper.debugLog(
-              tag: _tag, 'Session expired — redirect to login handled by DioClient');
+              tag: _tag,
+              'Session expired — redirect to login handled by DioClient');
         }
       } catch (_) {}
       return;
     }
+
+    // Force refresh the token — the server rejected it, so don't trust
+    // the local expiry check. This ensures we get a genuinely new token.
+    try {
+      final dioClient = Get.find<DioRemoteApiClient>();
+      final newToken = await dioClient.forceRefreshToken();
+      if (newToken == null) {
+        LogsHelper.debugLog(
+            tag: _tag, 'Force token refresh failed — cannot reconnect socket');
+        return;
+      }
+      LogsHelper.debugLog(
+          tag: _tag, 'Token force-refreshed, reconnecting socket');
+    } catch (e) {
+      LogsHelper.debugLog(
+          tag: _tag, 'Force token refresh error: $e');
+      return;
+    }
+
     disconnect();
     await connect();
   }
