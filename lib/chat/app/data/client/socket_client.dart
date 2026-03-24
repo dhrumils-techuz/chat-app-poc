@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
@@ -18,7 +19,10 @@ import '../repository/token_repository.dart';
 ///
 /// Listeners registered via [on] before [connect] are stored and applied
 /// to the socket instance once it is created, ensuring no events are missed.
-class SocketClient extends GetxService {
+///
+/// Implements [WidgetsBindingObserver] to detect when the app comes back
+/// to the foreground and auto-reconnects the socket if it was disconnected.
+class SocketClient extends GetxService with WidgetsBindingObserver {
   static const String _tag = 'SocketClient';
 
   final TokenRepository _tokenRepository;
@@ -39,10 +43,38 @@ class SocketClient extends GetxService {
   /// Flushed automatically once the socket connects.
   final List<_QueuedEvent> _eventQueue = [];
 
+  /// Conversation IDs that have been joined. Re-joined automatically
+  /// after every (re)connect so the server knows which rooms we're in.
+  final Set<String> _joinedConversations = {};
+
   bool get isConnected => _isConnected.value;
   bool get isAuthenticated => _isAuthenticated.value;
 
   SocketClient(this._tokenRepository);
+
+  @override
+  void onInit() {
+    super.onInit();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _handleAppResumed();
+    }
+  }
+
+  /// Called when the app returns to the foreground.
+  /// If the socket is disconnected, reconnects with a fresh token.
+  void _handleAppResumed() {
+    if (_isConnected.value) return; // already connected, nothing to do
+    LogsHelper.debugLog(
+        tag: _tag, 'App resumed — socket disconnected, reconnecting');
+    // Reset reconnect attempts so we get a fresh set of retries
+    _reconnectAttempts = 0;
+    connect();
+  }
 
   /// Initializes the socket connection with authentication via handshake.
   ///
@@ -140,6 +172,17 @@ class SocketClient extends GetxService {
       // The server only sets users online when they explicitly emit this event.
       socket.emit(SocketEvents.presenceOnline);
       LogsHelper.debugLog(tag: _tag, 'Emitted presence:online');
+
+      // Re-join all tracked conversation rooms. After a reconnect the server
+      // has a fresh socket with no room memberships, so we must rejoin.
+      if (_joinedConversations.isNotEmpty) {
+        socket.emit(SocketEvents.joinConversations, {
+          'conversationIds': _joinedConversations.toList(),
+        });
+        LogsHelper.debugLog(
+            tag: _tag,
+            'Re-joined ${_joinedConversations.length} conversation rooms');
+      }
     });
 
     socket.onDisconnect((_) {
@@ -274,15 +317,20 @@ class SocketClient extends GetxService {
 
   /// Joins conversation rooms.
   /// Server expects `conversations:join` with `{ conversationIds: string[] }`.
+  /// The conversation ID is tracked so rooms are automatically re-joined
+  /// after a reconnect.
   void joinConversation(String conversationId) {
+    _joinedConversations.add(conversationId);
     emit(SocketEvents.joinConversations, {
       'conversationIds': [conversationId],
     });
   }
 
   /// Joins multiple conversation rooms at once.
+  /// All IDs are tracked for automatic re-join after reconnect.
   void joinConversations(List<String> conversationIds) {
     if (conversationIds.isEmpty) return;
+    _joinedConversations.addAll(conversationIds);
     emit(SocketEvents.joinConversations, {
       'conversationIds': conversationIds,
     });
@@ -363,8 +411,10 @@ class SocketClient extends GetxService {
 
   @override
   void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
     disconnect();
     _pendingListeners.clear();
+    _joinedConversations.clear();
     super.onClose();
   }
 }
