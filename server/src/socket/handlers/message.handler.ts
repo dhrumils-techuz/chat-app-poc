@@ -151,11 +151,18 @@ export function handleMessageEvents(socket: Socket, io: Server, auth: JwtPayload
     }
   });
 
-  socket.on(SOCKET_EVENTS.MESSAGE_DELETE, async (data) => {
+  socket.on(SOCKET_EVENTS.MESSAGE_DELETE, async (data, callback) => {
     try {
       const { conversationId, messageId, forEveryone } = data;
 
-      if (!conversationId || !messageId) return;
+      if (!conversationId || !messageId) {
+        if (typeof callback === 'function') {
+          callback({ success: false, error: 'Missing required fields' });
+        }
+        return;
+      }
+
+      logger.info('message:delete received', { messageId, conversationId, forEveryone, userId });
 
       if (forEveryone) {
         await messageService.deleteMessage(messageId, conversationId, userId, tenantId);
@@ -171,11 +178,18 @@ export function handleMessageEvents(socket: Socket, io: Server, auth: JwtPayload
         // The message will be filtered out when this user fetches messages.
         await messageService.deleteMessageForUser(messageId, userId);
       }
+
+      if (typeof callback === 'function') {
+        callback({ success: true });
+      }
     } catch (error) {
       logger.error('Error handling message:delete', {
         error: error instanceof Error ? error.message : 'Unknown',
         userId,
       });
+      if (typeof callback === 'function') {
+        callback({ success: false, error: error instanceof Error ? error.message : 'Delete failed' });
+      }
     }
   });
 }

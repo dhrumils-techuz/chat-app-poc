@@ -133,6 +133,18 @@ class MessageDao {
     }
   }
 
+  /// Removes a single message from the local cache (for delete-for-me).
+  Future<void> removeMessage(String messageId) async {
+    final db = _appDatabase.database;
+    if (db == null) return;
+
+    try {
+      await db.delete(_table, where: 'id = ?', whereArgs: [messageId]);
+    } catch (e) {
+      LogsHelper.debugLog(tag: _tag, 'Remove message error: $e');
+    }
+  }
+
   /// Deletes all messages for a conversation.
   Future<void> deleteMessagesForConversation(String conversationId) async {
     final db = _appDatabase.database;

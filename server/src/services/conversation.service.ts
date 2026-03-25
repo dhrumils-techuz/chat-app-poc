@@ -19,6 +19,7 @@ interface ConversationWithParticipants extends Conversation {
     senderId: string;
     senderName: string;
     createdAt: Date;
+    isDeleted: boolean;
   } | null;
   unreadCount?: number;
   lastMessageAt?: Date | null;
@@ -157,11 +158,13 @@ class ConversationService {
       senderId: string;
       senderName: string;
       createdAt: Date;
+      isDeleted: boolean;
     }>(
-      `SELECT m.id, m.content, m.type, m.sender_id as "senderId", u.full_name as "senderName", m.created_at as "createdAt"
+      `SELECT m.id, m.content, m.type, m.sender_id as "senderId", u.full_name as "senderName",
+              m.created_at as "createdAt", m.is_deleted as "isDeleted"
        FROM messages m
        JOIN users u ON u.id = m.sender_id
-       WHERE m.conversation_id = $1 AND m.is_deleted = false
+       WHERE m.conversation_id = $1
        ORDER BY m.created_at DESC LIMIT 1`,
       [conversationId]
     );
@@ -189,12 +192,12 @@ class ConversationService {
 
     const convResult = await query<Conversation & { unread_count: number; last_message_at: Date | null }>(
       `SELECT c.*, cp.unread_count,
-              (SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = c.id AND m.is_deleted = false) AS last_message_at
+              (SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = c.id) AS last_message_at
        FROM conversations c
        JOIN conversation_participants cp ON cp.conversation_id = c.id
        WHERE c.tenant_id = $1 AND cp.user_id = $2 AND cp.left_at IS NULL AND c.is_active = true
        ORDER BY COALESCE(
-         (SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = c.id AND m.is_deleted = false),
+         (SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = c.id),
          c.updated_at,
          c.created_at
        ) DESC
@@ -225,11 +228,13 @@ class ConversationService {
         senderId: string;
         senderName: string;
         createdAt: Date;
+        isDeleted: boolean;
       }>(
-        `SELECT m.id, m.content, m.type, m.sender_id as "senderId", u.full_name as "senderName", m.created_at as "createdAt"
+        `SELECT m.id, m.content, m.type, m.sender_id as "senderId", u.full_name as "senderName",
+                m.created_at as "createdAt", m.is_deleted as "isDeleted"
          FROM messages m
          JOIN users u ON u.id = m.sender_id
-         WHERE m.conversation_id = $1 AND m.is_deleted = false
+         WHERE m.conversation_id = $1
          ORDER BY m.created_at DESC LIMIT 1`,
         [conv.id]
       );

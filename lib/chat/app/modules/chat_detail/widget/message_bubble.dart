@@ -76,13 +76,17 @@ class MessageBubble extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Sender name (group + received only)
-              if (showGroupAvatar) _buildSenderName(context),
+              // For deleted messages, only show the deleted text + timestamp.
+              // No sender name, no reply preview, no original content.
+              if (!message.isDeleted) ...[
+                // Sender name (group + received only)
+                if (showGroupAvatar) _buildSenderName(context),
 
-              // Reply preview
-              if (message.hasReply) _buildReplyPreview(context),
+                // Reply preview
+                if (message.hasReply) _buildReplyPreview(context),
+              ],
 
-              // Content
+              // Content (shows "This message was deleted" when isDeleted)
               _buildContent(context),
 
               // Timestamp + status row
@@ -328,8 +332,6 @@ class MessageBubble extends StatelessWidget {
   // ── Context Menu ───────────────────────────────────────────────────────
 
   void _showContextMenu(BuildContext context) {
-    if (message.isDeleted) return;
-
     final colors = ChatColors.getInstance(context);
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final bubbleSize = renderBox.size;
@@ -353,77 +355,93 @@ class MessageBubble extends StatelessWidget {
       color: colors.surfaceColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: [
-        if (onReply != null)
-          PopupMenuItem(
-            value: 'reply',
-            child: Row(
-              children: [
-                Icon(Icons.reply, size: 20, color: colors.textPrimary),
-                const SizedBox(width: 12),
-                Text(Keys.Reply.tr,
-                    style: TextStyle(color: colors.textPrimary)),
-              ],
+        // Deleted messages only get "Delete for me" to remove the placeholder
+        if (message.isDeleted) ...[
+          if (onDelete != null)
+            PopupMenuItem(
+              value: 'delete_me',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 20, color: colors.textPrimary),
+                  const SizedBox(width: 12),
+                  Text(Keys.Delete_for_me.tr,
+                      style: TextStyle(color: colors.textPrimary)),
+                ],
+              ),
             ),
-          ),
-        if (message.isTextMessage && message.content != null)
-          PopupMenuItem(
-            value: 'copy',
-            child: Row(
-              children: [
-                Icon(Icons.copy, size: 20, color: colors.textPrimary),
-                const SizedBox(width: 12),
-                Text(Keys.Copy.tr,
-                    style: TextStyle(color: colors.textPrimary)),
-              ],
+        ] else ...[
+          if (onReply != null)
+            PopupMenuItem(
+              value: 'reply',
+              child: Row(
+                children: [
+                  Icon(Icons.reply, size: 20, color: colors.textPrimary),
+                  const SizedBox(width: 12),
+                  Text(Keys.Reply.tr,
+                      style: TextStyle(color: colors.textPrimary)),
+                ],
+              ),
             ),
-          ),
-        if (isMyMessage && isGroup && onViewReaders != null)
-          PopupMenuItem(
-            value: 'read_by',
-            child: Row(
-              children: [
-                Icon(Icons.done_all, size: 20, color: colors.readReceiptColor),
-                const SizedBox(width: 12),
-                Text(Keys.Read_by.tr,
-                    style: TextStyle(color: colors.textPrimary)),
-              ],
+          if (message.isTextMessage && message.content != null)
+            PopupMenuItem(
+              value: 'copy',
+              child: Row(
+                children: [
+                  Icon(Icons.copy, size: 20, color: colors.textPrimary),
+                  const SizedBox(width: 12),
+                  Text(Keys.Copy.tr,
+                      style: TextStyle(color: colors.textPrimary)),
+                ],
+              ),
             ),
-          ),
-        if (isMyMessage && onDelete != null) ...[
-          PopupMenuItem(
-            value: 'delete_me',
-            child: Row(
-              children: [
-                Icon(Icons.delete_outline, size: 20, color: colors.textPrimary),
-                const SizedBox(width: 12),
-                Text(Keys.Delete_for_me.tr,
-                    style: TextStyle(color: colors.textPrimary)),
-              ],
+          if (isMyMessage && isGroup && onViewReaders != null)
+            PopupMenuItem(
+              value: 'read_by',
+              child: Row(
+                children: [
+                  Icon(Icons.done_all, size: 20, color: colors.readReceiptColor),
+                  const SizedBox(width: 12),
+                  Text(Keys.Read_by.tr,
+                      style: TextStyle(color: colors.textPrimary)),
+                ],
+              ),
             ),
-          ),
-          PopupMenuItem(
-            value: 'delete_all',
-            child: Row(
-              children: [
-                Icon(Icons.delete_forever, size: 20, color: colors.errorColor),
-                const SizedBox(width: 12),
-                Text(Keys.Delete_for_everyone.tr,
-                    style: TextStyle(color: colors.errorColor)),
-              ],
+          if (isMyMessage && onDelete != null) ...[
+            PopupMenuItem(
+              value: 'delete_me',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 20, color: colors.textPrimary),
+                  const SizedBox(width: 12),
+                  Text(Keys.Delete_for_me.tr,
+                      style: TextStyle(color: colors.textPrimary)),
+                ],
+              ),
             ),
-          ),
-        ] else if (onDelete != null)
-          PopupMenuItem(
-            value: 'delete_me',
-            child: Row(
-              children: [
-                Icon(Icons.delete_outline, size: 20, color: colors.textPrimary),
-                const SizedBox(width: 12),
-                Text(Keys.Delete_for_me.tr,
-                    style: TextStyle(color: colors.textPrimary)),
-              ],
+            PopupMenuItem(
+              value: 'delete_all',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_forever, size: 20, color: colors.errorColor),
+                  const SizedBox(width: 12),
+                  Text(Keys.Delete_for_everyone.tr,
+                      style: TextStyle(color: colors.errorColor)),
+                ],
+              ),
             ),
-          ),
+          ] else if (onDelete != null)
+            PopupMenuItem(
+              value: 'delete_me',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 20, color: colors.textPrimary),
+                  const SizedBox(width: 12),
+                  Text(Keys.Delete_for_me.tr,
+                      style: TextStyle(color: colors.textPrimary)),
+                ],
+              ),
+            ),
+        ],
       ],
     ).then((value) {
       if (value == null) return;

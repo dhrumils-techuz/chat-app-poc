@@ -83,6 +83,24 @@ class ProfileScreen extends GetView<ProfileController> {
                   ],
                 ),
               ),
+
+              const SizedBox(height: AppSizes.dimenToPx8),
+
+              Container(
+                color: colors.surfaceColor,
+                child: Obx(() => ListTile(
+                      leading:
+                          Icon(Icons.logout, color: colors.errorColor),
+                      title: Text(
+                        Keys.Logout.tr,
+                        style: ChatTextStyles.bodySemiBold.copyWith(
+                          color: colors.errorColor,
+                        ),
+                      ),
+                      enabled: !controller.isLoggingOut.value,
+                      onTap: controller.logout,
+                    )),
+              ),
             ],
           ),
         ),

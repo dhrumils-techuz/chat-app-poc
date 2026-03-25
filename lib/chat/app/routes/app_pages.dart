@@ -114,6 +114,7 @@ class ChatAppPages {
       binding: BindingsBuilder(() {
         Get.lazyPut(() => ProfileController(
               authService: Get.find<JwtAuthService>(),
+              authRepository: Get.find<AuthRepository>(),
             ));
       }),
     ),

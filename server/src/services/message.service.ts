@@ -120,15 +120,16 @@ class MessageService {
     }
 
     // LEFT JOIN reply parent message to include replyToContent and replyToSenderName.
-    // Filter out messages that the requesting user has "deleted for me"
-    // (message_status.status = 'deleted' for this user).
+    // "Deleted for everyone" messages (is_deleted=true) are still returned so the
+    // frontend can show a "This message was deleted" placeholder.
+    // Only "deleted for me" entries (message_status.status='deleted') are fully hidden.
     const baseQuery = `SELECT m.*, u.full_name as sender_name, u.avatar_url as sender_avatar_url,
        rm.content as reply_to_content, ru.full_name as reply_to_sender_name
        FROM messages m
        JOIN users u ON u.id = m.sender_id
        LEFT JOIN messages rm ON rm.id = m.reply_to_id
        LEFT JOIN users ru ON ru.id = rm.sender_id
-       WHERE m.conversation_id = $1 AND m.is_deleted = false
+       WHERE m.conversation_id = $1
          AND NOT EXISTS (
            SELECT 1 FROM message_status ms
            WHERE ms.message_id = m.id AND ms.user_id = $2 AND ms.status = 'deleted'
@@ -429,9 +430,10 @@ class MessageService {
       LEFT JOIN users ru ON ru.id = rm.sender_id`;
 
     // Newer messages (created_at > target, sorted ASC, take half)
+    // "Deleted for everyone" messages are included (shown as placeholders).
     const newerResult = await query<MessageWithSender>(
       `SELECT ${selectFields} FROM messages m ${joins}
-       WHERE m.conversation_id = $1 AND m.is_deleted = false
+       WHERE m.conversation_id = $1
          AND m.created_at > $2 ${deletedFilter}
        ORDER BY m.created_at ASC LIMIT $4`,
       [conversationId, targetCreatedAt, userId, half]
@@ -440,7 +442,7 @@ class MessageService {
     // Target + older messages (created_at <= target, sorted DESC, take half+1)
     const olderResult = await query<MessageWithSender>(
       `SELECT ${selectFields} FROM messages m ${joins}
-       WHERE m.conversation_id = $1 AND m.is_deleted = false
+       WHERE m.conversation_id = $1
          AND m.created_at <= $2 ${deletedFilter}
        ORDER BY m.created_at DESC LIMIT $4`,
       [conversationId, targetCreatedAt, userId, half + 1]

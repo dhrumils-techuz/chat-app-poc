@@ -149,6 +149,16 @@ class MessageRepository {
     );
   }
 
+  /// Marks a message as deleted in the local cache (for delete-for-everyone).
+  void markAsDeleted(String messageId) {
+    _messageDao.markAsDeleted(messageId);
+  }
+
+  /// Removes a message from the local cache entirely (for delete-for-me).
+  void removeFromCache(String messageId) {
+    _messageDao.removeMessage(messageId);
+  }
+
   Future<ApiResponseModel> markAsRead(String conversationId) {
     return _messageService.markAsRead(conversationId);
   }

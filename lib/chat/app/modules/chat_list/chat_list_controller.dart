@@ -62,6 +62,7 @@ class ChatListController extends GetxController {
   StreamSubscription<Map<String, dynamic>>? _messageReadSub;
   StreamSubscription<Map<String, dynamic>>? _messageDeliveredSub;
   StreamSubscription<Map<String, dynamic>>? _unreadUpdateSub;
+  StreamSubscription<Map<String, dynamic>>? _messageDeletedSub;
 
   String get currentUserId => _authService.currentUserId ?? '';
 
@@ -90,6 +91,7 @@ class ChatListController extends GetxController {
     _messageReadSub?.cancel();
     _messageDeliveredSub?.cancel();
     _unreadUpdateSub?.cancel();
+    _messageDeletedSub?.cancel();
     _typingTimers.forEach((_, timer) => timer.cancel());
     _typingTimers.clear();
     super.onClose();
@@ -238,6 +240,8 @@ class ChatListController extends GetxController {
         _socketService.onMessageDelivered.listen(_handleMessageDeliveredAck);
     _unreadUpdateSub =
         _socketService.onUnreadUpdate.listen(_handleUnreadUpdate);
+    _messageDeletedSub =
+        _socketService.onMessageDeleted.listen(_handleMessageDeleted);
   }
 
   /// Joins socket rooms for all loaded conversations so we receive
@@ -466,6 +470,32 @@ class ChatListController extends GetxController {
       conversations[index] =
           conversations[index].copyWith(unreadCount: unreadCount);
     }
+  }
+
+  /// Handles 'message:deleted' (delete for everyone). If the deleted message
+  /// is the last message shown in a conversation tile, update the preview.
+  void _handleMessageDeleted(Map<String, dynamic> data) {
+    final conversationId = data['conversationId'] as String?;
+    final messageId = data['messageId'] as String?;
+    final forEveryone = data['forEveryone'] as bool? ?? false;
+    if (conversationId == null || messageId == null) return;
+
+    // Only care about "delete for everyone" — the sender should still see
+    // the placeholder "This message was deleted" in the chat list.
+    if (!forEveryone) return;
+
+    final index = conversations.indexWhere((c) => c.id == conversationId);
+    if (index == -1) return;
+
+    final conversation = conversations[index];
+    final lastMsg = conversation.lastMessage;
+    if (lastMsg == null || lastMsg.id != messageId) return;
+
+    // Update the last message to show the deleted placeholder.
+    // The UI checks isDeleted first, so the old content won't be shown.
+    conversations[index] = conversation.copyWith(
+      lastMessage: lastMsg.copyWith(isDeleted: true),
+    );
   }
 
   // ── Actions ───────────────────────────────────────────────────────────

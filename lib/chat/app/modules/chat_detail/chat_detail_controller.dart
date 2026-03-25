@@ -461,14 +461,18 @@ class ChatDetailController extends GetxController {
       forEveryone: forEveryone,
     );
 
-    // Optimistic UI update
+    // Optimistic UI update + persist to local cache
     if (forEveryone) {
       final index = messages.indexWhere((m) => m.id == messageId);
       if (index != -1) {
         messages[index] = messages[index].copyWith(isDeleted: true);
       }
+      // Mark as deleted in local DB so it shows "This message was deleted"
+      _messageRepository.markAsDeleted(messageId);
     } else {
       messages.removeWhere((m) => m.id == messageId);
+      // Remove from local DB so it never reappears from cache
+      _messageRepository.removeFromCache(messageId);
     }
   }
 
@@ -822,6 +826,8 @@ class ChatDetailController extends GetxController {
         if (index != -1) {
           messages[index] = messages[index].copyWith(isDeleted: true);
         }
+        // Persist to local cache so it stays deleted on next load
+        _messageRepository.markAsDeleted(messageId);
       }
     });
 

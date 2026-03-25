@@ -35,7 +35,7 @@ export interface ClientToServerEvents {
     conversationId: string;
     messageId: string;
     forEveryone: boolean;
-  }) => void;
+  }, callback?: (response: { success: boolean; error?: string }) => void) => void;
 
   'message:delivered': (data: { messageId: string; conversationId: string }) => void;
 

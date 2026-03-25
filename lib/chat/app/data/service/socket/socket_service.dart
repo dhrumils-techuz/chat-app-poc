@@ -165,11 +165,20 @@ class SocketService extends GetxService {
     required String messageId,
     bool forEveryone = false,
   }) {
-    _socketClient.emit(SocketEvents.deleteMessage, {
-      'conversationId': conversationId,
-      'messageId': messageId,
-      'forEveryone': forEveryone,
-    });
+    _socketClient.emitWithAck(
+      SocketEvents.deleteMessage,
+      {
+        'conversationId': conversationId,
+        'messageId': messageId,
+        'forEveryone': forEveryone,
+      },
+      (response) {
+        LogsHelper.debugLog(
+          tag: 'SocketService',
+          'message:delete ack: $response',
+        );
+      },
+    );
   }
 
   /// Joins a conversation room to receive real-time updates.
