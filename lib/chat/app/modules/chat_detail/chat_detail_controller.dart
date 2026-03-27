@@ -562,6 +562,11 @@ class ChatDetailController extends GetxController {
                   ...readers.map((r) {
                     final name =
                         (r['fullName'] ?? r['full_name'] ?? '') as String;
+                    final readAtStr =
+                        (r['readAt'] ?? r['read_at'] ?? '') as String;
+                    final readAt = readAtStr.isNotEmpty
+                        ? DateTime.tryParse(readAtStr)?.toLocal()
+                        : null;
                     return ListTile(
                       dense: true,
                       leading: CircleAvatar(
@@ -575,6 +580,15 @@ class ChatDetailController extends GetxController {
                       ),
                       title: Text(name,
                           style: TextStyle(color: colors.textPrimary)),
+                      trailing: readAt != null
+                          ? Text(
+                              _formatReadAt(readAt),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.textSecondary,
+                              ),
+                            )
+                          : null,
                     );
                   }),
               ],
@@ -583,6 +597,20 @@ class ChatDetailController extends GetxController {
         );
       },
     );
+  }
+
+  /// Formats a read-at timestamp for the readers bottom sheet.
+  /// Shows "DD/MM/YYYY, HH:mm" or just "HH:mm" for today.
+  String _formatReadAt(DateTime dt) {
+    final now = DateTime.now();
+    final time =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return time;
+    }
+    final day = dt.day.toString().padLeft(2, '0');
+    final month = dt.month.toString().padLeft(2, '0');
+    return '$day/$month/${dt.year}, $time';
   }
 
   // ── Search ──────────────────────────────────────────────────────────

@@ -305,10 +305,9 @@ class ChatListItem extends StatelessWidget {
       return days[local.weekday - 1];
     }
 
-    final month = local.month.toString().padLeft(2, '0');
     final day = local.day.toString().padLeft(2, '0');
-    final year = (local.year % 100).toString().padLeft(2, '0');
-    return '$month/$day/$year';
+    final month = local.month.toString().padLeft(2, '0');
+    return '$day/$month/${local.year}';
   }
 
   String _getMessageTypeLabel(MessageType type) {

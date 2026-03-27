@@ -39,17 +39,17 @@ class ChatSearchBarWidget extends GetView<ChatListController> {
               size: AppSizes.dimenToPx20,
             ),
             suffixIcon: hasText
-                ? GestureDetector(
-                    onTap: () {
+                ? IconButton(
+                    onPressed: () {
                       controller.searchConversations('');
-                      // Clear the text field by rebuilding with a new controller
                       FocusScope.of(context).unfocus();
                     },
-                    child: Icon(
+                    icon: Icon(
                       Icons.close,
                       color: colors.iconColor,
                       size: AppSizes.dimenToPx18,
                     ),
+                    splashRadius: 16,
                   )
                 : null,
             border: InputBorder.none,

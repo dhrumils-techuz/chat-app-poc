@@ -167,19 +167,25 @@ class MessageInputBar extends GetView<ChatDetailController> {
                   // Send / Mic button
                   Obx(() {
                     final hasText = controller.messageText.value.isNotEmpty;
-                    return GestureDetector(
-                      onTap: hasText ? controller.sendTextMessage : null,
-                      child: Container(
+                    return Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.hardEdge,
+                      child: Ink(
                         width: 42,
                         height: 42,
                         decoration: const BoxDecoration(
                           gradient: AppColor.primaryGradient,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          hasText ? Icons.send : Icons.mic,
-                          color: AppColor.white,
-                          size: 20,
+                        child: InkWell(
+                          onTap: hasText ? controller.sendTextMessage : null,
+                          customBorder: const CircleBorder(),
+                          child: Icon(
+                            hasText ? Icons.send : Icons.mic,
+                            color: AppColor.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     );
@@ -299,13 +305,12 @@ class _IconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, size: 24, color: color),
-      ),
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 24, color: color),
+      padding: const EdgeInsets.all(8),
+      constraints: const BoxConstraints(),
+      splashRadius: 20,
     );
   }
 }

@@ -5,12 +5,11 @@ import 'logs_helper.dart';
 
 class DateTimeHelper {
   static const String serverDateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-  static const String formatMMMDD = 'MMM dd';
+  static const String formatDDMMYYYY = 'dd/MM/yyyy';
   static const String formatDDMMMYYYY = 'dd MMM, yyyy';
   static const String formatDMMMYYYY = 'd MMM yyyy';
   static const String formatMMMDDYYYY = 'MMM dd, yyyy';
   static const String formatHHmm = 'HH:mm';
-  static const String formathhmma = 'hh:mm a';
   static const String formatEEEE = 'EEEE';
   static const String formatEEEEMMMMdyyyy = 'EEEE, MMMM d, yyyy';
   static const String displayDateFormat = formatEEEEMMMMdyyyy;
@@ -62,13 +61,13 @@ class DateTimeHelper {
     final difference = today.difference(messageDay).inDays;
 
     if (difference == 0) {
-      return DateFormat(formathhmma).format(local);
+      return DateFormat(formatHHmm).format(local);
     } else if (difference == 1) {
       return 'Yesterday';
     } else if (difference < 7) {
       return DateFormat(formatEEEE).format(local);
     } else {
-      return DateFormat(formatDMMMYYYY).format(local);
+      return DateFormat(formatDDMMYYYY).format(local);
     }
   }
 
@@ -83,15 +82,13 @@ class DateTimeHelper {
     final difference = today.difference(messageDay).inDays;
 
     if (difference == 0) {
-      return DateFormat(formathhmma).format(local);
+      return DateFormat(formatHHmm).format(local);
     } else if (difference == 1) {
       return 'Yesterday';
     } else if (difference < 7) {
       return DateFormat(formatEEEE).format(local);
-    } else if (local.year == now.year) {
-      return DateFormat(formatMMMDD).format(local);
     } else {
-      return DateFormat(formatDMMMYYYY).format(local);
+      return DateFormat(formatDDMMYYYY).format(local);
     }
   }
 
@@ -125,10 +122,8 @@ class DateTimeHelper {
       return 'Today';
     } else if (difference == 1) {
       return 'Yesterday';
-    } else if (local.year == now.year) {
-      return DateFormat(formatDMMMYYYY).format(local);
     } else {
-      return DateFormat(formatDMMMYYYY).format(local);
+      return DateFormat(formatDDMMYYYY).format(local);
     }
   }
 

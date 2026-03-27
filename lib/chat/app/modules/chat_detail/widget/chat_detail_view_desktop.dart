@@ -478,12 +478,10 @@ class ChatDetailViewDesktop extends StatelessWidget {
       label = Keys.Today.tr;
     } else if (local.isYesterday) {
       label = Keys.Yesterday.tr;
-    } else if (local.isThisYear) {
-      label =
-          '${_monthName(local.month)} ${local.day}';
     } else {
-      label =
-          '${_monthName(local.month)} ${local.day}, ${local.year}';
+      final day = local.day.toString().padLeft(2, '0');
+      final month = local.month.toString().padLeft(2, '0');
+      label = '$day/$month/${local.year}';
     }
 
     return Padding(
@@ -509,15 +507,6 @@ class ChatDetailViewDesktop extends StatelessWidget {
     );
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────
-
-  String _monthName(int month) {
-    final months = [
-      Keys.Jan.tr, Keys.Feb.tr, Keys.Mar.tr, Keys.Apr.tr, Keys.May.tr, Keys.Jun.tr,
-      Keys.Jul.tr, Keys.Aug.tr, Keys.Sep.tr, Keys.Oct.tr, Keys.Nov.tr, Keys.Dec.tr,
-    ];
-    return months[month - 1];
-  }
 }
 
 // ── Header Icon Button ────────────────────────────────────────────────────
@@ -535,13 +524,12 @@ class _HeaderIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.dimenToPx20),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.dimenToPx8),
-        child: Icon(icon, size: AppSizes.dimenToPx22, color: color),
-      ),
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: AppSizes.dimenToPx22, color: color),
+      padding: const EdgeInsets.all(AppSizes.dimenToPx8),
+      constraints: const BoxConstraints(),
+      splashRadius: AppSizes.dimenToPx20,
     );
   }
 }

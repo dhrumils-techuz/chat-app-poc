@@ -453,18 +453,9 @@ class ChatDetailViewMobile extends GetView<ChatDetailController> {
     if (local.isToday) return Keys.Today.tr;
     if (local.isYesterday) return Keys.Yesterday.tr;
 
-    if (local.isThisYear) {
-      return '${_monthName(local.month)} ${local.day}';
-    }
-    return '${_monthName(local.month)} ${local.day}, ${local.year}';
-  }
-
-  String _monthName(int month) {
-    final months = [
-      Keys.Jan.tr, Keys.Feb.tr, Keys.Mar.tr, Keys.Apr.tr, Keys.May.tr, Keys.Jun.tr,
-      Keys.Jul.tr, Keys.Aug.tr, Keys.Sep.tr, Keys.Oct.tr, Keys.Nov.tr, Keys.Dec.tr,
-    ];
-    return months[month - 1];
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    return '$day/$month/${local.year}';
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────

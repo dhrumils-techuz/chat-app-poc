@@ -133,12 +133,13 @@ class _AttachmentOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = ChatColors.getInstance(context);
 
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
+          Ink(
             width: 56,
             height: 56,
             decoration: BoxDecoration(

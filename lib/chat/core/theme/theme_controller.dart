@@ -42,25 +42,57 @@ class ThemeController extends GetxController {
   /// Returns the initial [ThemeMode] from persisted preference.
   ThemeMode get initialThemeMode => _resolveThemeMode(themeMode.value);
 
+  /// Shared overlay color resolver for all interactive widgets.
+  /// Maps widget states (pressed, hovered, focused) to primary-tinted overlays.
+  static WidgetStateProperty<Color?> _overlayColor(
+      double pressedAlpha, double hoverAlpha) {
+    return WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.pressed)) {
+        return AppColor.primary.withValues(alpha: pressedAlpha);
+      }
+      if (states.contains(WidgetState.hovered)) {
+        return AppColor.primary.withValues(alpha: hoverAlpha);
+      }
+      if (states.contains(WidgetState.focused)) {
+        return AppColor.primary.withValues(alpha: hoverAlpha);
+      }
+      return null;
+    });
+  }
+
   /// Builds the light [ThemeData] with [ChatColors.light] extension.
   static ThemeData get lightTheme {
+    final overlay = _overlayColor(0.12, 0.06);
+    // ButtonStyle applied to ALL icon buttons — including those inside AppBar.
+    final iconStyle = ButtonStyle(overlayColor: overlay);
+
     return ThemeData(
       brightness: Brightness.light,
-      primarySwatch: MaterialColor(AppColor.primary.value, const {
-        50: Color(0xFFE8F8F0),
-        100: Color(0xFFC6EDDA),
-        200: Color(0xFFA0E1C1),
-        300: Color(0xFF7AD5A8),
-        400: Color(0xFF5ECB95),
-        500: AppColor.primary,
-        600: Color(0xFF0EB075),
-        700: Color(0xFF0C9B6A),
-        800: Color(0xFF0A875F),
-        900: Color(0xFF066547),
-      }),
+      // ColorScheme ensures M3 derives ALL overlays from primary.
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColor.primary,
+        brightness: Brightness.light,
+      ),
+      splashColor: AppColor.primary.withValues(alpha: 0.12),
+      highlightColor: AppColor.primary.withValues(alpha: 0.08),
       scaffoldBackgroundColor: AppColor.backgroundGrey,
       cardColor: AppColor.white,
       dividerColor: AppColor.divider,
+      // AppBar icons get their own IconButtonTheme in M3 — override it.
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: IconThemeData(color: AppColor.black),
+        actionsIconTheme: IconThemeData(color: AppColor.black),
+      ),
+      // Global icon button style — covers non-AppBar icons.
+      iconButtonTheme: IconButtonThemeData(style: iconStyle),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(overlayColor: overlay),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(overlayColor: overlay),
+      ),
       extensions: const [ChatColors.light()],
     );
   }
@@ -68,28 +100,38 @@ class ThemeController extends GetxController {
   /// Builds the dark [ThemeData] with [ChatColors.dark] extension.
   static ThemeData get darkTheme {
     const darkColors = ChatColors.dark();
+    final overlay = _overlayColor(0.18, 0.10);
+    final iconStyle = ButtonStyle(overlayColor: overlay);
+
     return ThemeData(
       brightness: Brightness.dark,
-      primarySwatch: MaterialColor(AppColor.primary.value, const {
-        50: Color(0xFFE8F8F0),
-        100: Color(0xFFC6EDDA),
-        200: Color(0xFFA0E1C1),
-        300: Color(0xFF7AD5A8),
-        400: Color(0xFF5ECB95),
-        500: AppColor.primary,
-        600: Color(0xFF0EB075),
-        700: Color(0xFF0C9B6A),
-        800: Color(0xFF0A875F),
-        900: Color(0xFF066547),
-      }),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColor.primary,
+        brightness: Brightness.dark,
+      ),
+      splashColor: AppColor.primary.withValues(alpha: 0.15),
+      highlightColor: AppColor.primary.withValues(alpha: 0.10),
       scaffoldBackgroundColor: darkColors.backgroundColor,
       cardColor: darkColors.surfaceColor,
       dividerColor: darkColors.dividerColor,
-      dialogTheme: DialogThemeData(
-        backgroundColor: darkColors.surfaceColor,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Color(0xFFE0E0E0)),
+        actionsIconTheme: const IconThemeData(color: Color(0xFFE0E0E0)),
       ),
+      iconButtonTheme: IconButtonThemeData(style: iconStyle),
       popupMenuTheme: PopupMenuThemeData(
         color: darkColors.surfaceColor,
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(overlayColor: overlay),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(overlayColor: overlay),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: darkColors.surfaceColor,
       ),
       extensions: const [ChatColors.dark()],
     );

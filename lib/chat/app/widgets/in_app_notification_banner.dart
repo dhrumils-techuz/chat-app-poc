@@ -321,16 +321,16 @@ class _DiscordBannerState extends State<_DiscordBanner>
 
                     // ── Close button ──
                     const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: _dismiss,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 16,
-                          color: textMuted,
-                        ),
+                    IconButton(
+                      onPressed: _dismiss,
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: textMuted,
                       ),
+                      padding: const EdgeInsets.only(top: 2),
+                      constraints: const BoxConstraints(),
+                      splashRadius: 14,
                     ),
                   ],
                 ),

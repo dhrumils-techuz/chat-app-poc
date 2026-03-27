@@ -483,10 +483,6 @@ class MessageBubble extends StatelessWidget {
 
   String _formatTime(DateTime dateTime) {
     final local = dateTime.toLocal();
-    final hour = local.hour;
-    final minute = local.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    return '$displayHour:$minute $period';
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 }

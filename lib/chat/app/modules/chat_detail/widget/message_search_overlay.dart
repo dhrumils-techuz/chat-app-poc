@@ -334,29 +334,17 @@ class _SearchResultCard extends StatelessWidget {
   }
 
   String _formatDateTime(DateTime date) {
-    final time = _formatTime(date);
-    if (date.isToday) return time;
-    if (date.isYesterday) return '${Keys.Yesterday.tr}, $time';
+    final local = date.toLocal();
+    final time = _formatTime(local);
+    if (local.isToday) return time;
+    if (local.isYesterday) return '${Keys.Yesterday.tr}, $time';
 
-    final day = date.day.toString().padLeft(2, '0');
-    final month = _monthAbbrev(date.month);
-    if (date.isThisYear) return '$day $month, $time';
-    return '$day $month ${date.year}, $time';
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    return '$day/$month/${local.year}, $time';
   }
 
   String _formatTime(DateTime date) {
-    final hour = date.hour;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    return '$displayHour:$minute $period';
-  }
-
-  String _monthAbbrev(int month) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return months[month - 1];
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

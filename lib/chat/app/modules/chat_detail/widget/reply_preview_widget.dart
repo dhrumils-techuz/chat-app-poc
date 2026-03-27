@@ -70,16 +70,16 @@ class ReplyPreviewWidget extends StatelessWidget {
           ),
 
           // Close button
-          GestureDetector(
-            onTap: onClose,
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(
-                Icons.close,
-                size: 18,
-                color: colors.iconColor,
-              ),
+          IconButton(
+            onPressed: onClose,
+            icon: Icon(
+              Icons.close,
+              size: 18,
+              color: colors.iconColor,
             ),
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            splashRadius: 16,
           ),
         ],
       ),
